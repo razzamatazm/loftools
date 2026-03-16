@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LOF Tools</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <h1>LOF Valuation Calculator</h1>
+      </header>
+
+      <main class="tool-shell">
+        <section class="tool-card">
+          <div class="tablist" role="tablist" aria-label="Valuation calculators">
+            <button class="tab active" type="button" data-tab="lease" aria-selected="true">Lease</button>
+            <button class="tab" type="button" data-tab="sale" aria-selected="false">Sale Comps</button>
+            <button class="tab" type="button" data-tab="aptSale" aria-selected="false">Apt Sale Comps</button>
+            <button class="tab" type="button" data-tab="aptRent" aria-selected="false">Apt Rent Comps</button>
+            <button class="tab" type="button" data-tab="currentRent" aria-selected="false">Current Rent</button>
+          </div>
+
+          <section class="panel active" data-panel="lease">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Income Approach</p>
+                <h2>Lease Comps</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="lease-clear-btn">Clear Values</button>
+                <button class="copy-btn" type="button" id="lease-copy-btn" disabled>Copy Value</button>
+              </div>
+            </div>
+
+            <div class="config-grid">
+              <label class="field">
+                <span>Building Size (SF)</span>
+                <input id="lease-sqft" type="text" inputmode="numeric" placeholder="Building square footage..." />
+              </label>
+              <label class="field">
+                <span>Vacancy Factor</span>
+                <div class="input-suffix">
+                  <input id="lease-vacancy" type="text" inputmode="decimal" placeholder="5" />
+                  <span>%</span>
+                </div>
+              </label>
+              <label class="field">
+                <span>Starting Cap Rate</span>
+                <input id="lease-start-cap" type="text" inputmode="decimal" placeholder="5.5" />
+              </label>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="checkbox-col">Use</th>
+                    <th>Rent / SF</th>
+                    <th>Lease Type</th>
+                    <th>Expense %</th>
+                    <th>Rent After Expenses</th>
+                    <th class="action-col"></th>
+                  </tr>
+                </thead>
+                <tbody id="lease-rows"></tbody>
+              </table>
+            </div>
+            <p class="hint">Highest rent-after-expenses row is auto-excluded as the high outlier. You can reselect it.</p>
+
+            <div class="summary-grid">
+              <article class="summary-card">
+                <span>Average Rent After Expenses</span>
+                <strong id="lease-average-rent">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>Potential Monthly NOI</span>
+                <strong id="lease-monthly-noi">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>Potential Annual NOI</span>
+                <strong id="lease-annual-noi">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>Annual NOI After Vacancy</span>
+                <strong id="lease-noi-after-vacancy">-</strong>
+              </article>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cap Rate</th>
+                    <th>Value Based on Market Rent</th>
+                  </tr>
+                </thead>
+                <tbody id="lease-cap-results"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="sale" hidden>
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Sales Approach</p>
+                <h2>Sale Comps</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="sale-clear-btn">Clear Values</button>
+                <button class="copy-btn" type="button" id="sale-copy-btn" disabled>Copy Value</button>
+              </div>
+            </div>
+
+            <div class="config-grid sale-grid">
+              <label class="field">
+                <span>Subject Property SF</span>
+                <input id="sale-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
+              </label>
+              <label class="field">
+                <span>Listing Discount Percent</span>
+                <div class="input-suffix">
+                  <input id="sale-listing-discount" type="text" inputmode="decimal" placeholder="0" />
+                  <span>%</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="checkbox-col">Use</th>
+                    <th>Type</th>
+                    <th>Purchase Price</th>
+                    <th>Comp SF</th>
+                    <th>$ / SF (Input)</th>
+                    <th>$ / SF (Used)</th>
+                    <th class="action-col"></th>
+                  </tr>
+                </thead>
+                <tbody id="sale-rows"></tbody>
+              </table>
+            </div>
+
+            <div class="actions-row">
+              <button class="secondary-btn" id="sale-add-row" type="button">Add Comp</button>
+            </div>
+            <p class="hint">Highest adjusted $/SF row is auto-excluded as the high outlier. Listing rows apply the discount before averaging.</p>
+
+            <div class="summary-grid summary-grid-two">
+              <article class="summary-card">
+                <span>Average $ / SF</span>
+                <strong id="sale-average-psf">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>Indicated Value</span>
+                <strong id="sale-indicated-value" class="copy-value" tabindex="0" role="button">-</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="aptSale" hidden>
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Multifamily Sales</p>
+                <h2>Apt Sale Comps</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="apt-sale-clear-btn">Clear Values</button>
+                <button class="copy-btn" type="button" id="apt-sale-copy-btn" disabled>Copy Value</button>
+              </div>
+            </div>
+
+            <div class="config-grid apt-sale-grid">
+              <label class="field">
+                <span>Subject Units</span>
+                <input id="apt-sale-subject-units" type="text" inputmode="numeric" placeholder="Subject units..." />
+              </label>
+              <label class="field toggle-field" for="apt-sale-enable-sf">
+                <span>Use $ / SF Valuation</span>
+                <span class="toggle-switch">
+                  <input id="apt-sale-enable-sf" type="checkbox" />
+                  <span class="toggle-slider" aria-hidden="true"></span>
+                </span>
+              </label>
+              <label class="field" id="apt-sale-subject-sqft-field" hidden>
+                <span>Subject Property SF</span>
+                <input id="apt-sale-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
+              </label>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="checkbox-col">Use</th>
+                    <th>Purchase Price</th>
+                    <th>Units</th>
+                    <th id="apt-sale-sf-heading">SF</th>
+                    <th>$ / Unit</th>
+                    <th id="apt-sale-psf-heading">$ / SF</th>
+                    <th class="action-col"></th>
+                  </tr>
+                </thead>
+                <tbody id="apt-sale-rows"></tbody>
+              </table>
+            </div>
+
+            <div class="actions-row">
+              <button class="secondary-btn" id="apt-sale-add-row" type="button">Add Comp</button>
+            </div>
+            <p class="hint">Highest $ / unit comp is auto-excluded as the high outlier. You can reselect it. Enable $ / SF valuation when you want to compare both methods.</p>
+
+            <div class="summary-grid summary-grid-two" id="apt-sale-summary-grid">
+              <article class="summary-card">
+                <span>Average $ / Unit</span>
+                <strong id="apt-sale-average-unit">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>Indicated Value ($ / Unit)</span>
+                <strong id="apt-sale-indicated-unit" class="copy-value" tabindex="0" role="button">-</strong>
+              </article>
+              <article class="summary-card" id="apt-sale-average-sf-card" hidden>
+                <span>Average $ / SF</span>
+                <strong id="apt-sale-average-sf">-</strong>
+              </article>
+              <article class="summary-card" id="apt-sale-indicated-sf-card" hidden>
+                <span>Indicated Value ($ / SF)</span>
+                <strong id="apt-sale-indicated-sf" class="copy-value" tabindex="0" role="button">-</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="aptRent" hidden>
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Multifamily Income</p>
+                <h2>Apt Rent Comps</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="apt-rent-clear-btn">Clear Values</button>
+                <button class="copy-btn" type="button" id="apt-rent-copy-btn" disabled>Copy Value</button>
+              </div>
+            </div>
+
+            <div class="config-grid">
+              <div class="field field-wide">
+                <span>Subject Unit Mix</span>
+                <div class="mix-grid">
+                  <label class="field compact">
+                    <span>Studios</span>
+                    <input id="apt-rent-studio" type="text" inputmode="numeric" placeholder="0" />
+                  </label>
+                  <label class="field compact">
+                    <span>1 Beds</span>
+                    <input id="apt-rent-onebed" type="text" inputmode="numeric" placeholder="0" />
+                  </label>
+                  <label class="field compact">
+                    <span>2 Beds</span>
+                    <input id="apt-rent-twobed" type="text" inputmode="numeric" placeholder="0" />
+                  </label>
+                  <label class="field compact">
+                    <span>3 Beds</span>
+                    <input id="apt-rent-threebed" type="text" inputmode="numeric" placeholder="0" />
+                  </label>
+                </div>
+              </div>
+              <label class="field">
+                <span>Vacancy Factor</span>
+                <div class="input-suffix">
+                  <input id="apt-rent-vacancy" type="text" inputmode="decimal" placeholder="5" />
+                  <span>%</span>
+                </div>
+              </label>
+              <label class="field">
+                <span>Expenses</span>
+                <div class="input-suffix">
+                  <input id="apt-rent-expense" type="text" inputmode="decimal" placeholder="20" />
+                  <span>%</span>
+                </div>
+              </label>
+              <label class="field">
+                <span>Starting Cap Rate</span>
+                <div class="input-suffix">
+                  <input id="apt-rent-start-cap" type="text" inputmode="decimal" placeholder="5.5" />
+                  <span>%</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="checkbox-col">Use</th>
+                    <th>Unit Type</th>
+                    <th>Monthly Rent Samples</th>
+                    <th>Avg/Outlier Marker</th>
+                  </tr>
+                </thead>
+                <tbody id="apt-rent-rows"></tbody>
+              </table>
+            </div>
+            <p class="hint">Highest rent input is auto-excluded for each unit type. Use the outlier toggle to include it again.</p>
+
+            <div class="summary-grid summary-grid-four">
+              <article class="summary-card">
+                <span>Studios Avg</span>
+                <strong id="apt-rent-avg-studio">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>1 Beds Avg</span>
+                <strong id="apt-rent-avg-onebed">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>2 Beds Avg</span>
+                <strong id="apt-rent-avg-twobed">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>3 Beds Avg</span>
+                <strong id="apt-rent-avg-threebed">-</strong>
+              </article>
+            </div>
+
+            <div class="summary-grid summary-grid-three">
+              <article class="summary-card">
+                <span>Annual Gross Rent</span>
+                <strong id="apt-rent-annual-gross">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>Effective Gross Income</span>
+                <strong id="apt-rent-effective-gross-income">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>Annual NOI After Expenses</span>
+                <strong id="apt-rent-annual-noi">-</strong>
+              </article>
+              <article class="summary-card">
+                <span>Value at Start Cap</span>
+                <strong id="apt-rent-start-cap-value">-</strong>
+              </article>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cap Rate</th>
+                    <th>Value Based on Market Rent</th>
+                  </tr>
+                </thead>
+                <tbody id="apt-rent-cap-results"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="currentRent" hidden>
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Current Income</p>
+                <h2>Current Rent</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="current-rent-clear-btn">Clear Values</button>
+                <button class="copy-btn" type="button" id="current-rent-copy-btn" disabled>Copy Value</button>
+              </div>
+            </div>
+
+            <div class="config-grid current-rent-grid">
+              <label class="field field-wide">
+                <span>Property Type</span>
+                <div class="mode-toggle" id="current-rent-mode-toggle" role="group" aria-label="Current rent property type">
+                  <button type="button" data-current-rent-mode="commercial">Commercial</button>
+                  <button type="button" data-current-rent-mode="apartment">Apartment</button>
+                </div>
+              </label>
+              <label class="field">
+                <span>Starting Cap Rate</span>
+                <div class="input-suffix">
+                  <input id="current-rent-start-cap" type="text" inputmode="decimal" placeholder="5.5" />
+                  <span>%</span>
+                </div>
+              </label>
+              <label class="field">
+                <span>Additional Income to Fill Vacant Space</span>
+                <input id="current-rent-additional-income" type="text" inputmode="decimal" placeholder="0" />
+              </label>
+              <label class="field">
+                <span>Vacancy Factor</span>
+                <div class="input-suffix">
+                  <input id="current-rent-vacancy" type="text" inputmode="decimal" placeholder="Optional" />
+                  <span>%</span>
+                </div>
+              </label>
+              <label class="field" id="current-rent-expense-field" hidden>
+                <span>Expenses</span>
+                <div class="input-suffix">
+                  <input id="current-rent-expense" type="text" inputmode="decimal" placeholder="20" />
+                  <span>%</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="table-wrap" id="current-rent-commercial-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Current Monthly Rent</th>
+                    <th>Lease Type</th>
+                    <th>Expense %</th>
+                    <th>Adjusted Monthly Rent</th>
+                    <th class="action-col"></th>
+                  </tr>
+                </thead>
+                <tbody id="current-rent-commercial-rows"></tbody>
+              </table>
+            </div>
+
+            <div class="table-wrap" id="current-rent-apartment-table" hidden>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Unit / Current Monthly Rent</th>
+                    <th>Vacancy Marker</th>
+                    <th class="action-col"></th>
+                  </tr>
+                </thead>
+                <tbody id="current-rent-apartment-rows"></tbody>
+              </table>
+            </div>
+
+            <p class="hint" id="current-rent-commercial-hint">Commercial mode applies lease-type expense adjustments to each in-place rent row before vacancy and cap rate.</p>
+            <p class="hint" id="current-rent-apartment-hint" hidden>Apartment mode counts $0 rows as vacant units for tracking only. Manual vacancy factor still controls valuation.</p>
+
+            <div class="summary-grid summary-grid-four" id="current-rent-summary-grid">
+              <article class="summary-card">
+                <span id="current-rent-summary-1-label">Adjusted Monthly Rent</span>
+                <strong id="current-rent-summary-1">-</strong>
+              </article>
+              <article class="summary-card">
+                <span id="current-rent-summary-2-label">Additional Monthly Income</span>
+                <strong id="current-rent-summary-2">-</strong>
+              </article>
+              <article class="summary-card">
+                <span id="current-rent-summary-3-label">Annual Gross Income</span>
+                <strong id="current-rent-summary-3">-</strong>
+              </article>
+              <article class="summary-card">
+                <span id="current-rent-summary-4-label">Annual NOI</span>
+                <strong id="current-rent-summary-4">-</strong>
+              </article>
+            </div>
+
+            <div class="summary-grid summary-grid-three">
+              <article class="summary-card">
+                <span id="current-rent-summary-5-label">Value at Start Cap</span>
+                <strong id="current-rent-summary-5">-</strong>
+              </article>
+              <article class="summary-card">
+                <span id="current-rent-summary-6-label">Vacancy Applied</span>
+                <strong id="current-rent-summary-6">-</strong>
+              </article>
+              <article class="summary-card" id="current-rent-summary-7-card">
+                <span id="current-rent-summary-7-label">Apartment Vacancy</span>
+                <strong id="current-rent-summary-7">-</strong>
+              </article>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cap Rate</th>
+                    <th>Value Based on Current Rent</th>
+                  </tr>
+                </thead>
+                <tbody id="current-rent-cap-results"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
