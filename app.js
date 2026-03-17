@@ -187,7 +187,7 @@ function createDefaultState() {
       },
       sale: createSaleSectionDefaults(),
       current: {
-        startCap: "",
+        startCap: "5",
         additionalIncome: "",
         vacancy: "",
         selectedCapRate: null,
@@ -350,7 +350,7 @@ function normalizeCommercialRent(input, fallback) {
 
 function normalizeCommercialCurrent(input, fallback) {
   return {
-    startCap: String(input?.startCap || ""),
+    startCap: String(input?.startCap ?? fallback.startCap),
     additionalIncome: String(input?.additionalIncome || ""),
     vacancy: String(input?.vacancy || ""),
     selectedCapRate: Number.isFinite(input?.selectedCapRate) ? input.selectedCapRate : null,
@@ -761,7 +761,12 @@ function consumePendingFocus() {
 }
 
 function bindTabSequence(sequence) {
-  const items = sequence.filter((element) => element instanceof HTMLElement && !element.disabled && element.offsetParent !== null);
+  const items = sequence.filter((element) => {
+    if (!(element instanceof HTMLElement) || element.offsetParent === null) return false;
+    if ("disabled" in element && element.disabled) return false;
+    if ("readOnly" in element && element.readOnly) return false;
+    return true;
+  });
   items.forEach((element, index) => {
     element.onkeydown = (event) => {
       if (event.key !== "Tab") return;

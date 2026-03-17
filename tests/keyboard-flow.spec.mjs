@@ -34,6 +34,7 @@ test("1-4 unit flow tabs from subject sf into the first comp row", async ({ page
 
 test("commercial flow tabs through shared subject setup and current-rent rows", async ({ page }) => {
   await page.getByRole("button", { name: "Commercial Valuations", exact: true }).click();
+  await expect(page.locator("#commercial-current-start-cap")).toHaveValue("5");
 
   await page.locator("#commercial-subject-sqft").fill("10000");
   await pressTab(page);
