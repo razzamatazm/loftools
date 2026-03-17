@@ -6,6 +6,7 @@ const aptRentTypeOptions = [
   { value: "onebed", label: "1 Bed" },
   { value: "twobed", label: "2 Bed" },
   { value: "threebed", label: "3 Bed" },
+  { value: "fourbed", label: "4 Bed" },
 ];
 const leaseExpenseRates = {
   nnn: 0.1,
@@ -18,99 +19,137 @@ const state = loadState();
 const elements = {
   tabs: Array.from(document.querySelectorAll(".tab")),
   panels: Array.from(document.querySelectorAll(".panel")),
-  leaseSqft: document.getElementById("lease-sqft"),
-  leaseVacancy: document.getElementById("lease-vacancy"),
-  leaseStartCap: document.getElementById("lease-start-cap"),
-  leaseRows: document.getElementById("lease-rows"),
-  leaseAverageRent: document.getElementById("lease-average-rent"),
-  leaseMonthlyNoi: document.getElementById("lease-monthly-noi"),
-  leaseAnnualNoi: document.getElementById("lease-annual-noi"),
-  leaseNoiAfterVacancy: document.getElementById("lease-noi-after-vacancy"),
-  leaseCapResults: document.getElementById("lease-cap-results"),
-  leaseCopyBtn: document.getElementById("lease-copy-btn"),
-  leaseClearBtn: document.getElementById("lease-clear-btn"),
-  saleSubjectSqft: document.getElementById("sale-subject-sqft"),
-  saleListingDiscount: document.getElementById("sale-listing-discount"),
-  saleRows: document.getElementById("sale-rows"),
-  saleAveragePsf: document.getElementById("sale-average-psf"),
-  saleIndicatedValue: document.getElementById("sale-indicated-value"),
-  saleCopyBtn: document.getElementById("sale-copy-btn"),
-  saleClearBtn: document.getElementById("sale-clear-btn"),
-  saleAddRowBtn: document.getElementById("sale-add-row"),
-  aptSaleEnableSf: document.getElementById("apt-sale-enable-sf"),
-  aptSaleSubjectUnits: document.getElementById("apt-sale-subject-units"),
-  aptSaleSubjectSqft: document.getElementById("apt-sale-subject-sqft"),
-  aptSaleSubjectSqftField: document.getElementById("apt-sale-subject-sqft-field"),
-  aptSaleRows: document.getElementById("apt-sale-rows"),
-  aptSaleSfHeading: document.getElementById("apt-sale-sf-heading"),
-  aptSalePsfHeading: document.getElementById("apt-sale-psf-heading"),
-  aptSaleSummaryGrid: document.getElementById("apt-sale-summary-grid"),
-  aptSaleAverageUnit: document.getElementById("apt-sale-average-unit"),
-  aptSaleIndicatedUnit: document.getElementById("apt-sale-indicated-unit"),
-  aptSaleAverageSfCard: document.getElementById("apt-sale-average-sf-card"),
-  aptSaleAverageSf: document.getElementById("apt-sale-average-sf"),
-  aptSaleIndicatedSfCard: document.getElementById("apt-sale-indicated-sf-card"),
-  aptSaleIndicatedSf: document.getElementById("apt-sale-indicated-sf"),
-  aptSaleCopyBtn: document.getElementById("apt-sale-copy-btn"),
-  aptSaleClearBtn: document.getElementById("apt-sale-clear-btn"),
-  aptSaleAddRowBtn: document.getElementById("apt-sale-add-row"),
-  aptRentStudio: document.getElementById("apt-rent-studio"),
-  aptRentOnebed: document.getElementById("apt-rent-onebed"),
-  aptRentTwobed: document.getElementById("apt-rent-twobed"),
-  aptRentThreebed: document.getElementById("apt-rent-threebed"),
-  aptRentVacancy: document.getElementById("apt-rent-vacancy"),
-  aptRentExpense: document.getElementById("apt-rent-expense"),
-  aptRentStartCap: document.getElementById("apt-rent-start-cap"),
-  aptRentRows: document.getElementById("apt-rent-rows"),
-  aptRentAvgStudio: document.getElementById("apt-rent-avg-studio"),
-  aptRentAvgOnebed: document.getElementById("apt-rent-avg-onebed"),
-  aptRentAvgTwobed: document.getElementById("apt-rent-avg-twobed"),
-  aptRentAvgThreebed: document.getElementById("apt-rent-avg-threebed"),
-  aptRentAnnualGross: document.getElementById("apt-rent-annual-gross"),
-  aptRentEffectiveGrossIncome: document.getElementById("apt-rent-effective-gross-income"),
-  aptRentAnnualNoi: document.getElementById("apt-rent-annual-noi"),
-  aptRentStartCapValue: document.getElementById("apt-rent-start-cap-value"),
-  aptRentCapResults: document.getElementById("apt-rent-cap-results"),
-  aptRentCopyBtn: document.getElementById("apt-rent-copy-btn"),
-  aptRentClearBtn: document.getElementById("apt-rent-clear-btn"),
-  currentRentModeButtons: Array.from(document.querySelectorAll("[data-current-rent-mode]")),
-  currentRentStartCap: document.getElementById("current-rent-start-cap"),
-  currentRentAdditionalIncome: document.getElementById("current-rent-additional-income"),
-  currentRentVacancy: document.getElementById("current-rent-vacancy"),
-  currentRentExpenseField: document.getElementById("current-rent-expense-field"),
-  currentRentExpense: document.getElementById("current-rent-expense"),
-  currentRentCommercialTable: document.getElementById("current-rent-commercial-table"),
-  currentRentApartmentTable: document.getElementById("current-rent-apartment-table"),
-  currentRentCommercialRows: document.getElementById("current-rent-commercial-rows"),
-  currentRentApartmentRows: document.getElementById("current-rent-apartment-rows"),
-  currentRentCommercialHint: document.getElementById("current-rent-commercial-hint"),
-  currentRentApartmentHint: document.getElementById("current-rent-apartment-hint"),
-  currentRentSummary1Label: document.getElementById("current-rent-summary-1-label"),
-  currentRentSummary1: document.getElementById("current-rent-summary-1"),
-  currentRentSummary2Label: document.getElementById("current-rent-summary-2-label"),
-  currentRentSummary2: document.getElementById("current-rent-summary-2"),
-  currentRentSummary3Label: document.getElementById("current-rent-summary-3-label"),
-  currentRentSummary3: document.getElementById("current-rent-summary-3"),
-  currentRentSummary4Label: document.getElementById("current-rent-summary-4-label"),
-  currentRentSummary4: document.getElementById("current-rent-summary-4"),
-  currentRentSummary5Label: document.getElementById("current-rent-summary-5-label"),
-  currentRentSummary5: document.getElementById("current-rent-summary-5"),
-  currentRentSummary6Label: document.getElementById("current-rent-summary-6-label"),
-  currentRentSummary6: document.getElementById("current-rent-summary-6"),
-  currentRentSummary7Card: document.getElementById("current-rent-summary-7-card"),
-  currentRentSummary7Label: document.getElementById("current-rent-summary-7-label"),
-  currentRentSummary7: document.getElementById("current-rent-summary-7"),
-  currentRentCapResults: document.getElementById("current-rent-cap-results"),
-  currentRentCopyBtn: document.getElementById("current-rent-copy-btn"),
-  currentRentClearBtn: document.getElementById("current-rent-clear-btn"),
+  oneToFour: {
+    subjectSqft: document.getElementById("one-four-subject-sqft"),
+    listingDiscountField: document.getElementById("one-four-listing-discount-field"),
+    listingDiscount: document.getElementById("one-four-listing-discount"),
+    rows: document.getElementById("one-four-sale-rows"),
+    averagePsf: document.getElementById("one-four-average-psf"),
+    indicatedValue: document.getElementById("one-four-indicated-value"),
+    copyBtn: document.getElementById("one-four-copy-btn"),
+    clearBtn: document.getElementById("one-four-clear-btn"),
+    addRowBtn: document.getElementById("one-four-add-row"),
+  },
+  commercial: {
+    subjectSqft: document.getElementById("commercial-subject-sqft"),
+    rent: {
+      vacancy: document.getElementById("commercial-rent-vacancy"),
+      startCap: document.getElementById("commercial-rent-start-cap"),
+      rows: document.getElementById("commercial-rent-rows"),
+      average: document.getElementById("commercial-rent-average"),
+      monthlyNoi: document.getElementById("commercial-rent-monthly-noi"),
+      annualNoi: document.getElementById("commercial-rent-annual-noi"),
+      noiAfterVacancy: document.getElementById("commercial-rent-noi-after-vacancy"),
+      capResults: document.getElementById("commercial-rent-cap-results"),
+      copyBtn: document.getElementById("commercial-rent-copy-btn"),
+      clearBtn: document.getElementById("commercial-rent-clear-btn"),
+    },
+    sale: {
+      listingDiscountField: document.getElementById("commercial-sale-listing-discount-field"),
+      listingDiscount: document.getElementById("commercial-sale-listing-discount"),
+      rows: document.getElementById("commercial-sale-rows"),
+      averagePsf: document.getElementById("commercial-sale-average-psf"),
+      indicatedValue: document.getElementById("commercial-sale-indicated-value"),
+      copyBtn: document.getElementById("commercial-sale-copy-btn"),
+      clearBtn: document.getElementById("commercial-sale-clear-btn"),
+      addRowBtn: document.getElementById("commercial-sale-add-row"),
+    },
+    current: {
+      startCap: document.getElementById("commercial-current-start-cap"),
+      additionalIncome: document.getElementById("commercial-current-additional-income"),
+      vacancy: document.getElementById("commercial-current-vacancy"),
+      rows: document.getElementById("commercial-current-rows"),
+      summary1: document.getElementById("commercial-current-summary-1"),
+      summary2: document.getElementById("commercial-current-summary-2"),
+      summary3: document.getElementById("commercial-current-summary-3"),
+      summary4: document.getElementById("commercial-current-summary-4"),
+      summary5: document.getElementById("commercial-current-summary-5"),
+      summary6: document.getElementById("commercial-current-summary-6"),
+      capResults: document.getElementById("commercial-current-cap-results"),
+      copyBtn: document.getElementById("commercial-current-copy-btn"),
+      clearBtn: document.getElementById("commercial-current-clear-btn"),
+    },
+  },
+  apartment: {
+    current: {
+      modePerUnit: document.getElementById("apartment-current-mode-per-unit"),
+      modeGrouped: document.getElementById("apartment-current-mode-grouped"),
+      startCap: document.getElementById("apartment-current-start-cap"),
+      vacancy: document.getElementById("apartment-current-vacancy"),
+      expense: document.getElementById("apartment-current-expense"),
+      head: document.getElementById("apartment-current-head"),
+      rows: document.getElementById("apartment-current-rows"),
+      hint: document.getElementById("apartment-current-hint"),
+      fillRows: document.getElementById("apartment-current-fill-rows"),
+      fillTotal: document.getElementById("apartment-current-fill-total"),
+      summary1: document.getElementById("apartment-current-summary-1"),
+      summary2: document.getElementById("apartment-current-summary-2"),
+      summary3: document.getElementById("apartment-current-summary-3"),
+      summary4: document.getElementById("apartment-current-summary-4"),
+      summary5: document.getElementById("apartment-current-summary-5"),
+      summary6: document.getElementById("apartment-current-summary-6"),
+      summary7: document.getElementById("apartment-current-summary-7"),
+      capResults: document.getElementById("apartment-current-cap-results"),
+      copyBtn: document.getElementById("apartment-current-copy-btn"),
+      clearBtn: document.getElementById("apartment-current-clear-btn"),
+    },
+    market: {
+      vacancy: document.getElementById("apartment-market-vacancy"),
+      expense: document.getElementById("apartment-market-expense"),
+      startCap: document.getElementById("apartment-market-start-cap"),
+      rows: document.getElementById("apartment-market-rows"),
+      mix: {
+        studio: document.getElementById("apartment-mix-studio"),
+        onebed: document.getElementById("apartment-mix-onebed"),
+        twobed: document.getElementById("apartment-mix-twobed"),
+        threebed: document.getElementById("apartment-mix-threebed"),
+        fourbed: document.getElementById("apartment-mix-fourbed"),
+      },
+      averages: {
+        studio: document.getElementById("apartment-market-avg-studio"),
+        onebed: document.getElementById("apartment-market-avg-onebed"),
+        twobed: document.getElementById("apartment-market-avg-twobed"),
+        threebed: document.getElementById("apartment-market-avg-threebed"),
+        fourbed: document.getElementById("apartment-market-avg-fourbed"),
+      },
+      annualGross: document.getElementById("apartment-market-annual-gross"),
+      effectiveGross: document.getElementById("apartment-market-effective-gross"),
+      annualNoi: document.getElementById("apartment-market-annual-noi"),
+      startCapValue: document.getElementById("apartment-market-start-cap-value"),
+      capResults: document.getElementById("apartment-market-cap-results"),
+      copyBtn: document.getElementById("apartment-market-copy-btn"),
+      clearBtn: document.getElementById("apartment-market-clear-btn"),
+    },
+    sale: {
+      enableSf: document.getElementById("apartment-sale-enable-sf"),
+      subjectUnits: document.getElementById("apartment-sale-subject-units"),
+      subjectSqft: document.getElementById("apartment-sale-subject-sqft"),
+      subjectSqftField: document.getElementById("apartment-sale-subject-sqft-field"),
+      sfHeading: document.getElementById("apartment-sale-sf-heading"),
+      psfHeading: document.getElementById("apartment-sale-psf-heading"),
+      rows: document.getElementById("apartment-sale-rows"),
+      summaryGrid: document.getElementById("apartment-sale-summary-grid"),
+      averageUnit: document.getElementById("apartment-sale-average-unit"),
+      indicatedUnit: document.getElementById("apartment-sale-indicated-unit"),
+      averageSfCard: document.getElementById("apartment-sale-average-sf-card"),
+      averageSf: document.getElementById("apartment-sale-average-sf"),
+      indicatedSfCard: document.getElementById("apartment-sale-indicated-sf-card"),
+      indicatedSf: document.getElementById("apartment-sale-indicated-sf"),
+      copyBtn: document.getElementById("apartment-sale-copy-btn"),
+      clearBtn: document.getElementById("apartment-sale-clear-btn"),
+      addRowBtn: document.getElementById("apartment-sale-add-row"),
+    },
+  },
 };
 
 const derived = {
-  leaseCopyAmount: null,
-  saleCopyAmount: null,
-  aptSaleCopyAmount: null,
-  aptRentCopyAmount: null,
-  currentRentCopyAmount: null,
+  oneToFourSaleCopy: null,
+  commercialSaleCopy: null,
+  commercialRentCopy: null,
+  commercialCurrentCopy: null,
+  apartmentMarketCopy: null,
+  apartmentSaleCopy: null,
+  apartmentCurrentCopy: null,
 };
 let pendingFocusToken = null;
 let pendingFocusTimer = null;
@@ -134,152 +173,257 @@ function loadState() {
 
 function createDefaultState() {
   return {
-    activeTab: "lease",
-    lease: {
-      sqft: "",
-      vacancy: "5",
-      startCap: "",
-      selectedCapRate: null,
-      rows: [createLeaseRow()],
+    activeTab: "oneToFour",
+    oneToFour: {
+      sale: createSaleSectionDefaults(),
     },
-    sale: {
+    commercial: {
       subjectSqft: "",
-      listingDiscount: "0",
-      rows: [createSaleRow()],
-    },
-    aptSale: {
-      enablePerSf: false,
-      subjectUnits: "",
-      subjectSqft: "",
-      rows: [createAptSaleRow()],
-    },
-    aptRent: {
-      mix: {
-        studio: "0",
-        onebed: "0",
-        twobed: "0",
-        threebed: "0",
+      rent: {
+        vacancy: "5",
+        startCap: "5",
+        selectedCapRate: null,
+        rows: [createLeaseRow()],
       },
-      vacancy: "5",
-      expensePercent: "20",
-      startCap: "",
-      selectedCapRate: null,
-      rows: aptRentTypeOptions.map((type) => createAptRentRow(type.value)),
-    },
-    currentRent: {
-      mode: "commercial",
-      startCap: "",
-      additionalIncome: "",
-      vacancy: "",
-      selectedCapRate: null,
-      commercial: {
+      sale: createSaleSectionDefaults(),
+      current: {
+        startCap: "",
+        additionalIncome: "",
+        vacancy: "",
+        selectedCapRate: null,
         rows: [createCurrentRentCommercialRow()],
       },
-      apartment: {
+    },
+    apartment: {
+      current: {
+        rentRollMode: "perUnit",
+        startCap: "5",
+        vacancy: "",
         expensePercent: "20",
-        rows: [createCurrentRentApartmentRow()],
+        selectedCapRate: null,
+        rows: [createApartmentRentRollRow()],
+        groupedRows: [createApartmentGroupedRentRollRow()],
+      },
+      market: {
+        vacancy: "5",
+        expensePercent: "20",
+        startCap: "5",
+        selectedCapRate: null,
+        rows: aptRentTypeOptions.map((type) => createAptRentRow(type.value)),
+      },
+      sale: {
+        enablePerSf: false,
+        subjectSqft: "",
+        rows: [createAptSaleRow()],
       },
     },
   };
 }
 
+function createSaleSectionDefaults() {
+  return {
+    subjectSqft: "",
+    listingDiscount: "0",
+    rows: [createSaleRow()],
+  };
+}
+
 function normalizeState(input) {
   const fallback = createDefaultState();
-  const next = {
-    activeTab: ["lease", "sale", "aptSale", "aptRent", "currentRent"].includes(input?.activeTab) ? input.activeTab : fallback.activeTab,
-    lease: {
-      sqft: String(input?.lease?.sqft || ""),
-      vacancy: String(input?.lease?.vacancy || fallback.lease.vacancy),
-      startCap: String(input?.lease?.startCap || ""),
-      selectedCapRate: Number.isFinite(input?.lease?.selectedCapRate) ? input.lease.selectedCapRate : null,
-      rows: Array.isArray(input?.lease?.rows) && input.lease.rows.length
-        ? input.lease.rows.map((row) => ({
-            rent: String(row?.rent || ""),
-            leaseType: ["nnn", "modified", "gross"].includes(row?.leaseType) ? row.leaseType : "nnn",
-            include: row?.include !== false,
-            userTouched: row?.userTouched === true,
-          }))
-        : fallback.lease.rows,
+  if (input?.oneToFour && input?.commercial && input?.apartment) {
+    return normalizeNewShape(input, fallback);
+  }
+  return normalizeLegacyShape(input, fallback);
+}
+
+function normalizeNewShape(input, fallback) {
+  return {
+    activeTab: normalizeActiveTab(input?.activeTab, fallback.activeTab),
+    oneToFour: {
+      sale: normalizeSaleSection(input?.oneToFour?.sale, fallback.oneToFour.sale),
     },
-    sale: {
-      subjectSqft: String(input?.sale?.subjectSqft || ""),
-      listingDiscount: String(input?.sale?.listingDiscount || fallback.sale.listingDiscount),
-      rows: Array.isArray(input?.sale?.rows) && input.sale.rows.length
-        ? input.sale.rows.map((row) => ({
-            sqft: String(row?.sqft || ""),
-            price: String(row?.price || ""),
-            psf: String(row?.psf || ""),
-            listing: row?.listing === true,
-            include: row?.include !== false,
-            userTouched: row?.userTouched === true,
-          }))
-        : fallback.sale.rows,
+    commercial: {
+      subjectSqft: String(input?.commercial?.subjectSqft || ""),
+      rent: normalizeCommercialRent(input?.commercial?.rent, fallback.commercial.rent),
+      sale: normalizeSaleSection(input?.commercial?.sale, fallback.commercial.sale),
+      current: normalizeCommercialCurrent(input?.commercial?.current, fallback.commercial.current),
     },
-    aptSale: {
-      enablePerSf: input?.aptSale?.enablePerSf === true || input?.aptSale?.method === "perSf",
-      subjectUnits: String(input?.aptSale?.subjectUnits || ""),
-      subjectSqft: String(input?.aptSale?.subjectSqft || ""),
-      rows: Array.isArray(input?.aptSale?.rows) && input.aptSale.rows.length
-        ? input.aptSale.rows.map((row) => ({
-            price: String(row?.price || ""),
-            units: String(row?.units || ""),
-            sqft: String(row?.sqft || ""),
-            include: row?.include !== false,
-            userTouched: row?.userTouched === true,
-          }))
-        : fallback.aptSale.rows,
-    },
-    aptRent: {
-      mix: {
-        studio: String(input?.aptRent?.mix?.studio ?? fallback.aptRent.mix.studio),
-        onebed: String(input?.aptRent?.mix?.onebed ?? fallback.aptRent.mix.onebed),
-        twobed: String(input?.aptRent?.mix?.twobed ?? fallback.aptRent.mix.twobed),
-        threebed: String(input?.aptRent?.mix?.threebed ?? fallback.aptRent.mix.threebed),
-      },
-      vacancy: String(input?.aptRent?.vacancy || fallback.aptRent.vacancy),
-      expensePercent: String(input?.aptRent?.expensePercent || fallback.aptRent.expensePercent),
-      startCap: String(input?.aptRent?.startCap || ""),
-      selectedCapRate: Number.isFinite(input?.aptRent?.selectedCapRate) ? input.aptRent.selectedCapRate : null,
-      rows: Array.isArray(input?.aptRent?.rows) && input.aptRent.rows.length
-        ? aptRentTypeOptions.map((type) => {
-            const match = input.aptRent.rows.find((row) => row?.type === type.value);
-            return {
-              type: type.value,
-              include: match?.include !== false,
-              userTouched: match?.userTouched === true,
-              includeOutlier: match?.includeOutlier === true,
-              rents: Array.isArray(match?.rents)
-                ? [0, 1, 2, 3].map((index) => String(match.rents[index] || ""))
-                : ["", "", "", ""],
-            };
-          })
-        : fallback.aptRent.rows,
-    },
-    currentRent: {
-      mode: ["commercial", "apartment"].includes(input?.currentRent?.mode) ? input.currentRent.mode : fallback.currentRent.mode,
-      startCap: String(input?.currentRent?.startCap || ""),
-      additionalIncome: String(input?.currentRent?.additionalIncome || ""),
-      vacancy: String(input?.currentRent?.vacancy || ""),
-      selectedCapRate: Number.isFinite(input?.currentRent?.selectedCapRate) ? input.currentRent.selectedCapRate : null,
-      commercial: {
-        rows: Array.isArray(input?.currentRent?.commercial?.rows) && input.currentRent.commercial.rows.length
-          ? input.currentRent.commercial.rows.map((row) => ({
-              rent: String(row?.rent || ""),
-              leaseType: ["nnn", "modified", "gross"].includes(row?.leaseType) ? row.leaseType : "nnn",
-            }))
-          : fallback.currentRent.commercial.rows,
-      },
-      apartment: {
-        expensePercent: String(input?.currentRent?.apartment?.expensePercent || fallback.currentRent.apartment.expensePercent),
-        rows: Array.isArray(input?.currentRent?.apartment?.rows) && input.currentRent.apartment.rows.length
-          ? input.currentRent.apartment.rows.map((row) => ({
-              rent: String(row?.rent || ""),
-            }))
-          : fallback.currentRent.apartment.rows,
-      },
+    apartment: {
+      current: normalizeApartmentCurrent(input?.apartment?.current, fallback.apartment.current),
+      market: normalizeApartmentMarket(input?.apartment?.market, fallback.apartment.market),
+      sale: normalizeApartmentSale(input?.apartment?.sale, fallback.apartment.sale),
     },
   };
-  return next;
+}
+
+function normalizeLegacyShape(input, fallback) {
+  const commercialSale = normalizeSaleSection({
+    subjectSqft: input?.sale?.subjectSqft || "",
+    listingDiscount: input?.sale?.listingDiscount || fallback.commercial.sale.listingDiscount,
+    rows: Array.isArray(input?.sale?.rows) ? input.sale.rows : fallback.commercial.sale.rows,
+  }, fallback.commercial.sale);
+
+  return {
+    activeTab: normalizeLegacyActiveTab(input?.activeTab),
+    oneToFour: {
+      sale: normalizeSaleSection({
+        subjectSqft: commercialSale.subjectSqft,
+        listingDiscount: commercialSale.listingDiscount,
+        rows: commercialSale.rows,
+      }, fallback.oneToFour.sale),
+    },
+    commercial: {
+      subjectSqft: String(input?.lease?.sqft || input?.sale?.subjectSqft || ""),
+      rent: normalizeCommercialRent({
+        vacancy: input?.lease?.vacancy,
+        startCap: input?.lease?.startCap,
+        selectedCapRate: input?.lease?.selectedCapRate,
+        rows: input?.lease?.rows,
+      }, fallback.commercial.rent),
+      sale: commercialSale,
+      current: normalizeCommercialCurrent({
+        startCap: input?.currentRent?.mode === "commercial" ? input?.currentRent?.startCap : "",
+        additionalIncome: input?.currentRent?.mode === "commercial" ? input?.currentRent?.additionalIncome : "",
+        vacancy: input?.currentRent?.mode === "commercial" ? input?.currentRent?.vacancy : "",
+        selectedCapRate: input?.currentRent?.mode === "commercial" ? input?.currentRent?.selectedCapRate : null,
+        rows: input?.currentRent?.mode === "commercial" ? input?.currentRent?.commercial?.rows : null,
+      }, fallback.commercial.current),
+    },
+    apartment: {
+      current: normalizeApartmentCurrent({
+        startCap: input?.currentRent?.mode === "apartment" ? input?.currentRent?.startCap : "",
+        vacancy: input?.currentRent?.mode === "apartment" ? input?.currentRent?.vacancy : "",
+        expensePercent: input?.currentRent?.apartment?.expensePercent,
+        selectedCapRate: input?.currentRent?.mode === "apartment" ? input?.currentRent?.selectedCapRate : null,
+        rows: input?.currentRent?.apartment?.rows,
+      }, fallback.apartment.current),
+      market: normalizeApartmentMarket(input?.aptRent, fallback.apartment.market),
+      sale: normalizeApartmentSale(input?.aptSale, fallback.apartment.sale),
+    },
+  };
+}
+
+function normalizeActiveTab(activeTab, fallback) {
+  if (["oneToFour", "commercial", "apartment"].includes(activeTab)) return activeTab;
+  return fallback;
+}
+
+function normalizeLegacyActiveTab(activeTab) {
+  if (activeTab === "sale") return "oneToFour";
+  if (activeTab === "rent" || activeTab === "lease" || activeTab === "currentRent") return "commercial";
+  if (activeTab === "aptSale" || activeTab === "aptRent") return "apartment";
+  return "oneToFour";
+}
+
+function normalizeSaleSection(input, fallback) {
+  return {
+    subjectSqft: String(input?.subjectSqft || ""),
+    listingDiscount: String(input?.listingDiscount || fallback.listingDiscount),
+    rows: Array.isArray(input?.rows) && input.rows.length
+      ? input.rows.map((row) => ({
+          sqft: String(row?.sqft || ""),
+          price: String(row?.price || ""),
+          psf: String(row?.psf || ""),
+          listing: row?.listing === true,
+          include: row?.include !== false,
+          userTouched: row?.userTouched === true,
+        }))
+      : fallback.rows,
+  };
+}
+
+function normalizeCommercialRent(input, fallback) {
+  return {
+    vacancy: String(input?.vacancy || fallback.vacancy),
+    startCap: String(input?.startCap ?? fallback.startCap),
+    selectedCapRate: Number.isFinite(input?.selectedCapRate) ? input.selectedCapRate : null,
+    rows: Array.isArray(input?.rows) && input.rows.length
+      ? input.rows.map((row) => ({
+          rent: String(row?.rent || ""),
+          leaseType: ["nnn", "modified", "gross"].includes(row?.leaseType) ? row.leaseType : "nnn",
+          include: row?.include !== false,
+          userTouched: row?.userTouched === true,
+        }))
+      : fallback.rows,
+  };
+}
+
+function normalizeCommercialCurrent(input, fallback) {
+  return {
+    startCap: String(input?.startCap || ""),
+    additionalIncome: String(input?.additionalIncome || ""),
+    vacancy: String(input?.vacancy || ""),
+    selectedCapRate: Number.isFinite(input?.selectedCapRate) ? input.selectedCapRate : null,
+    rows: Array.isArray(input?.rows) && input.rows.length
+      ? input.rows.map((row) => ({
+          rent: String(row?.rent || ""),
+          leaseType: ["nnn", "modified", "gross"].includes(row?.leaseType) ? row.leaseType : "nnn",
+        }))
+      : fallback.rows,
+  };
+}
+
+function normalizeApartmentCurrent(input, fallback) {
+  return {
+    rentRollMode: input?.rentRollMode === "grouped" ? "grouped" : "perUnit",
+    startCap: String(input?.startCap ?? fallback.startCap),
+    vacancy: String(input?.vacancy || ""),
+    expensePercent: String(input?.expensePercent || fallback.expensePercent),
+    selectedCapRate: Number.isFinite(input?.selectedCapRate) ? input.selectedCapRate : null,
+    rows: Array.isArray(input?.rows) && input.rows.length
+      ? input.rows.map((row) => ({
+          type: aptRentTypeOptions.some((type) => type.value === row?.type) ? row.type : "",
+          rent: String(row?.rent || ""),
+        }))
+      : fallback.rows,
+    groupedRows: Array.isArray(input?.groupedRows) && input.groupedRows.length
+      ? input.groupedRows.map((row) => ({
+          type: aptRentTypeOptions.some((type) => type.value === row?.type) ? row.type : "",
+          totalUnits: String(row?.totalUnits || ""),
+          occupiedRent: String(row?.occupiedRent || ""),
+          vacantUnits: String(row?.vacantUnits || ""),
+        }))
+      : fallback.groupedRows,
+  };
+}
+
+function normalizeApartmentMarket(input, fallback) {
+  return {
+    vacancy: String(input?.vacancy || fallback.vacancy),
+    expensePercent: String(input?.expensePercent || fallback.expensePercent),
+    startCap: String(input?.startCap ?? fallback.startCap),
+    selectedCapRate: Number.isFinite(input?.selectedCapRate) ? input.selectedCapRate : null,
+    rows: Array.isArray(input?.rows) && input.rows.length
+      ? aptRentTypeOptions.map((type) => {
+          const match = input.rows.find((row) => row?.type === type.value);
+          return {
+            type: type.value,
+            include: match?.include !== false,
+            userTouched: match?.userTouched === true,
+            includeOutlier: match?.includeOutlier === true,
+            rents: Array.isArray(match?.rents)
+              ? [0, 1, 2, 3].map((index) => String(match.rents[index] || ""))
+              : ["", "", "", ""],
+          };
+        })
+      : fallback.rows,
+  };
+}
+
+function normalizeApartmentSale(input, fallback) {
+  return {
+    enablePerSf: input?.enablePerSf === true || input?.method === "perSf",
+    subjectSqft: String(input?.subjectSqft || ""),
+    rows: Array.isArray(input?.rows) && input.rows.length
+      ? input.rows.map((row) => ({
+          price: String(row?.price || ""),
+          units: String(row?.units || ""),
+          sqft: String(row?.sqft || ""),
+          include: row?.include !== false,
+          userTouched: row?.userTouched === true,
+        }))
+      : fallback.rows,
+  };
 }
 
 function createLeaseRow() {
@@ -295,21 +439,19 @@ function createAptSaleRow() {
 }
 
 function createAptRentRow(type) {
-  return {
-    type,
-    include: true,
-    userTouched: false,
-    includeOutlier: false,
-    rents: ["", "", "", ""],
-  };
+  return { type, include: true, userTouched: false, includeOutlier: false, rents: ["", "", "", ""] };
 }
 
 function createCurrentRentCommercialRow() {
   return { rent: "", leaseType: "nnn" };
 }
 
-function createCurrentRentApartmentRow() {
-  return { rent: "" };
+function createApartmentRentRollRow() {
+  return { type: "", rent: "" };
+}
+
+function createApartmentGroupedRentRollRow() {
+  return { type: "", totalUnits: "", occupiedRent: "", vacantUnits: "" };
 }
 
 function bindStaticEvents() {
@@ -337,195 +479,194 @@ function bindStaticEvents() {
   elements.tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       state.activeTab = tab.dataset.tab;
-      renderTabs();
-      persistState();
+      renderAll();
     });
   });
 
-  bindInput(elements.leaseSqft, (value) => {
-    state.lease.sqft = value;
-    renderLease();
+  bindInput(elements.oneToFour.subjectSqft, (value) => {
+    state.oneToFour.sale.subjectSqft = value;
+    renderOneToFour();
   });
-  bindInput(elements.leaseVacancy, (value) => {
-    state.lease.vacancy = value;
-    renderLease();
+  bindInput(elements.oneToFour.listingDiscount, (value) => {
+    state.oneToFour.sale.listingDiscount = value;
+    renderOneToFour();
   });
-  bindInput(elements.leaseStartCap, (value) => {
-    state.lease.startCap = value;
-    renderLease();
+  bindBlurFormatWhole(elements.oneToFour.subjectSqft, () => {
+    state.oneToFour.sale.subjectSqft = formatWholeInput(state.oneToFour.sale.subjectSqft);
+    renderOneToFour();
   });
-  bindBlurFormatWhole(elements.leaseSqft, () => {
-    state.lease.sqft = formatWholeInput(state.lease.sqft);
-    renderLease();
+  elements.oneToFour.listingDiscount?.addEventListener("blur", () => {
+    state.oneToFour.sale.listingDiscount = formatPercentInput(state.oneToFour.sale.listingDiscount, 100);
+    renderOneToFour();
   });
-  bindBlurCap(elements.leaseStartCap, () => {
-    state.lease.startCap = formatCapInput(state.lease.startCap);
-    renderLease();
+  elements.oneToFour.addRowBtn?.addEventListener("click", () => {
+    state.oneToFour.sale.rows.push(createSaleRow());
+    renderOneToFour();
   });
-  elements.leaseVacancy?.addEventListener("blur", () => {
-    state.lease.vacancy = formatPercentInput(state.lease.vacancy, 100);
-    renderLease();
+  elements.oneToFour.copyBtn?.addEventListener("click", () => copyAmount(derived.oneToFourSaleCopy, elements.oneToFour.copyBtn));
+  elements.oneToFour.clearBtn?.addEventListener("click", () => clearPageSection("oneToFourSale", elements.oneToFour.clearBtn));
+
+  bindInput(elements.commercial.subjectSqft, (value) => {
+    state.commercial.subjectSqft = value;
+    renderCommercial();
+  });
+  bindBlurFormatWhole(elements.commercial.subjectSqft, () => {
+    state.commercial.subjectSqft = formatWholeInput(state.commercial.subjectSqft);
+    renderCommercial();
   });
 
-  bindInput(elements.saleSubjectSqft, (value) => {
-    state.sale.subjectSqft = value;
-    renderSale();
+  bindInput(elements.commercial.rent.vacancy, (value) => {
+    state.commercial.rent.vacancy = value;
+    renderCommercial();
   });
-  bindInput(elements.saleListingDiscount, (value) => {
-    state.sale.listingDiscount = value;
-    renderSale();
+  bindInput(elements.commercial.rent.startCap, (value) => {
+    state.commercial.rent.startCap = value;
+    renderCommercial();
   });
-  bindBlurFormatWhole(elements.saleSubjectSqft, () => {
-    state.sale.subjectSqft = formatWholeInput(state.sale.subjectSqft);
-    renderSale();
+  elements.commercial.rent.vacancy?.addEventListener("blur", () => {
+    state.commercial.rent.vacancy = formatPercentInput(state.commercial.rent.vacancy, 100);
+    renderCommercial();
   });
-  elements.saleListingDiscount?.addEventListener("blur", () => {
-    state.sale.listingDiscount = formatPercentInput(state.sale.listingDiscount, 100);
-    renderSale();
+  bindBlurCap(elements.commercial.rent.startCap, () => {
+    state.commercial.rent.startCap = formatCapInput(state.commercial.rent.startCap);
+    renderCommercial();
   });
-  elements.saleAddRowBtn?.addEventListener("click", () => {
-    state.sale.rows.push(createSaleRow());
-    renderSale();
-  });
+  elements.commercial.rent.copyBtn?.addEventListener("click", () => copyAmount(derived.commercialRentCopy, elements.commercial.rent.copyBtn));
+  elements.commercial.rent.clearBtn?.addEventListener("click", () => clearPageSection("commercialRent", elements.commercial.rent.clearBtn));
 
-  elements.aptSaleEnableSf?.addEventListener("change", () => {
-    state.aptSale.enablePerSf = elements.aptSaleEnableSf.checked;
-    renderAptSale();
+  bindInput(elements.commercial.sale.listingDiscount, (value) => {
+    state.commercial.sale.listingDiscount = value;
+    renderCommercial();
   });
-  bindInput(elements.aptSaleSubjectUnits, (value) => {
-    state.aptSale.subjectUnits = value;
-    renderAptSale();
+  elements.commercial.sale.listingDiscount?.addEventListener("blur", () => {
+    state.commercial.sale.listingDiscount = formatPercentInput(state.commercial.sale.listingDiscount, 100);
+    renderCommercial();
   });
-  bindInput(elements.aptSaleSubjectSqft, (value) => {
-    state.aptSale.subjectSqft = value;
-    renderAptSale();
+  elements.commercial.sale.addRowBtn?.addEventListener("click", () => {
+    state.commercial.sale.rows.push(createSaleRow());
+    renderCommercial();
   });
-  bindBlurFormatWhole(elements.aptSaleSubjectUnits, () => {
-    state.aptSale.subjectUnits = formatWholeInput(state.aptSale.subjectUnits);
-    renderAptSale();
-  });
-  bindBlurFormatWhole(elements.aptSaleSubjectSqft, () => {
-    state.aptSale.subjectSqft = formatWholeInput(state.aptSale.subjectSqft);
-    renderAptSale();
-  });
-  elements.aptSaleAddRowBtn?.addEventListener("click", () => {
-    state.aptSale.rows.push(createAptSaleRow());
-    renderAptSale();
-  });
+  elements.commercial.sale.copyBtn?.addEventListener("click", () => copyAmount(derived.commercialSaleCopy, elements.commercial.sale.copyBtn));
+  elements.commercial.sale.clearBtn?.addEventListener("click", () => clearPageSection("commercialSale", elements.commercial.sale.clearBtn));
 
-  bindInput(elements.aptRentStudio, (value) => {
-    state.aptRent.mix.studio = value;
-    renderAptRent();
+  bindInput(elements.commercial.current.startCap, (value) => {
+    state.commercial.current.startCap = value;
+    renderCommercial();
   });
-  bindInput(elements.aptRentOnebed, (value) => {
-    state.aptRent.mix.onebed = value;
-    renderAptRent();
+  bindInput(elements.commercial.current.additionalIncome, (value) => {
+    state.commercial.current.additionalIncome = value;
+    renderCommercial();
   });
-  bindInput(elements.aptRentTwobed, (value) => {
-    state.aptRent.mix.twobed = value;
-    renderAptRent();
+  bindInput(elements.commercial.current.vacancy, (value) => {
+    state.commercial.current.vacancy = value;
+    renderCommercial();
   });
-  bindInput(elements.aptRentThreebed, (value) => {
-    state.aptRent.mix.threebed = value;
-    renderAptRent();
+  bindBlurCap(elements.commercial.current.startCap, () => {
+    state.commercial.current.startCap = formatCapInput(state.commercial.current.startCap);
+    renderCommercial();
   });
-  [elements.aptRentStudio, elements.aptRentOnebed, elements.aptRentTwobed, elements.aptRentThreebed].forEach((input, index) => {
-    if (!input) return;
-    const keys = ["studio", "onebed", "twobed", "threebed"];
-    input.addEventListener("blur", () => {
-      const key = keys[index];
-      state.aptRent.mix[key] = String(parseNonNegativeWholeNumber(state.aptRent.mix[key] || "0"));
-      renderAptRent();
+  elements.commercial.current.additionalIncome?.addEventListener("blur", () => {
+    state.commercial.current.additionalIncome = formatMoneyInput(state.commercial.current.additionalIncome, 0);
+    renderCommercial();
+  });
+  elements.commercial.current.vacancy?.addEventListener("blur", () => {
+    state.commercial.current.vacancy = formatPercentInput(state.commercial.current.vacancy, 100);
+    renderCommercial();
+  });
+  elements.commercial.current.copyBtn?.addEventListener("click", () => copyAmount(derived.commercialCurrentCopy, elements.commercial.current.copyBtn));
+  elements.commercial.current.clearBtn?.addEventListener("click", () => clearPageSection("commercialCurrent", elements.commercial.current.clearBtn));
+
+  bindInput(elements.apartment.current.startCap, (value) => {
+    state.apartment.current.startCap = value;
+    renderApartment();
+  });
+  [elements.apartment.current.modePerUnit, elements.apartment.current.modeGrouped].forEach((button) => {
+    button?.addEventListener("click", () => {
+      const nextMode = button.dataset.apartmentRollMode;
+      if (!["perUnit", "grouped"].includes(nextMode) || state.apartment.current.rentRollMode === nextMode) return;
+      state.apartment.current.rentRollMode = nextMode;
+      renderApartment();
     });
   });
-  bindInput(elements.aptRentVacancy, (value) => {
-    state.aptRent.vacancy = value;
-    renderAptRent();
+  bindInput(elements.apartment.current.vacancy, (value) => {
+    state.apartment.current.vacancy = value;
+    renderApartment();
   });
-  bindInput(elements.aptRentExpense, (value) => {
-    state.aptRent.expensePercent = value;
-    renderAptRent();
+  bindInput(elements.apartment.current.expense, (value) => {
+    state.apartment.current.expensePercent = value;
+    renderApartment();
   });
-  bindInput(elements.aptRentStartCap, (value) => {
-    state.aptRent.startCap = value;
-    renderAptRent();
+  bindBlurCap(elements.apartment.current.startCap, () => {
+    state.apartment.current.startCap = formatCapInput(state.apartment.current.startCap);
+    renderApartment();
   });
-  elements.aptRentVacancy?.addEventListener("blur", () => {
-    state.aptRent.vacancy = formatPercentInput(state.aptRent.vacancy, 100);
-    renderAptRent();
+  elements.apartment.current.vacancy?.addEventListener("blur", () => {
+    state.apartment.current.vacancy = formatPercentInput(state.apartment.current.vacancy, 100);
+    renderApartment();
   });
-  elements.aptRentExpense?.addEventListener("blur", () => {
-    state.aptRent.expensePercent = formatPercentInput(state.aptRent.expensePercent, 100);
-    renderAptRent();
+  elements.apartment.current.expense?.addEventListener("blur", () => {
+    state.apartment.current.expensePercent = formatPercentInput(state.apartment.current.expensePercent, 100);
+    renderApartment();
   });
-  bindBlurCap(elements.aptRentStartCap, () => {
-    state.aptRent.startCap = formatCapInput(state.aptRent.startCap);
-    renderAptRent();
-  });
+  elements.apartment.current.copyBtn?.addEventListener("click", () => copyAmount(derived.apartmentCurrentCopy, elements.apartment.current.copyBtn));
+  elements.apartment.current.clearBtn?.addEventListener("click", () => clearPageSection("apartmentCurrent", elements.apartment.current.clearBtn));
 
-  elements.currentRentModeButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      state.currentRent.mode = button.dataset.currentRentMode;
-      renderCurrentRent();
-    });
+  bindInput(elements.apartment.market.vacancy, (value) => {
+    state.apartment.market.vacancy = value;
+    renderApartment();
   });
-  bindInput(elements.currentRentStartCap, (value) => {
-    state.currentRent.startCap = value;
-    renderCurrentRent();
+  bindInput(elements.apartment.market.expense, (value) => {
+    state.apartment.market.expensePercent = value;
+    renderApartment();
   });
-  bindInput(elements.currentRentAdditionalIncome, (value) => {
-    state.currentRent.additionalIncome = value;
-    renderCurrentRent();
+  bindInput(elements.apartment.market.startCap, (value) => {
+    state.apartment.market.startCap = value;
+    renderApartment();
   });
-  bindInput(elements.currentRentVacancy, (value) => {
-    state.currentRent.vacancy = value;
-    renderCurrentRent();
+  elements.apartment.market.vacancy?.addEventListener("blur", () => {
+    state.apartment.market.vacancy = formatPercentInput(state.apartment.market.vacancy, 100);
+    renderApartment();
   });
-  bindInput(elements.currentRentExpense, (value) => {
-    state.currentRent.apartment.expensePercent = value;
-    renderCurrentRent();
+  elements.apartment.market.expense?.addEventListener("blur", () => {
+    state.apartment.market.expensePercent = formatPercentInput(state.apartment.market.expensePercent, 100);
+    renderApartment();
   });
-  bindBlurCap(elements.currentRentStartCap, () => {
-    state.currentRent.startCap = formatCapInput(state.currentRent.startCap);
-    renderCurrentRent();
+  bindBlurCap(elements.apartment.market.startCap, () => {
+    state.apartment.market.startCap = formatCapInput(state.apartment.market.startCap);
+    renderApartment();
   });
-  elements.currentRentAdditionalIncome?.addEventListener("blur", () => {
-    state.currentRent.additionalIncome = formatMoneyInput(state.currentRent.additionalIncome, 0);
-    renderCurrentRent();
-  });
-  elements.currentRentVacancy?.addEventListener("blur", () => {
-    state.currentRent.vacancy = formatPercentInput(state.currentRent.vacancy, 100);
-    renderCurrentRent();
-  });
-  elements.currentRentExpense?.addEventListener("blur", () => {
-    state.currentRent.apartment.expensePercent = formatPercentInput(state.currentRent.apartment.expensePercent, 100);
-    renderCurrentRent();
-  });
+  elements.apartment.market.copyBtn?.addEventListener("click", () => copyAmount(derived.apartmentMarketCopy, elements.apartment.market.copyBtn));
+  elements.apartment.market.clearBtn?.addEventListener("click", () => clearPageSection("apartmentMarket", elements.apartment.market.clearBtn));
 
-  elements.leaseCopyBtn?.addEventListener("click", () => copyAmount(derived.leaseCopyAmount, elements.leaseCopyBtn));
-  elements.leaseClearBtn?.addEventListener("click", () => clearTabValues("lease", elements.leaseClearBtn));
-  elements.saleCopyBtn?.addEventListener("click", () => copyAmount(derived.saleCopyAmount, elements.saleCopyBtn));
-  elements.saleClearBtn?.addEventListener("click", () => clearTabValues("sale", elements.saleClearBtn));
-  elements.aptSaleCopyBtn?.addEventListener("click", () => copyAmount(derived.aptSaleCopyAmount, elements.aptSaleCopyBtn));
-  elements.aptSaleClearBtn?.addEventListener("click", () => clearTabValues("aptSale", elements.aptSaleClearBtn));
-  elements.aptRentCopyBtn?.addEventListener("click", () => copyAmount(derived.aptRentCopyAmount, elements.aptRentCopyBtn));
-  elements.aptRentClearBtn?.addEventListener("click", () => clearTabValues("aptRent", elements.aptRentClearBtn));
-  elements.currentRentCopyBtn?.addEventListener("click", () => copyAmount(derived.currentRentCopyAmount, elements.currentRentCopyBtn));
-  elements.currentRentClearBtn?.addEventListener("click", () => clearTabValues("currentRent", elements.currentRentClearBtn));
+  elements.apartment.sale.enableSf?.addEventListener("change", () => {
+    state.apartment.sale.enablePerSf = elements.apartment.sale.enableSf.checked;
+    renderApartment();
+  });
+  bindInput(elements.apartment.sale.subjectSqft, (value) => {
+    state.apartment.sale.subjectSqft = value;
+    renderApartment();
+  });
+  bindBlurFormatWhole(elements.apartment.sale.subjectSqft, () => {
+    state.apartment.sale.subjectSqft = formatWholeInput(state.apartment.sale.subjectSqft);
+    renderApartment();
+  });
+  elements.apartment.sale.addRowBtn?.addEventListener("click", () => {
+    state.apartment.sale.rows.push(createAptSaleRow());
+    renderApartment();
+  });
+  elements.apartment.sale.copyBtn?.addEventListener("click", () => copyAmount(derived.apartmentSaleCopy, elements.apartment.sale.copyBtn));
+  elements.apartment.sale.clearBtn?.addEventListener("click", () => clearPageSection("apartmentSale", elements.apartment.sale.clearBtn));
 
-  bindCopyValueTrigger(elements.saleIndicatedValue, () => derived.saleCopyAmount, elements.saleCopyBtn);
-  bindCopyValueTrigger(elements.aptSaleIndicatedUnit, () => calculateAptSale().indicatedPerUnit, elements.aptSaleCopyBtn);
-  bindCopyValueTrigger(elements.aptSaleIndicatedSf, () => calculateAptSale().indicatedPerSf, elements.aptSaleCopyBtn);
+  bindCopyValueTrigger(elements.oneToFour.indicatedValue, () => derived.oneToFourSaleCopy, elements.oneToFour.copyBtn);
+  bindCopyValueTrigger(elements.commercial.sale.indicatedValue, () => derived.commercialSaleCopy, elements.commercial.sale.copyBtn);
+  bindCopyValueTrigger(elements.apartment.sale.indicatedUnit, () => calculateApartmentSale(getApartmentUnitMix()).indicatedPerUnit, elements.apartment.sale.copyBtn);
+  bindCopyValueTrigger(elements.apartment.sale.indicatedSf, () => calculateApartmentSale(getApartmentUnitMix()).indicatedPerSf, elements.apartment.sale.copyBtn);
 }
 
 function bindInput(element, handler) {
   if (!element) return;
-  element.addEventListener("input", (event) => {
-    handler(event.target.value);
-  });
-  element.addEventListener("change", (event) => {
-    handler(event.target.value);
-  });
+  element.addEventListener("input", (event) => handler(event.target.value));
+  element.addEventListener("change", (event) => handler(event.target.value));
 }
 
 function bindBlurFormatWhole(element, handler) {
@@ -555,7 +696,8 @@ function isSelectableField(target) {
 function setControlValue(element, value) {
   if (!element) return;
   if (document.activeElement === element) return;
-  element.value = value;
+  if ("value" in element) element.value = value;
+  else element.textContent = value;
 }
 
 function captureActiveInputState(container) {
@@ -576,11 +718,7 @@ function restoreActiveInputState(container, focusState) {
   const next = container.querySelector(`[data-focus-key="${focusState.key}"]`);
   if (!(next instanceof HTMLElement)) return;
   next.focus();
-  if (
-    typeof focusState.selectionStart === "number" &&
-    typeof focusState.selectionEnd === "number" &&
-    typeof next.setSelectionRange === "function"
-  ) {
+  if (typeof next.setSelectionRange === "function" && typeof focusState.selectionStart === "number" && typeof focusState.selectionEnd === "number") {
     next.setSelectionRange(focusState.selectionStart, focusState.selectionEnd);
   }
 }
@@ -595,12 +733,9 @@ function getElementFocusToken(element) {
 function focusElementByToken(token) {
   if (!token) return false;
   let next = null;
-  if (token.startsWith("focus:")) {
-    next = document.querySelector(`[data-focus-key="${token.slice(6)}"]`);
-  } else if (token.startsWith("id:")) {
-    next = document.getElementById(token.slice(3));
-  }
-  if (!(next instanceof HTMLElement)) return false;
+  if (token.startsWith("focus:")) next = document.querySelector(`[data-focus-key="${token.slice(6)}"]`);
+  if (token.startsWith("id:")) next = document.getElementById(token.slice(3));
+  if (!(next instanceof HTMLElement) || next.offsetParent === null) return false;
   next.focus();
   shouldSelectFocusedField = false;
   selectFocusedFieldContents(next);
@@ -626,7 +761,7 @@ function consumePendingFocus() {
 }
 
 function bindTabSequence(sequence) {
-  const items = sequence.filter((element) => element instanceof HTMLElement && !element.disabled && !element.hidden);
+  const items = sequence.filter((element) => element instanceof HTMLElement && !element.disabled && element.offsetParent !== null);
   items.forEach((element, index) => {
     element.onkeydown = (event) => {
       if (event.key !== "Tab") return;
@@ -643,120 +778,133 @@ function bindTabSequence(sequence) {
 
 function bindTabFlows() {
   bindTabSequence([
-    elements.leaseSqft,
-    elements.leaseVacancy,
-    elements.leaseStartCap,
-    ...Array.from(elements.leaseRows.querySelectorAll("[data-lease-rent], [data-lease-type]")).sort((left, right) => {
-      const leftRow = Number(left.getAttribute("data-lease-rent") ?? left.getAttribute("data-lease-type"));
-      const rightRow = Number(right.getAttribute("data-lease-rent") ?? right.getAttribute("data-lease-type"));
-      if (leftRow !== rightRow) return leftRow - rightRow;
-      return left.hasAttribute("data-lease-rent") ? -1 : 1;
-    }),
+    ...elements.tabs,
+    elements.oneToFour.subjectSqft,
+    ...(elements.oneToFour.listingDiscountField?.hidden ? [] : [elements.oneToFour.listingDiscount]),
+    ...Array.from(elements.oneToFour.rows.querySelectorAll("[data-sale-price], [data-sale-sqft], [data-sale-psf]")).sort(sortSaleInputs),
   ]);
 
   bindTabSequence([
-    elements.saleSubjectSqft,
-    elements.saleListingDiscount,
-    ...Array.from(elements.saleRows.querySelectorAll("[data-sale-price], [data-sale-sqft]")).sort((left, right) => {
-      const leftRow = Number(left.getAttribute("data-sale-price") ?? left.getAttribute("data-sale-sqft"));
-      const rightRow = Number(right.getAttribute("data-sale-price") ?? right.getAttribute("data-sale-sqft"));
-      if (leftRow !== rightRow) return leftRow - rightRow;
-      return left.hasAttribute("data-sale-price") ? -1 : 1;
-    }),
+    ...elements.tabs,
+    elements.commercial.subjectSqft,
+    elements.commercial.current.startCap,
+    elements.commercial.current.additionalIncome,
+    elements.commercial.current.vacancy,
+    ...Array.from(elements.commercial.current.rows.querySelectorAll("[data-commercial-current-rent], [data-commercial-current-type]")).sort(sortCurrentCommercialInputs),
+    elements.commercial.rent.vacancy,
+    elements.commercial.rent.startCap,
+    ...Array.from(elements.commercial.rent.rows.querySelectorAll("[data-commercial-rent-rent], [data-commercial-rent-type]")).sort(sortCommercialRentInputs),
+    ...(elements.commercial.sale.listingDiscountField?.hidden ? [] : [elements.commercial.sale.listingDiscount]),
+    ...Array.from(elements.commercial.sale.rows.querySelectorAll("[data-commercial-sale-price], [data-commercial-sale-sqft], [data-commercial-sale-psf]")).sort(sortCommercialSaleInputs),
   ]);
 
   bindTabSequence([
-    elements.aptSaleSubjectUnits,
-    elements.aptSaleEnableSf,
-    ...(state.aptSale.enablePerSf ? [elements.aptSaleSubjectSqft] : []),
-    ...Array.from(elements.aptSaleRows.querySelectorAll("[data-apt-sale-price], [data-apt-sale-units], [data-apt-sale-sqft]"))
-      .filter((element) => state.aptSale.enablePerSf || !element.hasAttribute("data-apt-sale-sqft"))
-      .sort((left, right) => {
-      const leftRow = Number(left.getAttribute("data-apt-sale-price") ?? left.getAttribute("data-apt-sale-units") ?? left.getAttribute("data-apt-sale-sqft"));
-      const rightRow = Number(right.getAttribute("data-apt-sale-price") ?? right.getAttribute("data-apt-sale-units") ?? right.getAttribute("data-apt-sale-sqft"));
-      if (leftRow !== rightRow) return leftRow - rightRow;
-      const order = (element) => (
-        element.hasAttribute("data-apt-sale-price") ? 0 : element.hasAttribute("data-apt-sale-units") ? 1 : 2
-      );
-      return order(left) - order(right);
-    }),
+    ...elements.tabs,
+    elements.apartment.current.modePerUnit,
+    elements.apartment.current.modeGrouped,
+    elements.apartment.current.startCap,
+    elements.apartment.current.vacancy,
+    elements.apartment.current.expense,
+    ...Array.from(elements.apartment.current.rows.querySelectorAll("[data-apartment-current-type], [data-apartment-current-rent], [data-apartment-grouped-type], [data-apartment-grouped-total-units], [data-apartment-grouped-occupied-rent], [data-apartment-grouped-vacant-units]")).sort(sortApartmentCurrentInputs),
+    elements.apartment.market.vacancy,
+    elements.apartment.market.expense,
+    elements.apartment.market.startCap,
+    ...Array.from(elements.apartment.market.rows.querySelectorAll("[data-apartment-market-sample]")).filter((input) => input.closest("tr")?.offsetParent !== null),
+    elements.apartment.sale.enableSf,
+    ...(state.apartment.sale.enablePerSf ? [elements.apartment.sale.subjectSqft] : []),
+    ...Array.from(elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-price], [data-apartment-sale-units], [data-apartment-sale-sqft]"))
+      .filter((input) => state.apartment.sale.enablePerSf || !input.hasAttribute("data-apartment-sale-sqft"))
+      .sort(sortApartmentSaleInputs),
   ]);
+}
 
-  bindTabSequence([
-    elements.aptRentStudio,
-    elements.aptRentOnebed,
-    elements.aptRentTwobed,
-    elements.aptRentThreebed,
-    elements.aptRentVacancy,
-    elements.aptRentExpense,
-    elements.aptRentStartCap,
-    ...Array.from(elements.aptRentRows.querySelectorAll("[data-apt-rent-sample]")).filter((input) => input.closest("tr")?.style.display !== "none"),
-  ]);
+function sortSaleInputs(left, right) {
+  const leftRow = Number(left.getAttribute("data-sale-price") ?? left.getAttribute("data-sale-sqft") ?? left.getAttribute("data-sale-psf"));
+  const rightRow = Number(right.getAttribute("data-sale-price") ?? right.getAttribute("data-sale-sqft") ?? right.getAttribute("data-sale-psf"));
+  if (leftRow !== rightRow) return leftRow - rightRow;
+  return saleFieldOrder(left) - saleFieldOrder(right);
+}
 
-  bindTabSequence([
-    ...elements.currentRentModeButtons,
-    elements.currentRentStartCap,
-    elements.currentRentAdditionalIncome,
-    elements.currentRentVacancy,
-    ...(state.currentRent.mode === "apartment" ? [elements.currentRentExpense] : []),
-    ...Array.from(
-      state.currentRent.mode === "commercial"
-        ? elements.currentRentCommercialRows.querySelectorAll("[data-current-rent-commercial-rent], [data-current-rent-commercial-type]")
-        : elements.currentRentApartmentRows.querySelectorAll("[data-current-rent-apartment-rent]")
-    ).sort((left, right) => {
-      const leftRow = Number(
-        left.getAttribute("data-current-rent-commercial-rent") ??
-        left.getAttribute("data-current-rent-commercial-type") ??
-        left.getAttribute("data-current-rent-apartment-rent")
-      );
-      const rightRow = Number(
-        right.getAttribute("data-current-rent-commercial-rent") ??
-        right.getAttribute("data-current-rent-commercial-type") ??
-        right.getAttribute("data-current-rent-apartment-rent")
-      );
-      if (leftRow !== rightRow) return leftRow - rightRow;
-      return left.hasAttribute("data-current-rent-commercial-rent") ? -1 : 1;
-    }),
-  ]);
+function sortCommercialSaleInputs(left, right) {
+  const leftRow = Number(left.getAttribute("data-commercial-sale-price") ?? left.getAttribute("data-commercial-sale-sqft") ?? left.getAttribute("data-commercial-sale-psf"));
+  const rightRow = Number(right.getAttribute("data-commercial-sale-price") ?? right.getAttribute("data-commercial-sale-sqft") ?? right.getAttribute("data-commercial-sale-psf"));
+  if (leftRow !== rightRow) return leftRow - rightRow;
+  return commercialSaleFieldOrder(left) - commercialSaleFieldOrder(right);
+}
+
+function sortCurrentCommercialInputs(left, right) {
+  const leftRow = Number(left.getAttribute("data-commercial-current-rent") ?? left.getAttribute("data-commercial-current-type"));
+  const rightRow = Number(right.getAttribute("data-commercial-current-rent") ?? right.getAttribute("data-commercial-current-type"));
+  if (leftRow !== rightRow) return leftRow - rightRow;
+  return left.hasAttribute("data-commercial-current-rent") ? -1 : 1;
+}
+
+function sortCommercialRentInputs(left, right) {
+  const leftRow = Number(left.getAttribute("data-commercial-rent-rent") ?? left.getAttribute("data-commercial-rent-type"));
+  const rightRow = Number(right.getAttribute("data-commercial-rent-rent") ?? right.getAttribute("data-commercial-rent-type"));
+  if (leftRow !== rightRow) return leftRow - rightRow;
+  return left.hasAttribute("data-commercial-rent-rent") ? -1 : 1;
+}
+
+function sortApartmentCurrentInputs(left, right) {
+  const leftRow = Number(
+    left.getAttribute("data-apartment-current-type")
+    ?? left.getAttribute("data-apartment-current-rent")
+    ?? left.getAttribute("data-apartment-grouped-type")
+    ?? left.getAttribute("data-apartment-grouped-total-units")
+    ?? left.getAttribute("data-apartment-grouped-occupied-rent")
+    ?? left.getAttribute("data-apartment-grouped-vacant-units"),
+  );
+  const rightRow = Number(
+    right.getAttribute("data-apartment-current-type")
+    ?? right.getAttribute("data-apartment-current-rent")
+    ?? right.getAttribute("data-apartment-grouped-type")
+    ?? right.getAttribute("data-apartment-grouped-total-units")
+    ?? right.getAttribute("data-apartment-grouped-occupied-rent")
+    ?? right.getAttribute("data-apartment-grouped-vacant-units"),
+  );
+  if (leftRow !== rightRow) return leftRow - rightRow;
+  return apartmentCurrentFieldOrder(left) - apartmentCurrentFieldOrder(right);
+}
+
+function sortApartmentSaleInputs(left, right) {
+  const leftRow = Number(left.getAttribute("data-apartment-sale-price") ?? left.getAttribute("data-apartment-sale-units") ?? left.getAttribute("data-apartment-sale-sqft"));
+  const rightRow = Number(right.getAttribute("data-apartment-sale-price") ?? right.getAttribute("data-apartment-sale-units") ?? right.getAttribute("data-apartment-sale-sqft"));
+  if (leftRow !== rightRow) return leftRow - rightRow;
+  return apartmentSaleFieldOrder(left) - apartmentSaleFieldOrder(right);
+}
+
+function saleFieldOrder(element) {
+  if (element.hasAttribute("data-sale-price")) return 0;
+  if (element.hasAttribute("data-sale-sqft")) return 1;
+  return 2;
+}
+
+function commercialSaleFieldOrder(element) {
+  if (element.hasAttribute("data-commercial-sale-price")) return 0;
+  if (element.hasAttribute("data-commercial-sale-sqft")) return 1;
+  return 2;
+}
+
+function apartmentSaleFieldOrder(element) {
+  if (element.hasAttribute("data-apartment-sale-price")) return 0;
+  if (element.hasAttribute("data-apartment-sale-units")) return 1;
+  return 2;
+}
+
+function apartmentCurrentFieldOrder(element) {
+  if (element.hasAttribute("data-apartment-current-type") || element.hasAttribute("data-apartment-grouped-type")) return 0;
+  if (element.hasAttribute("data-apartment-current-rent") || element.hasAttribute("data-apartment-grouped-total-units")) return 1;
+  if (element.hasAttribute("data-apartment-grouped-vacant-units")) return 2;
+  if (element.hasAttribute("data-apartment-grouped-occupied-rent")) return 3;
+  return 4;
 }
 
 function renderAll() {
   renderTabs();
-  renderLease();
-  renderSale();
-  renderAptSale();
-  renderAptRent();
-  renderCurrentRent();
-}
-
-function clearTabValues(tabKey, button) {
-  const defaults = createDefaultState();
-  if (tabKey === "lease") {
-    state.lease = defaults.lease;
-  } else if (tabKey === "sale") {
-    state.sale = defaults.sale;
-  } else if (tabKey === "aptSale") {
-    state.aptSale = defaults.aptSale;
-  } else if (tabKey === "aptRent") {
-    state.aptRent = defaults.aptRent;
-  } else if (tabKey === "currentRent") {
-    state.currentRent = defaults.currentRent;
-  } else {
-    return;
-  }
-  renderAll();
-  flashButton(button, "Cleared");
-}
-
-function bindCopyValueTrigger(element, getAmount, feedbackButton) {
-  if (!element) return;
-  const handler = () => copyAmount(getAmount(), feedbackButton, element);
-  element.addEventListener("click", handler);
-  element.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    handler();
-  });
+  renderOneToFour();
+  renderCommercial();
+  renderApartment();
 }
 
 function renderTabs() {
@@ -772,77 +920,498 @@ function renderTabs() {
   });
 }
 
-function renderLease() {
-  setControlValue(elements.leaseSqft, state.lease.sqft);
-  setControlValue(elements.leaseVacancy, state.lease.vacancy);
-  setControlValue(elements.leaseStartCap, state.lease.startCap);
+function renderOneToFour() {
+  setControlValue(elements.oneToFour.subjectSqft, state.oneToFour.sale.subjectSqft);
+  setControlValue(elements.oneToFour.listingDiscount, state.oneToFour.sale.listingDiscount);
+  ensureSaleTrailingEmptyRow(state.oneToFour.sale.rows);
+  const calculations = calculateSaleSection(state.oneToFour.sale.rows, state.oneToFour.sale.subjectSqft, state.oneToFour.sale.listingDiscount);
+  renderSaleRows({
+    tbody: elements.oneToFour.rows,
+    rows: state.oneToFour.sale.rows,
+    calculations,
+    listingField: elements.oneToFour.listingDiscountField,
+    priceAttr: "data-sale-price",
+    sqftAttr: "data-sale-sqft",
+    psfAttr: "data-sale-psf",
+    typeAttr: "data-sale-type",
+    includeAttr: "data-sale-include",
+    removeAttr: "data-sale-remove",
+    focusPrefix: "sale",
+    onRender: bindOneToFourSaleEvents,
+  });
+  elements.oneToFour.averagePsf.textContent = calculations.averagePsf === null ? "-" : `${formatCurrency(calculations.averagePsf, 2)} / SF`;
+  elements.oneToFour.indicatedValue.textContent = calculations.indicatedValue === null ? "-" : formatCurrency(calculations.indicatedValue, 0);
+  elements.oneToFour.indicatedValue.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedValue) && calculations.indicatedValue > 0)));
+  derived.oneToFourSaleCopy = calculations.indicatedValue;
+  setCopyButtonState(elements.oneToFour.copyBtn, calculations.indicatedValue);
+  bindTabFlows();
+  persistState();
+}
 
-  ensureLeaseTrailingEmptyRow();
-  const calculations = calculateLease();
-  const focusState = captureActiveInputState(elements.leaseRows);
+function renderCommercial() {
+  setControlValue(elements.commercial.subjectSqft, state.commercial.subjectSqft);
+  renderCommercialCurrent();
+  renderCommercialRent();
+  renderCommercialSale();
+  bindTabFlows();
+  persistState();
+}
 
-  elements.leaseRows.innerHTML = state.lease.rows.map((row, index) => {
+function renderCommercialCurrent() {
+  setControlValue(elements.commercial.current.startCap, state.commercial.current.startCap);
+  setControlValue(elements.commercial.current.additionalIncome, state.commercial.current.additionalIncome);
+  setControlValue(elements.commercial.current.vacancy, state.commercial.current.vacancy);
+  ensureCurrentRentCommercialTrailingEmptyRow();
+  const calculations = calculateCommercialCurrent();
+  const focusState = captureActiveInputState(elements.commercial.current.rows);
+
+  elements.commercial.current.rows.innerHTML = state.commercial.current.rows.map((row, index) => {
     const rowCalc = calculations.rows[index];
-    const outlierChip = rowCalc?.isOutlier ? '<span class="chip outlier">High Outlier</span>' : "";
     return `
-      <tr class="${rowCalc?.isOutlier ? "is-outlier" : ""}">
-        <td><input type="checkbox" data-lease-include="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
-        <td><input class="table-input" type="text" data-focus-key="lease-rent-${index}" data-lease-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Rent / SF..." /></td>
+      <tr>
+        <td><input class="table-input" type="text" data-focus-key="commercial-current-rent-${index}" data-commercial-current-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Current monthly rent..." /></td>
         <td>
-          <select class="table-select" data-focus-key="lease-type-${index}" data-lease-type="${index}" tabindex="-1">
+          <select class="table-select" data-focus-key="commercial-current-type-${index}" data-commercial-current-type="${index}" tabindex="-1">
             <option value="nnn" ${row.leaseType === "nnn" ? "selected" : ""}>NNN</option>
             <option value="modified" ${row.leaseType === "modified" ? "selected" : ""}>Modified</option>
             <option value="gross" ${row.leaseType === "gross" ? "selected" : ""}>Gross</option>
           </select>
         </td>
         <td>${rowCalc?.expenseLabel || "10%"}</td>
-        <td>
-          <div class="metric-stack">
-            <span>${rowCalc?.adjustedRentLabel || "-"}</span>
-            ${outlierChip}
-          </div>
-        </td>
-        <td>${state.lease.rows.length > 1 ? `<button class="row-remove" type="button" data-lease-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
+        <td>${rowCalc?.adjustedRentLabel || "-"}</td>
+        <td>${state.commercial.current.rows.length > 1 ? `<button class="row-remove" type="button" data-commercial-current-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
       </tr>
     `;
   }).join("");
 
-  bindLeaseRowEvents();
-  bindTabFlows();
-  if (!consumePendingFocus()) restoreActiveInputState(elements.leaseRows, focusState);
-  renderLeaseMetrics(calculations);
-}
+  bindCommercialCurrentEvents();
+  if (!consumePendingFocus()) restoreActiveInputState(elements.commercial.current.rows, focusState);
 
-function renderLeaseMetrics(calculations = calculateLease()) {
-  elements.leaseAverageRent.textContent = calculations.averageAdjustedRent === null ? "-" : `${formatCurrency(calculations.averageAdjustedRent, 2)} / SF`;
-  elements.leaseMonthlyNoi.textContent = calculations.potentialMonthlyNoi === null ? "-" : formatCurrency(calculations.potentialMonthlyNoi, 0);
-  elements.leaseAnnualNoi.textContent = calculations.potentialAnnualNoi === null ? "-" : formatCurrency(calculations.potentialAnnualNoi, 0);
-  elements.leaseNoiAfterVacancy.textContent = calculations.annualNoiAfterVacancy === null ? "-" : formatCurrency(calculations.annualNoiAfterVacancy, 0);
-  derived.leaseCopyAmount = calculations.selectedCapValue;
-  setCopyButtonState(elements.leaseCopyBtn, calculations.selectedCapValue);
-
+  elements.commercial.current.summary1.textContent = calculations.baseMonthlyIncome === null ? "-" : formatCurrency(calculations.baseMonthlyIncome, 0);
+  elements.commercial.current.summary2.textContent = formatCurrency(calculations.additionalIncome, 0);
+  elements.commercial.current.summary3.textContent = calculations.annualGrossIncome === null ? "-" : formatCurrency(calculations.annualGrossIncome, 0);
+  elements.commercial.current.summary4.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
+  elements.commercial.current.summary5.textContent = calculations.startCapValue === null ? "-" : formatCurrency(calculations.startCapValue, 0);
+  elements.commercial.current.summary6.textContent = calculations.appliedVacancyLabel;
+  derived.commercialCurrentCopy = calculations.selectedCapValue;
+  setCopyButtonState(elements.commercial.current.copyBtn, calculations.selectedCapValue);
   renderCapResults({
-    tbody: elements.leaseCapResults,
-    startCapRaw: state.lease.startCap,
-    selectedCapRate: state.lease.selectedCapRate,
-    annualNoiAfterVacancy: calculations.annualNoiAfterVacancy,
+    tbody: elements.commercial.current.capResults,
+    startCapRaw: state.commercial.current.startCap,
+    selectedCapRate: state.commercial.current.selectedCapRate,
+    annualNoiAfterVacancy: calculations.annualNoi,
     onSelect: (capRate) => {
-      state.lease.selectedCapRate = capRate;
-      renderLease();
+      state.commercial.current.selectedCapRate = capRate;
+      renderCommercialCurrent();
     },
     emptyMessage: "Enter a starting cap rate to generate values.",
-    copyButton: elements.leaseCopyBtn,
+    copyButton: elements.commercial.current.copyBtn,
     storeSelected: (capRate, value) => {
-      state.lease.selectedCapRate = capRate;
-      derived.leaseCopyAmount = value;
-      setCopyButtonState(elements.leaseCopyBtn, value);
+      state.commercial.current.selectedCapRate = capRate;
+      derived.commercialCurrentCopy = value;
+      setCopyButtonState(elements.commercial.current.copyBtn, value);
     },
   });
+}
+
+function renderCommercialRent() {
+  setControlValue(elements.commercial.rent.vacancy, state.commercial.rent.vacancy);
+  setControlValue(elements.commercial.rent.startCap, state.commercial.rent.startCap);
+  ensureLeaseTrailingEmptyRow(state.commercial.rent.rows);
+  const calculations = calculateCommercialRent();
+  const focusState = captureActiveInputState(elements.commercial.rent.rows);
+
+  elements.commercial.rent.rows.innerHTML = state.commercial.rent.rows.map((row, index) => {
+    const rowCalc = calculations.rows[index];
+    const outlierChip = rowCalc?.isOutlier ? '<span class="chip outlier">High Outlier</span>' : "";
+    return `
+      <tr class="${rowCalc?.isOutlier ? "is-outlier" : ""}">
+        <td><input type="checkbox" data-commercial-rent-include="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
+        <td><input class="table-input" type="text" data-focus-key="commercial-rent-rent-${index}" data-commercial-rent-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Rent / SF..." /></td>
+        <td>
+          <select class="table-select" data-focus-key="commercial-rent-type-${index}" data-commercial-rent-type="${index}" tabindex="-1">
+            <option value="nnn" ${row.leaseType === "nnn" ? "selected" : ""}>NNN</option>
+            <option value="modified" ${row.leaseType === "modified" ? "selected" : ""}>Modified</option>
+            <option value="gross" ${row.leaseType === "gross" ? "selected" : ""}>Gross</option>
+          </select>
+        </td>
+        <td>${rowCalc?.expenseLabel || "10%"}</td>
+        <td><div class="metric-stack"><span>${rowCalc?.adjustedRentLabel || "-"}</span>${outlierChip}</div></td>
+        <td>${state.commercial.rent.rows.length > 1 ? `<button class="row-remove" type="button" data-commercial-rent-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
+      </tr>
+    `;
+  }).join("");
+
+  bindCommercialRentEvents();
+  if (!consumePendingFocus()) restoreActiveInputState(elements.commercial.rent.rows, focusState);
+
+  elements.commercial.rent.average.textContent = calculations.averageAdjustedRent === null ? "-" : `${formatCurrency(calculations.averageAdjustedRent, 2)} / SF`;
+  elements.commercial.rent.monthlyNoi.textContent = calculations.potentialMonthlyNoi === null ? "-" : formatCurrency(calculations.potentialMonthlyNoi, 0);
+  elements.commercial.rent.annualNoi.textContent = calculations.potentialAnnualNoi === null ? "-" : formatCurrency(calculations.potentialAnnualNoi, 0);
+  elements.commercial.rent.noiAfterVacancy.textContent = calculations.annualNoiAfterVacancy === null ? "-" : formatCurrency(calculations.annualNoiAfterVacancy, 0);
+  derived.commercialRentCopy = calculations.selectedCapValue;
+  setCopyButtonState(elements.commercial.rent.copyBtn, calculations.selectedCapValue);
+  renderCapResults({
+    tbody: elements.commercial.rent.capResults,
+    startCapRaw: state.commercial.rent.startCap,
+    selectedCapRate: state.commercial.rent.selectedCapRate,
+    annualNoiAfterVacancy: calculations.annualNoiAfterVacancy,
+    onSelect: (capRate) => {
+      state.commercial.rent.selectedCapRate = capRate;
+      renderCommercialRent();
+    },
+    emptyMessage: "Enter a starting cap rate to generate values.",
+    copyButton: elements.commercial.rent.copyBtn,
+    storeSelected: (capRate, value) => {
+      state.commercial.rent.selectedCapRate = capRate;
+      derived.commercialRentCopy = value;
+      setCopyButtonState(elements.commercial.rent.copyBtn, value);
+    },
+  });
+}
+
+function renderCommercialSale() {
+  setControlValue(elements.commercial.sale.listingDiscount, state.commercial.sale.listingDiscount);
+  ensureSaleTrailingEmptyRow(state.commercial.sale.rows);
+  const calculations = calculateSaleSection(state.commercial.sale.rows, state.commercial.subjectSqft, state.commercial.sale.listingDiscount);
+  renderSaleRows({
+    tbody: elements.commercial.sale.rows,
+    rows: state.commercial.sale.rows,
+    calculations,
+    listingField: elements.commercial.sale.listingDiscountField,
+    priceAttr: "data-commercial-sale-price",
+    sqftAttr: "data-commercial-sale-sqft",
+    psfAttr: "data-commercial-sale-psf",
+    typeAttr: "data-commercial-sale-type",
+    includeAttr: "data-commercial-sale-include",
+    removeAttr: "data-commercial-sale-remove",
+    focusPrefix: "commercial-sale",
+    onRender: bindCommercialSaleEvents,
+  });
+  elements.commercial.sale.averagePsf.textContent = calculations.averagePsf === null ? "-" : `${formatCurrency(calculations.averagePsf, 2)} / SF`;
+  elements.commercial.sale.indicatedValue.textContent = calculations.indicatedValue === null ? "-" : formatCurrency(calculations.indicatedValue, 0);
+  elements.commercial.sale.indicatedValue.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedValue) && calculations.indicatedValue > 0)));
+  derived.commercialSaleCopy = calculations.indicatedValue;
+  setCopyButtonState(elements.commercial.sale.copyBtn, calculations.indicatedValue);
+}
+
+function renderApartment() {
+  const unitMix = getApartmentUnitMix();
+  renderApartmentCurrent(unitMix);
+  renderApartmentMarket(unitMix);
+  renderApartmentSale(unitMix);
+  bindTabFlows();
   persistState();
 }
 
-function calculateLease() {
-  const rows = state.lease.rows.map((row) => {
+function renderApartmentCurrent(unitMix) {
+  const isGroupedMode = state.apartment.current.rentRollMode === "grouped";
+  setControlValue(elements.apartment.current.startCap, state.apartment.current.startCap);
+  setControlValue(elements.apartment.current.vacancy, state.apartment.current.vacancy);
+  setControlValue(elements.apartment.current.expense, state.apartment.current.expensePercent);
+  elements.apartment.current.modePerUnit?.classList.toggle("active", !isGroupedMode);
+  elements.apartment.current.modePerUnit?.setAttribute("aria-selected", String(!isGroupedMode));
+  elements.apartment.current.modeGrouped?.classList.toggle("active", isGroupedMode);
+  elements.apartment.current.modeGrouped?.setAttribute("aria-selected", String(isGroupedMode));
+  elements.apartment.current.head.innerHTML = isGroupedMode
+    ? `
+        <tr>
+          <th>Unit Type</th>
+          <th>Total Units</th>
+          <th>Vacant Units</th>
+          <th>Occupied Total Rent</th>
+          <th>Occupied Units</th>
+          <th>Avg Occupied Rent</th>
+          <th class="action-col"></th>
+        </tr>
+      `
+    : `
+        <tr>
+          <th>Unit Type</th>
+          <th>Current Monthly Rent</th>
+          <th>Status</th>
+          <th class="action-col"></th>
+        </tr>
+      `;
+  elements.apartment.current.hint.textContent = isGroupedMode
+    ? "Enter grouped occupied rent and vacancy totals by unit type. Vacant units feed the automatic vacancy fill plan from the market-rent averages below."
+    : "Each apartment unit is entered as its own row. Any row entered as $0 is treated as vacant and feeds the automatic vacancy fill plan by unit type.";
+  if (isGroupedMode) ensureApartmentGroupedRentRollTrailingEmptyRow();
+  else ensureApartmentRentRollTrailingEmptyRow();
+  const marketCalculations = calculateApartmentMarket(unitMix);
+  const calculations = calculateApartmentCurrent(unitMix, marketCalculations.averageByType);
+  const focusState = captureActiveInputState(elements.apartment.current.rows);
+
+  elements.apartment.current.rows.innerHTML = isGroupedMode
+    ? state.apartment.current.groupedRows.map((row, index) => {
+        const rowCalc = calculations.rows[index];
+        return `
+          <tr>
+            <td>
+              <select class="table-select" data-focus-key="apartment-grouped-type-${index}" data-apartment-grouped-type="${index}">
+                <option value="" ${row.type === "" ? "selected" : ""}>Select type...</option>
+                ${aptRentTypeOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${row.type === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+              </select>
+            </td>
+            <td><input class="table-input" type="text" data-focus-key="apartment-grouped-total-units-${index}" data-apartment-grouped-total-units="${index}" value="${escapeHtml(row.totalUnits)}" placeholder="Total units..." /></td>
+            <td><input class="table-input" type="text" data-focus-key="apartment-grouped-vacant-units-${index}" data-apartment-grouped-vacant-units="${index}" value="${escapeHtml(row.vacantUnits)}" placeholder="Vacant units..." /></td>
+            <td><input class="table-input" type="text" data-focus-key="apartment-grouped-occupied-rent-${index}" data-apartment-grouped-occupied-rent="${index}" value="${escapeHtml(row.occupiedRent)}" placeholder="Occupied total rent..." /></td>
+            <td>${rowCalc?.occupiedUnitsLabel || "-"}</td>
+            <td><div class="metric-stack"><span>${rowCalc?.averageOccupiedRentLabel || "-"}</span>${rowCalc?.fillLabel ? `<span class="chip">${escapeHtml(rowCalc.fillLabel)}</span>` : ""}</div></td>
+            <td>${state.apartment.current.groupedRows.length > 1 ? `<button class="row-remove" type="button" data-apartment-grouped-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
+          </tr>
+        `;
+      }).join("")
+    : state.apartment.current.rows.map((row, index) => {
+        const rowCalc = calculations.rows[index];
+        return `
+          <tr class="${rowCalc?.isVacant ? "is-outlier" : ""}">
+            <td>
+              <select class="table-select" data-focus-key="apartment-current-type-${index}" data-apartment-current-type="${index}">
+                <option value="" ${row.type === "" ? "selected" : ""}>Select type...</option>
+                ${aptRentTypeOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${row.type === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+              </select>
+            </td>
+            <td><input class="table-input" type="text" data-focus-key="apartment-current-rent-${index}" data-apartment-current-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Current monthly rent..." /></td>
+            <td><div class="metric-stack"><span>${rowCalc?.statusLabel || "-"}</span>${rowCalc?.fillLabel ? `<span class="chip">${escapeHtml(rowCalc.fillLabel)}</span>` : ""}</div></td>
+            <td>${state.apartment.current.rows.length > 1 ? `<button class="row-remove" type="button" data-apartment-current-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
+          </tr>
+        `;
+      }).join("");
+
+  bindApartmentCurrentEvents();
+  if (!consumePendingFocus()) restoreActiveInputState(elements.apartment.current.rows, focusState);
+
+  elements.apartment.current.fillRows.innerHTML = calculations.fillPlanRows.length
+    ? calculations.fillPlanRows.map((row) => `
+        <tr data-unit-type="${escapeHtml(row.type)}">
+          <td>${escapeHtml(getAptRentTypeLabel(row.type))}</td>
+          <td>${escapeHtml(String(row.vacantUnits))}</td>
+          <td>${row.marketRent === null ? "Needs Market Rent Avg" : formatCurrency(row.marketRent, 0)}</td>
+          <td>${row.monthlyIncome === null ? "-" : formatCurrency(row.monthlyIncome, 0)}</td>
+        </tr>
+      `).join("")
+    : `<tr><td colspan="4" class="empty-cell">${escapeHtml(isGroupedMode ? "Enter grouped unit counts and vacant units to build the fill plan." : "Assign unit types on vacant rent-roll rows to build the fill plan.")}</td></tr>`;
+  elements.apartment.current.fillTotal.textContent = calculations.monthlyFillIncome === null ? "-" : formatCurrency(calculations.monthlyFillIncome, 0);
+
+  elements.apartment.current.summary1.textContent = calculations.baseMonthlyIncome === null ? "-" : formatCurrency(calculations.baseMonthlyIncome, 0);
+  elements.apartment.current.summary2.textContent = calculations.monthlyFillIncome === null ? "-" : formatCurrency(calculations.monthlyFillIncome, 0);
+  elements.apartment.current.summary3.textContent = calculations.annualGrossIncome === null ? "-" : formatCurrency(calculations.annualGrossIncome, 0);
+  elements.apartment.current.summary4.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
+  elements.apartment.current.summary5.textContent = calculations.startCapValue === null ? "-" : formatCurrency(calculations.startCapValue, 0);
+  elements.apartment.current.summary6.textContent = calculations.appliedVacancyLabel;
+  elements.apartment.current.summary7.textContent = calculations.apartmentVacancyLabel;
+  derived.apartmentCurrentCopy = calculations.selectedCapValue;
+  setCopyButtonState(elements.apartment.current.copyBtn, calculations.selectedCapValue);
+  renderApartmentCurrentCapResults(calculations);
+}
+
+function renderApartmentMarket(unitMix) {
+  setControlValue(elements.apartment.market.vacancy, state.apartment.market.vacancy);
+  setControlValue(elements.apartment.market.expense, state.apartment.market.expensePercent);
+  setControlValue(elements.apartment.market.startCap, state.apartment.market.startCap);
+  Object.entries(unitMix).forEach(([key, count]) => {
+    elements.apartment.market.mix[key].textContent = String(count);
+    const mixCard = elements.apartment.market.mix[key]?.closest(".summary-card");
+    const averageCard = elements.apartment.market.averages[key]?.closest(".summary-card");
+    if (mixCard) mixCard.hidden = count === 0;
+    if (averageCard) averageCard.hidden = count === 0;
+  });
+  const calculations = calculateApartmentMarket(unitMix);
+  const focusState = captureActiveInputState(elements.apartment.market.rows);
+
+  elements.apartment.market.rows.innerHTML = state.apartment.market.rows.map((row, index) => {
+    const rowCalc = calculations.rows[index];
+    const outlierButton = rowCalc?.showOutlierToggle
+      ? `<button class="mini-toggle ${rowCalc.outlierIncluded ? "" : "active"}" type="button" data-apartment-market-outlier="${index}" tabindex="-1">${rowCalc.outlierIncluded ? "Include Outlier" : "Remove Outlier"}</button>`
+      : "";
+    return `
+      <tr class="${rowCalc?.showOutlierToggle && !rowCalc.outlierIncluded ? "is-outlier" : ""}" data-unit-type="${escapeHtml(row.type)}" ${rowCalc?.hidden ? 'style="display:none;"' : ""}>
+        <td><input type="checkbox" data-apartment-market-include="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
+        <td>${escapeHtml(getAptRentTypeLabel(row.type))}</td>
+        <td>
+          <div class="rent-sample-grid">
+            ${row.rents.map((value, rentIndex) => `
+              <input class="table-input" type="text" data-focus-key="apartment-market-${index}-${rentIndex}" data-apartment-market-sample="${index}" data-rent-index="${rentIndex}" value="${escapeHtml(value)}" placeholder="Rent ${rentIndex + 1}..." />
+            `).join("")}
+          </div>
+        </td>
+        <td><div class="metric-stack"><span>${rowCalc?.displayLabel || "-"}</span>${outlierButton}</div></td>
+      </tr>
+    `;
+  }).join("");
+
+  bindApartmentMarketEvents();
+  if (!consumePendingFocus()) restoreActiveInputState(elements.apartment.market.rows, focusState);
+
+  Object.entries(elements.apartment.market.averages).forEach(([key, output]) => {
+    output.textContent = calculations.averageByType[key] === null ? "-" : formatCurrency(calculations.averageByType[key], 0);
+  });
+  elements.apartment.market.annualGross.textContent = calculations.annualGrossRent === null ? "-" : formatCurrency(calculations.annualGrossRent, 0);
+  elements.apartment.market.effectiveGross.textContent = calculations.effectiveGrossIncome === null ? "-" : formatCurrency(calculations.effectiveGrossIncome, 0);
+  elements.apartment.market.annualNoi.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
+  elements.apartment.market.startCapValue.textContent = calculations.startCapValue === null ? "-" : formatCurrency(calculations.startCapValue, 0);
+  derived.apartmentMarketCopy = calculations.selectedCapValue;
+  setCopyButtonState(elements.apartment.market.copyBtn, calculations.selectedCapValue);
+  renderCapResults({
+    tbody: elements.apartment.market.capResults,
+    startCapRaw: state.apartment.market.startCap,
+    selectedCapRate: state.apartment.market.selectedCapRate,
+    annualNoiAfterVacancy: calculations.annualNoi,
+    onSelect: (capRate) => {
+      state.apartment.market.selectedCapRate = capRate;
+      renderApartmentMarket(getApartmentUnitMix());
+    },
+    emptyMessage: "Enter a starting cap rate to generate values.",
+    copyButton: elements.apartment.market.copyBtn,
+    storeSelected: (capRate, value) => {
+      state.apartment.market.selectedCapRate = capRate;
+      derived.apartmentMarketCopy = value;
+      setCopyButtonState(elements.apartment.market.copyBtn, value);
+    },
+  });
+}
+
+function renderApartmentSale(unitMix) {
+  const subjectUnits = Object.values(unitMix).reduce((sum, value) => sum + value, 0);
+  if (elements.apartment.sale.enableSf) elements.apartment.sale.enableSf.checked = state.apartment.sale.enablePerSf;
+  elements.apartment.sale.subjectUnits.textContent = String(subjectUnits);
+  setControlValue(elements.apartment.sale.subjectSqft, state.apartment.sale.subjectSqft);
+  elements.apartment.sale.subjectSqftField.hidden = !state.apartment.sale.enablePerSf;
+  elements.apartment.sale.sfHeading.hidden = !state.apartment.sale.enablePerSf;
+  elements.apartment.sale.psfHeading.hidden = !state.apartment.sale.enablePerSf;
+  elements.apartment.sale.summaryGrid.className = `summary-grid ${state.apartment.sale.enablePerSf ? "summary-grid-four" : "summary-grid-two"}`;
+  ensureAptSaleTrailingEmptyRow(state.apartment.sale.rows);
+  const calculations = calculateApartmentSale(unitMix);
+  const focusState = captureActiveInputState(elements.apartment.sale.rows);
+
+  elements.apartment.sale.rows.innerHTML = state.apartment.sale.rows.map((row, index) => {
+    const rowCalc = calculations.rows[index];
+    const outlierChip = rowCalc?.isOutlier ? '<span class="chip outlier">High Outlier</span>' : "";
+    return `
+      <tr class="${rowCalc?.isOutlier ? "is-outlier" : ""}">
+        <td><input type="checkbox" data-apartment-sale-include="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
+        <td><input class="table-input" type="text" data-focus-key="apartment-sale-price-${index}" data-apartment-sale-price="${index}" value="${escapeHtml(row.price)}" placeholder="Purchase Price..." /></td>
+        <td><input class="table-input" type="text" data-focus-key="apartment-sale-units-${index}" data-apartment-sale-units="${index}" value="${escapeHtml(row.units)}" placeholder="Units..." /></td>
+        <td ${state.apartment.sale.enablePerSf ? "" : 'hidden'}><input class="table-input" type="text" data-focus-key="apartment-sale-sqft-${index}" data-apartment-sale-sqft="${index}" value="${escapeHtml(row.sqft)}" placeholder="SF..." ${state.apartment.sale.enablePerSf ? "" : 'tabindex="-1"'} /></td>
+        <td><div class="metric-stack"><span>${rowCalc?.perUnitLabel || "-"}</span>${outlierChip}</div></td>
+        <td ${state.apartment.sale.enablePerSf ? "" : 'hidden'}>${rowCalc?.perSfLabel || "-"}</td>
+        <td>${state.apartment.sale.rows.length > 1 ? `<button class="row-remove" type="button" data-apartment-sale-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
+      </tr>
+    `;
+  }).join("");
+
+  bindApartmentSaleEvents();
+  if (!consumePendingFocus()) restoreActiveInputState(elements.apartment.sale.rows, focusState);
+
+  elements.apartment.sale.averageUnit.textContent = calculations.averagePerUnit === null ? "-" : formatCurrency(calculations.averagePerUnit, 0);
+  elements.apartment.sale.indicatedUnit.textContent = calculations.indicatedPerUnit === null ? "-" : formatCurrency(calculations.indicatedPerUnit, 0);
+  elements.apartment.sale.indicatedUnit.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedPerUnit) && calculations.indicatedPerUnit > 0)));
+  elements.apartment.sale.averageSfCard.hidden = !state.apartment.sale.enablePerSf;
+  elements.apartment.sale.indicatedSfCard.hidden = !state.apartment.sale.enablePerSf;
+  elements.apartment.sale.averageSf.textContent = calculations.averagePerSf === null ? "-" : `${formatCurrency(calculations.averagePerSf, 2)} / SF`;
+  elements.apartment.sale.indicatedSf.textContent = calculations.indicatedPerSf === null ? "-" : formatCurrency(calculations.indicatedPerSf, 0);
+  elements.apartment.sale.indicatedSf.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedPerSf) && calculations.indicatedPerSf > 0)));
+  derived.apartmentSaleCopy = calculations.indicatedPerUnit;
+  setCopyButtonState(elements.apartment.sale.copyBtn, calculations.indicatedPerUnit);
+}
+
+function renderSaleRows({
+  tbody,
+  rows,
+  calculations,
+  listingField,
+  priceAttr,
+  sqftAttr,
+  psfAttr,
+  typeAttr,
+  includeAttr,
+  removeAttr,
+  focusPrefix,
+  onRender,
+}) {
+  const focusState = captureActiveInputState(tbody);
+  const hasListingRows = rows.some((row) => row.listing);
+  if (listingField) {
+    listingField.hidden = !hasListingRows;
+    listingField.classList.toggle("attention-glow", hasListingRows);
+  }
+  tbody.innerHTML = rows.map((row, index) => {
+    const rowCalc = calculations.rows[index];
+    const listingChip = row.listing && rowCalc?.usedPsf !== null ? '<span class="chip listing">Listing Adj</span>' : "";
+    const outlierChip = rowCalc?.isOutlier ? '<span class="chip outlier">High Outlier</span>' : "";
+    return `
+      <tr class="${rowCalc?.isOutlier ? "is-outlier" : ""}">
+        <td><input type="checkbox" ${includeAttr}="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
+        <td>
+          <div class="sale-toggle">
+            <button type="button" class="${row.listing ? "" : "active"}" ${typeAttr}="${index}" data-sale-type-value="sale" tabindex="-1">Sale</button>
+            <button type="button" class="${row.listing ? "active" : ""}" ${typeAttr}="${index}" data-sale-type-value="listing" tabindex="-1">Listing</button>
+          </div>
+        </td>
+        <td><input class="table-input" type="text" data-focus-key="${focusPrefix}-price-${index}" ${priceAttr}="${index}" value="${escapeHtml(row.price)}" placeholder="Purchase Price..." ${rowCalc?.lockBasis ? "readonly" : ""} /></td>
+        <td><input class="table-input" type="text" data-focus-key="${focusPrefix}-sqft-${index}" ${sqftAttr}="${index}" value="${escapeHtml(row.sqft)}" placeholder="Comp SF..." ${rowCalc?.lockBasis ? "readonly" : ""} /></td>
+        <td><input class="table-input" type="text" data-focus-key="${focusPrefix}-psf-${index}" ${psfAttr}="${index}" value="${escapeHtml(row.psf)}" placeholder="$ / SF..." tabindex="-1" ${rowCalc?.lockPsf ? "readonly" : ""} /></td>
+        <td><div class="metric-stack"><span>${rowCalc?.usedPsfLabel || "-"}</span>${listingChip}${outlierChip}</div></td>
+        <td>${rows.length > 1 ? `<button class="row-remove" type="button" ${removeAttr}="${index}" tabindex="-1">Remove</button>` : ""}</td>
+      </tr>
+    `;
+  }).join("");
+  onRender();
+  if (!consumePendingFocus()) restoreActiveInputState(tbody, focusState);
+}
+
+function calculateSaleSection(rowsState, subjectSqftRaw, listingDiscountRaw) {
+  const listingDiscountRate = clampPercent(listingDiscountRaw);
+  const rows = rowsState.map((row) => {
+    const sqft = parsePositiveWholeNumber(row.sqft);
+    const price = parseLooseNumber(row.price);
+    const manualPsf = parseLooseNumber(row.psf);
+    const computedPsf = price !== null && sqft !== null && sqft > 0 ? price / sqft : null;
+    const basePsf = computedPsf ?? manualPsf;
+    const usedPsf = basePsf === null ? null : (row.listing ? basePsf * (1 - listingDiscountRate) : basePsf);
+    return {
+      usedPsf,
+      usedPsfLabel: usedPsf === null ? "-" : `${formatCurrency(usedPsf, 2)} / SF`,
+      lockPsf: computedPsf !== null,
+      lockBasis: manualPsf !== null && computedPsf === null,
+      isOutlier: false,
+    };
+  });
+
+  let outlierIndex = -1;
+  let highestMetric = -Infinity;
+  rows.forEach((row, index) => {
+    if (row.usedPsf === null) return;
+    if (row.usedPsf > highestMetric) {
+      highestMetric = row.usedPsf;
+      outlierIndex = index;
+    }
+  });
+
+  rows.forEach((row, index) => {
+    row.isOutlier = index === outlierIndex;
+    const sourceRow = rowsState[index];
+    if (!sourceRow) return;
+    if (row.isOutlier) {
+      if (sourceRow.userTouched !== true) sourceRow.include = false;
+    } else if (sourceRow.userTouched !== true) {
+      sourceRow.include = true;
+    }
+  });
+
+  const selectedMetrics = rows
+    .map((row, index) => ({ row, source: rowsState[index] }))
+    .filter((entry) => entry.source?.include && entry.row.usedPsf !== null)
+    .map((entry) => entry.row.usedPsf);
+  const averagePsf = selectedMetrics.length ? selectedMetrics.reduce((sum, value) => sum + value, 0) / selectedMetrics.length : null;
+  const subjectSqft = parsePositiveWholeNumber(subjectSqftRaw);
+  const indicatedValue = averagePsf === null || subjectSqft === null ? null : averagePsf * subjectSqft;
+  return { rows, averagePsf, indicatedValue };
+}
+
+function calculateCommercialRent() {
+  const rows = state.commercial.rent.rows.map((row) => {
     const rentPerSf = parseLooseNumber(row.rent || "");
     const expenseRate = getLeaseExpenseRate(row.leaseType);
     const adjustedRent = rentPerSf === null ? null : rentPerSf * (1 - expenseRate);
@@ -865,198 +1434,8 @@ function calculateLease() {
   });
 
   rows.forEach((row, index) => {
-    const sourceRow = state.lease.rows[index];
-    const isOutlier = index === outlierIndex;
-    row.isOutlier = isOutlier;
-    if (!sourceRow) return;
-    if (isOutlier) {
-      if (sourceRow.userTouched !== true) sourceRow.include = false;
-    } else if (sourceRow.userTouched !== true) {
-      sourceRow.include = true;
-    }
-  });
-
-  const selectedAdjustedRents = rows
-    .map((row, index) => ({ row, source: state.lease.rows[index] }))
-    .filter((entry) => entry.source?.include && entry.row.adjustedRent !== null)
-    .map((entry) => entry.row.adjustedRent);
-
-  const averageAdjustedRent = selectedAdjustedRents.length
-    ? selectedAdjustedRents.reduce((sum, value) => sum + value, 0) / selectedAdjustedRents.length
-    : null;
-  const squareFootage = parsePositiveWholeNumber(state.lease.sqft);
-  const vacancyRate = clampPercent(state.lease.vacancy);
-  const potentialMonthlyNoi = averageAdjustedRent === null || squareFootage === null ? null : averageAdjustedRent * squareFootage;
-  const potentialAnnualNoi = potentialMonthlyNoi === null ? null : potentialMonthlyNoi * 12;
-  const annualNoiAfterVacancy = potentialAnnualNoi === null ? null : potentialAnnualNoi * (1 - vacancyRate);
-
-  const selectedCapValue = calculateSelectedCapValue(state.lease.startCap, state.lease.selectedCapRate, annualNoiAfterVacancy, (nextRate) => {
-    state.lease.selectedCapRate = nextRate;
-  });
-
-  return {
-    rows,
-    averageAdjustedRent,
-    potentialMonthlyNoi,
-    potentialAnnualNoi,
-    annualNoiAfterVacancy,
-    selectedCapValue,
-  };
-}
-
-function bindLeaseRowEvents() {
-  bindRepeatingRows(elements.leaseRows, {
-    removeAttr: "data-lease-remove",
-    onRemove: (index) => {
-      if (state.lease.rows.length <= 1) return;
-      state.lease.rows.splice(index, 1);
-      renderLease();
-    },
-  });
-
-  elements.leaseRows.querySelectorAll("[data-lease-include]").forEach((input) => {
-    input.addEventListener("change", () => {
-      const index = Number(input.dataset.leaseInclude);
-      const row = state.lease.rows[index];
-      if (!row) return;
-      row.include = input.checked;
-      row.userTouched = true;
-      renderLease();
-    });
-  });
-  elements.leaseRows.querySelectorAll("[data-lease-rent]").forEach((input) => {
-    input.addEventListener("input", () => {
-      const index = Number(input.dataset.leaseRent);
-      if (!state.lease.rows[index]) return;
-      state.lease.rows[index].rent = input.value;
-      renderLease();
-    });
-    input.addEventListener("blur", () => {
-      const index = Number(input.dataset.leaseRent);
-      if (!state.lease.rows[index]) return;
-      state.lease.rows[index].rent = formatMoneyInput(state.lease.rows[index].rent, 2);
-      renderLease();
-    });
-  });
-  elements.leaseRows.querySelectorAll("[data-lease-type]").forEach((select) => {
-    select.addEventListener("change", () => {
-      const index = Number(select.dataset.leaseType);
-      if (!state.lease.rows[index]) return;
-      state.lease.rows[index].leaseType = select.value;
-      renderLease();
-    });
-  });
-}
-
-function ensureLeaseTrailingEmptyRow() {
-  if (!state.lease.rows.length) {
-    state.lease.rows.push(createLeaseRow());
-    return;
-  }
-  if (state.lease.rows.length === 1 && leaseRowHasData(state.lease.rows[0])) {
-    state.lease.rows.push(createLeaseRow());
-    return;
-  }
-  const emptyIndexes = state.lease.rows
-    .map((row, index) => ({ row, index }))
-    .filter((entry) => !leaseRowHasData(entry.row));
-  if (emptyIndexes.length > 1) {
-    emptyIndexes.slice(0, -1).reverse().forEach((entry) => state.lease.rows.splice(entry.index, 1));
-  }
-  const lastRow = state.lease.rows[state.lease.rows.length - 1];
-  if (leaseRowHasData(lastRow)) {
-    state.lease.rows.push(createLeaseRow());
-  }
-}
-
-function leaseRowHasData(row) {
-  return parseLooseNumber(row?.rent || "") !== null;
-}
-
-function renderSale() {
-  setControlValue(elements.saleSubjectSqft, state.sale.subjectSqft);
-  setControlValue(elements.saleListingDiscount, state.sale.listingDiscount);
-
-  ensureSaleTrailingEmptyRow();
-  const calculations = calculateSale();
-  const focusState = captureActiveInputState(elements.saleRows);
-
-  elements.saleRows.innerHTML = state.sale.rows.map((row, index) => {
-    const rowCalc = calculations.rows[index];
-    const listingChip = row.listing && rowCalc?.usedPsf !== null ? '<span class="chip listing">Listing Adj</span>' : "";
-    const outlierChip = rowCalc?.isOutlier ? '<span class="chip outlier">High Outlier</span>' : "";
-    return `
-      <tr class="${rowCalc?.isOutlier ? "is-outlier" : ""}">
-        <td><input type="checkbox" data-sale-include="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
-        <td>
-          <div class="sale-toggle">
-            <button type="button" class="${row.listing ? "" : "active"}" data-sale-type="${index}" data-sale-type-value="sale" tabindex="-1">Sale</button>
-            <button type="button" class="${row.listing ? "active" : ""}" data-sale-type="${index}" data-sale-type-value="listing" tabindex="-1">Listing</button>
-          </div>
-        </td>
-        <td><input class="table-input" type="text" data-focus-key="sale-price-${index}" data-sale-price="${index}" value="${escapeHtml(row.price)}" placeholder="Purchase Price..." ${rowCalc?.lockBasis ? "readonly" : ""} /></td>
-        <td><input class="table-input" type="text" data-focus-key="sale-sqft-${index}" data-sale-sqft="${index}" value="${escapeHtml(row.sqft)}" placeholder="Comp SF..." ${rowCalc?.lockBasis ? "readonly" : ""} /></td>
-        <td><input class="table-input" type="text" data-focus-key="sale-psf-${index}" data-sale-psf="${index}" value="${escapeHtml(row.psf)}" placeholder="$ / SF..." tabindex="-1" ${rowCalc?.lockPsf ? "readonly" : ""} /></td>
-        <td>
-          <div class="metric-stack">
-            <span>${rowCalc?.usedPsfLabel || "-"}</span>
-            ${listingChip}
-            ${outlierChip}
-          </div>
-        </td>
-        <td>${state.sale.rows.length > 1 ? `<button class="row-remove" type="button" data-sale-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
-      </tr>
-    `;
-  }).join("");
-
-  bindSaleRowEvents();
-  bindTabFlows();
-  if (!consumePendingFocus()) restoreActiveInputState(elements.saleRows, focusState);
-  renderSaleMetrics(calculations);
-}
-
-function renderSaleMetrics(calculations = calculateSale()) {
-  elements.saleAveragePsf.textContent = calculations.averagePsf === null ? "-" : `${formatCurrency(calculations.averagePsf, 2)} / SF`;
-  elements.saleIndicatedValue.textContent = calculations.indicatedValue === null ? "-" : formatCurrency(calculations.indicatedValue, 0);
-  elements.saleIndicatedValue.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedValue) && calculations.indicatedValue > 0)));
-  derived.saleCopyAmount = calculations.indicatedValue;
-  setCopyButtonState(elements.saleCopyBtn, calculations.indicatedValue);
-  persistState();
-}
-
-function calculateSale() {
-  const listingDiscountRate = clampPercent(state.sale.listingDiscount);
-  const rows = state.sale.rows.map((row) => {
-    const sqft = parsePositiveWholeNumber(row.sqft);
-    const price = parseLooseNumber(row.price);
-    const manualPsf = parseLooseNumber(row.psf);
-    const computedPsf = price !== null && sqft !== null && sqft > 0 ? price / sqft : null;
-    const basePsf = computedPsf ?? manualPsf;
-    const usedPsf = basePsf === null ? null : (row.listing ? basePsf * (1 - listingDiscountRate) : basePsf);
-    const hasComputedBasis = computedPsf !== null;
-    const hasManualPsf = manualPsf !== null;
-    return {
-      usedPsf,
-      usedPsfLabel: usedPsf === null ? "-" : `${formatCurrency(usedPsf, 2)} / SF`,
-      lockPsf: hasComputedBasis,
-      lockBasis: hasManualPsf && !hasComputedBasis,
-      isOutlier: false,
-    };
-  });
-
-  let outlierIndex = -1;
-  let highestMetric = -Infinity;
-  rows.forEach((row, index) => {
-    if (row.usedPsf === null) return;
-    if (row.usedPsf > highestMetric) {
-      highestMetric = row.usedPsf;
-      outlierIndex = index;
-    }
-  });
-
-  rows.forEach((row, index) => {
     row.isOutlier = index === outlierIndex;
-    const sourceRow = state.sale.rows[index];
+    const sourceRow = state.commercial.rent.rows[index];
     if (!sourceRow) return;
     if (row.isOutlier) {
       if (sourceRow.userTouched !== true) sourceRow.include = false;
@@ -1065,181 +1444,312 @@ function calculateSale() {
     }
   });
 
-  const selectedMetrics = rows
-    .map((row, index) => ({ row, source: state.sale.rows[index] }))
-    .filter((entry) => entry.source?.include && entry.row.usedPsf !== null)
-    .map((entry) => entry.row.usedPsf);
+  const selectedAdjustedRents = rows
+    .map((row, index) => ({ row, source: state.commercial.rent.rows[index] }))
+    .filter((entry) => entry.source?.include && entry.row.adjustedRent !== null)
+    .map((entry) => entry.row.adjustedRent);
+  const averageAdjustedRent = selectedAdjustedRents.length ? selectedAdjustedRents.reduce((sum, value) => sum + value, 0) / selectedAdjustedRents.length : null;
+  const subjectSqft = parsePositiveWholeNumber(state.commercial.subjectSqft);
+  const vacancyRate = clampPercent(state.commercial.rent.vacancy);
+  const potentialMonthlyNoi = averageAdjustedRent === null || subjectSqft === null ? null : averageAdjustedRent * subjectSqft;
+  const potentialAnnualNoi = potentialMonthlyNoi === null ? null : potentialMonthlyNoi * 12;
+  const annualNoiAfterVacancy = potentialAnnualNoi === null ? null : potentialAnnualNoi * (1 - vacancyRate);
+  const selectedCapValue = calculateSelectedCapValue(state.commercial.rent.startCap, state.commercial.rent.selectedCapRate, annualNoiAfterVacancy, (nextRate) => {
+    state.commercial.rent.selectedCapRate = nextRate;
+  });
 
-  const averagePsf = selectedMetrics.length
-    ? selectedMetrics.reduce((sum, value) => sum + value, 0) / selectedMetrics.length
+  return { rows, averageAdjustedRent, potentialMonthlyNoi, potentialAnnualNoi, annualNoiAfterVacancy, selectedCapValue };
+}
+
+function calculateCommercialCurrent() {
+  const additionalIncome = parseLooseNumber(state.commercial.current.additionalIncome);
+  const vacancyRate = clampPercent(state.commercial.current.vacancy);
+  const rows = state.commercial.current.rows.map((row) => {
+    const rent = parseLooseNumber(row.rent);
+    const expenseRate = getLeaseExpenseRate(row.leaseType);
+    const adjustedRent = rent === null ? null : rent * (1 - expenseRate);
+    return {
+      adjustedRent,
+      expenseLabel: `${(expenseRate * 100).toFixed(0)}%`,
+      adjustedRentLabel: adjustedRent === null ? "-" : formatCurrency(adjustedRent, 0),
+    };
+  });
+  const values = rows.map((row) => row.adjustedRent).filter((value) => value !== null);
+  const baseMonthlyIncome = values.length ? values.reduce((sum, value) => sum + value, 0) : null;
+  const totalAdditionalIncome = additionalIncome ?? 0;
+  const monthlyIncomeBeforeVacancy = baseMonthlyIncome === null ? (totalAdditionalIncome > 0 ? totalAdditionalIncome : null) : baseMonthlyIncome + totalAdditionalIncome;
+  const annualGrossIncome = monthlyIncomeBeforeVacancy === null ? null : monthlyIncomeBeforeVacancy * 12;
+  const annualNoi = annualGrossIncome === null ? null : annualGrossIncome * (1 - vacancyRate);
+  const startCapRate = parseLooseNumber(state.commercial.current.startCap);
+  const startCapValue = annualNoi === null || startCapRate === null || startCapRate <= 0 ? null : annualNoi / (startCapRate / 100);
+  const selectedCapValue = calculateSelectedCapValue(state.commercial.current.startCap, state.commercial.current.selectedCapRate, annualNoi, (nextRate) => {
+    state.commercial.current.selectedCapRate = nextRate;
+  });
+
+  return {
+    rows,
+    additionalIncome: totalAdditionalIncome,
+    baseMonthlyIncome,
+    annualGrossIncome,
+    annualNoi,
+    startCapValue,
+    selectedCapValue,
+    appliedVacancyLabel: `${(vacancyRate * 100).toFixed(1).replace(/\.0$/, "")}%`,
+  };
+}
+
+function getApartmentUnitMix() {
+  const mix = Object.fromEntries(aptRentTypeOptions.map((type) => [type.value, 0]));
+  if (state.apartment.current.rentRollMode === "grouped") {
+    state.apartment.current.groupedRows.forEach((row) => {
+      const totalUnits = parsePositiveWholeNumber(row.totalUnits);
+      if (!row.type || totalUnits === null) return;
+      mix[row.type] += totalUnits;
+    });
+    return mix;
+  }
+  state.apartment.current.rows.forEach((row) => {
+    const rent = parseLooseNumber(row.rent);
+    if (!row.type || rent === null) return;
+    mix[row.type] += 1;
+  });
+  return mix;
+}
+
+function calculateApartmentMarket(unitMix) {
+  const averageByType = Object.fromEntries(aptRentTypeOptions.map((type) => [type.value, null]));
+  const rows = state.apartment.market.rows.map((row) => {
+    const hasUnits = unitMix[row.type] > 0;
+    const rentEntries = row.rents
+      .map((value, index) => ({ index, value: parseLooseNumber(value || "") }))
+      .filter((entry) => entry.value !== null);
+
+    let outlierIndex = null;
+    if (rentEntries.length > 1) {
+      let highest = rentEntries[0];
+      rentEntries.slice(1).forEach((entry) => {
+        if (entry.value > highest.value) highest = entry;
+      });
+      outlierIndex = highest.index;
+    }
+    if (outlierIndex === null) row.includeOutlier = false;
+    const selectedValues = rentEntries
+      .filter((entry) => outlierIndex === null || row.includeOutlier || entry.index !== outlierIndex)
+      .map((entry) => entry.value);
+    const averageRent = selectedValues.length ? selectedValues.reduce((sum, value) => sum + value, 0) / selectedValues.length : null;
+    averageByType[row.type] = row.include ? averageRent : null;
+
+    return {
+      hidden: !hasUnits,
+      showOutlierToggle: hasUnits && outlierIndex !== null,
+      outlierIncluded: row.includeOutlier,
+      displayLabel: averageRent === null ? "-" : `${formatCurrency(averageRent, 0)} / mo`,
+      averageRent,
+    };
+  });
+
+  const totalUnits = Object.values(unitMix).reduce((sum, value) => sum + value, 0);
+  const annualGrossRent = totalUnits
+    ? Object.keys(unitMix).reduce((sum, key) => sum + (averageByType[key] || 0) * unitMix[key] * 12, 0)
     : null;
-  const subjectSqft = parsePositiveWholeNumber(state.sale.subjectSqft);
-  const indicatedValue = averagePsf === null || subjectSqft === null ? null : averagePsf * subjectSqft;
-  return { rows, averagePsf, indicatedValue };
+  const vacancyRate = clampPercent(state.apartment.market.vacancy);
+  const expenseRate = clampPercent(state.apartment.market.expensePercent);
+  const effectiveGrossIncome = annualGrossRent === null ? null : annualGrossRent * (1 - vacancyRate);
+  const annualNoi = effectiveGrossIncome === null ? null : effectiveGrossIncome * (1 - expenseRate);
+  const startCapRate = parseLooseNumber(state.apartment.market.startCap);
+  const startCapValue = annualNoi === null || startCapRate === null || startCapRate <= 0 ? null : annualNoi / (startCapRate / 100);
+  const selectedCapValue = calculateSelectedCapValue(state.apartment.market.startCap, state.apartment.market.selectedCapRate, annualNoi, (nextRate) => {
+    state.apartment.market.selectedCapRate = nextRate;
+  });
+
+  return { rows, averageByType, annualGrossRent, effectiveGrossIncome, annualNoi, startCapValue, selectedCapValue };
 }
 
-function bindSaleRowEvents() {
-  bindRepeatingRows(elements.saleRows, {
-    removeAttr: "data-sale-remove",
-    onRemove: (index) => {
-      if (state.sale.rows.length <= 1) return;
-      state.sale.rows.splice(index, 1);
-      renderSale();
-    },
-  });
+function calculateApartmentCurrent(unitMix, marketRentAverages) {
+  const vacancyRate = clampPercent(state.apartment.current.vacancy);
+  const expenseRate = clampPercent(state.apartment.current.expensePercent);
+  let rows;
+  let fillPlanRows;
+  let baseMonthlyIncome = null;
+  let vacantUnits = 0;
+  let totalUnits = 0;
 
-  elements.saleRows.querySelectorAll("[data-sale-include]").forEach((input) => {
-    input.addEventListener("change", () => {
-      const index = Number(input.dataset.saleInclude);
-      const row = state.sale.rows[index];
-      if (!row) return;
-      row.include = input.checked;
-      row.userTouched = true;
-      renderSale();
+  if (state.apartment.current.rentRollMode === "grouped") {
+    const fillPlanByType = Object.fromEntries(aptRentTypeOptions.map((type) => [type.value, 0]));
+    rows = state.apartment.current.groupedRows.map((row) => {
+      const totalUnitsValue = parsePositiveWholeNumber(row.totalUnits);
+      const rawVacantUnits = parseLooseNumber(row.vacantUnits);
+      const parsedVacantUnits = rawVacantUnits === null ? 0 : Math.max(0, Math.round(rawVacantUnits));
+      const vacantCount = totalUnitsValue === null ? parsedVacantUnits : Math.min(parsedVacantUnits, totalUnitsValue);
+      const occupiedUnits = totalUnitsValue === null ? null : Math.max(totalUnitsValue - vacantCount, 0);
+      const occupiedRent = occupiedUnits === 0 ? 0 : parseLooseNumber(row.occupiedRent);
+      const averageOccupiedRent = occupiedUnits && occupiedRent !== null ? occupiedRent / occupiedUnits : null;
+      const marketRent = row.type ? marketRentAverages[row.type] ?? null : null;
+      if (row.type && totalUnitsValue !== null) {
+        totalUnits += totalUnitsValue;
+        vacantUnits += vacantCount;
+        fillPlanByType[row.type] += vacantCount;
+      }
+      if (row.type && totalUnitsValue !== null && occupiedRent !== null) baseMonthlyIncome = (baseMonthlyIncome ?? 0) + occupiedRent;
+      return {
+        type: row.type,
+        totalUnits: totalUnitsValue,
+        vacantUnits: vacantCount,
+        occupiedUnits,
+        occupiedRent,
+        averageOccupiedRent,
+        occupiedUnitsLabel: occupiedUnits === null ? "-" : String(occupiedUnits),
+        averageOccupiedRentLabel: averageOccupiedRent === null ? "-" : formatCurrency(averageOccupiedRent, 0),
+        fillLabel: row.type && vacantCount > 0
+          ? marketRent === null
+            ? "Needs Market Rent"
+            : `Fill at ${formatCurrency(marketRent, 0)}`
+          : "",
+      };
     });
-  });
-  elements.saleRows.querySelectorAll("[data-sale-type]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const index = Number(button.dataset.saleType);
-      const row = state.sale.rows[index];
-      if (!row) return;
-      row.listing = button.dataset.saleTypeValue === "listing";
-      renderSale();
+    fillPlanRows = aptRentTypeOptions.map((type) => {
+      const fillVacantUnits = fillPlanByType[type.value];
+      const marketRent = marketRentAverages[type.value] ?? null;
+      return {
+        type: type.value,
+        vacantUnits: fillVacantUnits,
+        marketRent,
+        monthlyIncome: fillVacantUnits && marketRent !== null ? fillVacantUnits * marketRent : null,
+      };
+    }).filter((row) => row.vacantUnits > 0);
+  } else {
+    rows = state.apartment.current.rows.map((row) => {
+      const rent = parseLooseNumber(row.rent);
+      const isVacant = rent === 0;
+      const marketRent = row.type ? marketRentAverages[row.type] ?? null : null;
+      if (row.type && rent !== null) {
+        totalUnits += 1;
+        if (isVacant) vacantUnits += 1;
+      }
+      return {
+        type: row.type,
+        rent,
+        isVacant,
+        marketRent,
+        statusLabel: rent === null ? "-" : isVacant ? "$0" : formatCurrency(rent, 0),
+        fillLabel: isVacant
+          ? row.type
+            ? marketRent === null
+              ? "Needs Market Rent"
+              : `Fill at ${formatCurrency(marketRent, 0)}`
+            : "Select Unit Type"
+          : "",
+      };
     });
+
+    fillPlanRows = aptRentTypeOptions.map((type) => {
+      const fillVacantUnits = rows.filter((row) => row.rent === 0 && row.type === type.value).length;
+      const marketRent = marketRentAverages[type.value] ?? null;
+      return {
+        type: type.value,
+        vacantUnits: fillVacantUnits,
+        marketRent,
+        monthlyIncome: fillVacantUnits && marketRent !== null ? fillVacantUnits * marketRent : null,
+      };
+    }).filter((row) => row.vacantUnits > 0);
+
+    const incomeRows = rows.filter((row) => row.rent !== null && row.type);
+    baseMonthlyIncome = incomeRows.length ? incomeRows.reduce((sum, row) => sum + row.rent, 0) : null;
+  }
+
+  const monthlyFillIncome = fillPlanRows.reduce((sum, row) => sum + (row.monthlyIncome || 0), 0);
+  const annualGrossIncomeWithoutFill = baseMonthlyIncome === null ? null : baseMonthlyIncome * 12;
+  const effectiveGrossIncomeWithoutFill = annualGrossIncomeWithoutFill === null ? null : annualGrossIncomeWithoutFill * (1 - vacancyRate);
+  const annualNoiWithoutFill = effectiveGrossIncomeWithoutFill === null ? null : effectiveGrossIncomeWithoutFill * (1 - expenseRate);
+  const monthlyIncomeBeforeVacancy = baseMonthlyIncome === null ? (monthlyFillIncome > 0 ? monthlyFillIncome : null) : baseMonthlyIncome + monthlyFillIncome;
+  const annualGrossIncome = monthlyIncomeBeforeVacancy === null ? null : monthlyIncomeBeforeVacancy * 12;
+  const effectiveGrossIncome = annualGrossIncome === null ? null : annualGrossIncome * (1 - vacancyRate);
+  const annualNoi = effectiveGrossIncome === null ? null : effectiveGrossIncome * (1 - expenseRate);
+  const startCapRate = parseLooseNumber(state.apartment.current.startCap);
+  const startCapValueWithoutFill = annualNoiWithoutFill === null || startCapRate === null || startCapRate <= 0 ? null : annualNoiWithoutFill / (startCapRate / 100);
+  const startCapValue = annualNoi === null || startCapRate === null || startCapRate <= 0 ? null : annualNoi / (startCapRate / 100);
+  const selectedCapValue = calculateSelectedCapValue(state.apartment.current.startCap, state.apartment.current.selectedCapRate, annualNoi, (nextRate) => {
+    state.apartment.current.selectedCapRate = nextRate;
   });
-  elements.saleRows.querySelectorAll("[data-sale-sqft]").forEach((input) => {
-    input.addEventListener("input", () => updateSaleField(input.dataset.saleSqft, "sqft", input.value));
-    input.addEventListener("blur", () => {
-      const index = Number(input.dataset.saleSqft);
-      if (!state.sale.rows[index]) return;
-      state.sale.rows[index].sqft = formatWholeInput(state.sale.rows[index].sqft);
-      renderSale();
-    });
-  });
-  elements.saleRows.querySelectorAll("[data-sale-price]").forEach((input) => {
-    input.addEventListener("input", () => updateSaleField(input.dataset.salePrice, "price", input.value));
-    input.addEventListener("blur", () => {
-      const index = Number(input.dataset.salePrice);
-      if (!state.sale.rows[index]) return;
-      state.sale.rows[index].price = formatMoneyInput(state.sale.rows[index].price, 0);
-      renderSale();
-    });
-  });
-  elements.saleRows.querySelectorAll("[data-sale-psf]").forEach((input) => {
-    input.addEventListener("input", () => updateSaleField(input.dataset.salePsf, "psf", input.value));
-    input.addEventListener("blur", () => {
-      const index = Number(input.dataset.salePsf);
-      if (!state.sale.rows[index]) return;
-      state.sale.rows[index].psf = formatMoneyInput(state.sale.rows[index].psf, 2);
-      renderSale();
-    });
-  });
+  const selectedCapValueWithoutFill = annualNoiWithoutFill === null || !Number.isFinite(state.apartment.current.selectedCapRate) || state.apartment.current.selectedCapRate <= 0
+    ? null
+    : annualNoiWithoutFill / (state.apartment.current.selectedCapRate / 100);
+
+  return {
+    rows,
+    fillPlanRows,
+    monthlyFillIncome,
+    baseMonthlyIncome,
+    annualGrossIncomeWithoutFill,
+    annualNoiWithoutFill,
+    startCapValueWithoutFill,
+    selectedCapValueWithoutFill,
+    annualGrossIncome,
+    annualNoi,
+    startCapValue,
+    selectedCapValue,
+    appliedVacancyLabel: `${(vacancyRate * 100).toFixed(1).replace(/\.0$/, "")}%`,
+    apartmentVacancyLabel: totalUnits ? `${vacantUnits} / ${totalUnits} (${((vacantUnits / totalUnits) * 100).toFixed(1).replace(/\.0$/, "")}%)` : "-",
+  };
 }
 
-function updateSaleField(indexRaw, field, value) {
-  const index = Number(indexRaw);
-  const row = state.sale.rows[index];
-  if (!row) return;
-  row[field] = value;
-  if (field === "psf" && parseLooseNumber(value) !== null) {
-    row.sqft = "";
-    row.price = "";
-    renderSale();
+function renderApartmentCurrentCapResults(calculations) {
+  const tbody = elements.apartment.current.capResults;
+  tbody.innerHTML = "";
+  const startingCap = parseLooseNumber(state.apartment.current.startCap);
+  if (startingCap === null || startingCap <= 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-cell">Enter a starting cap rate to generate values.</td></tr>';
+    state.apartment.current.selectedCapRate = null;
+    derived.apartmentCurrentCopy = null;
+    setCopyButtonState(elements.apartment.current.copyBtn, null);
     return;
   }
-  if (field !== "psf" && parseLooseNumber(row.psf) !== null) {
-    row.psf = "";
-    renderSale();
-    return;
-  }
-  renderSale();
-}
 
-function ensureSaleTrailingEmptyRow() {
-  if (!state.sale.rows.length) {
-    state.sale.rows.push(createSaleRow());
-    return;
-  }
-  if (state.sale.rows.length === 1 && saleRowHasData(state.sale.rows[0])) {
-    state.sale.rows.push(createSaleRow());
-    return;
-  }
-  const emptyIndexes = state.sale.rows
-    .map((row, index) => ({ row, index }))
-    .filter((entry) => !saleRowHasData(entry.row));
-  if (emptyIndexes.length > 1) {
-    emptyIndexes.slice(0, -1).reverse().forEach((entry) => state.sale.rows.splice(entry.index, 1));
-  }
-  const lastRow = state.sale.rows[state.sale.rows.length - 1];
-  if (saleRowHasData(lastRow)) state.sale.rows.push(createSaleRow());
-}
+  const maxCap = startingCap + leaseCapStep * (leaseCapCount - 1);
+  const offset = (state.apartment.current.selectedCapRate - startingCap) / leaseCapStep;
+  const isValidSelected = Number.isFinite(state.apartment.current.selectedCapRate)
+    && state.apartment.current.selectedCapRate >= startingCap
+    && state.apartment.current.selectedCapRate <= maxCap
+    && Math.abs(offset - Math.round(offset)) < 0.001;
+  const resolvedSelected = isValidSelected ? state.apartment.current.selectedCapRate : Number(startingCap.toFixed(2));
+  let selectedValueWithFill = null;
 
-function saleRowHasData(row) {
-  return (
-    parseLooseNumber(row?.sqft || "") !== null ||
-    parseLooseNumber(row?.price || "") !== null ||
-    parseLooseNumber(row?.psf || "") !== null
-  );
-}
-
-function renderAptSale() {
-  if (elements.aptSaleEnableSf) elements.aptSaleEnableSf.checked = state.aptSale.enablePerSf;
-  setControlValue(elements.aptSaleSubjectUnits, state.aptSale.subjectUnits);
-  setControlValue(elements.aptSaleSubjectSqft, state.aptSale.subjectSqft);
-  elements.aptSaleSubjectSqftField.hidden = !state.aptSale.enablePerSf;
-  elements.aptSaleSfHeading.hidden = !state.aptSale.enablePerSf;
-  elements.aptSalePsfHeading.hidden = !state.aptSale.enablePerSf;
-  elements.aptSaleSummaryGrid.className = `summary-grid ${state.aptSale.enablePerSf ? "summary-grid-four" : "summary-grid-two"}`;
-
-  ensureAptSaleTrailingEmptyRow();
-  const calculations = calculateAptSale();
-  const focusState = captureActiveInputState(elements.aptSaleRows);
-
-  elements.aptSaleRows.innerHTML = state.aptSale.rows.map((row, index) => {
-    const rowCalc = calculations.rows[index];
-    const outlierChip = rowCalc?.isOutlier ? '<span class="chip outlier">High Outlier</span>' : "";
-    return `
-      <tr class="${rowCalc?.isOutlier ? "is-outlier" : ""}">
-        <td><input type="checkbox" data-apt-sale-include="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
-        <td><input class="table-input" type="text" data-focus-key="apt-sale-price-${index}" data-apt-sale-price="${index}" value="${escapeHtml(row.price)}" placeholder="Purchase Price..." /></td>
-        <td><input class="table-input" type="text" data-focus-key="apt-sale-units-${index}" data-apt-sale-units="${index}" value="${escapeHtml(row.units)}" placeholder="Units..." /></td>
-        <td ${state.aptSale.enablePerSf ? "" : 'hidden'}>
-          <input class="table-input" type="text" data-focus-key="apt-sale-sqft-${index}" data-apt-sale-sqft="${index}" value="${escapeHtml(row.sqft)}" placeholder="SF..." ${state.aptSale.enablePerSf ? "" : 'tabindex="-1"'} />
-        </td>
-        <td>
-          <div class="metric-stack">
-            <span>${rowCalc?.perUnitLabel || "-"}</span>
-            ${outlierChip}
-          </div>
-        </td>
-        <td ${state.aptSale.enablePerSf ? "" : 'hidden'}>${rowCalc?.perSfLabel || "-"}</td>
-        <td>${state.aptSale.rows.length > 1 ? `<button class="row-remove" type="button" data-apt-sale-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
-      </tr>
+  for (let index = 0; index < leaseCapCount; index += 1) {
+    const capRate = Number((startingCap + index * leaseCapStep).toFixed(2));
+    const impliedValueWithoutFill = calculations.annualNoiWithoutFill === null ? null : calculations.annualNoiWithoutFill / (capRate / 100);
+    const impliedValueWithFill = calculations.annualNoi === null ? null : calculations.annualNoi / (capRate / 100);
+    const row = document.createElement("tr");
+    const isSelected = Math.abs(capRate - resolvedSelected) < 0.001;
+    row.className = `cap-row${isSelected ? " is-selected" : ""}`;
+    row.innerHTML = `
+      <td>${formatCapRateDisplay(capRate)}</td>
+      <td>${impliedValueWithoutFill === null ? "-" : formatCurrency(impliedValueWithoutFill, 0)}</td>
+      <td>${impliedValueWithFill === null ? "-" : formatCurrency(impliedValueWithFill, 0)}</td>
     `;
-  }).join("");
+    row.tabIndex = 0;
+    row.addEventListener("click", () => {
+      state.apartment.current.selectedCapRate = capRate;
+      renderApartmentCurrent(getApartmentUnitMix());
+      copyAmount(impliedValueWithFill, elements.apartment.current.copyBtn, row);
+    });
+    row.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      state.apartment.current.selectedCapRate = capRate;
+      renderApartmentCurrent(getApartmentUnitMix());
+      copyAmount(impliedValueWithFill, elements.apartment.current.copyBtn, row);
+    });
+    if (isSelected) selectedValueWithFill = impliedValueWithFill;
+    tbody.appendChild(row);
+  }
 
-  bindAptSaleRowEvents();
-  bindTabFlows();
-  if (!consumePendingFocus()) restoreActiveInputState(elements.aptSaleRows, focusState);
-  renderAptSaleMetrics(calculations);
+  state.apartment.current.selectedCapRate = resolvedSelected;
+  derived.apartmentCurrentCopy = selectedValueWithFill;
+  setCopyButtonState(elements.apartment.current.copyBtn, selectedValueWithFill);
 }
 
-function renderAptSaleMetrics(calculations = calculateAptSale()) {
-  elements.aptSaleAverageUnit.textContent = calculations.averagePerUnit === null ? "-" : formatCurrency(calculations.averagePerUnit, 0);
-  elements.aptSaleIndicatedUnit.textContent = calculations.indicatedPerUnit === null ? "-" : formatCurrency(calculations.indicatedPerUnit, 0);
-  elements.aptSaleIndicatedUnit.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedPerUnit) && calculations.indicatedPerUnit > 0)));
-  elements.aptSaleAverageSfCard.hidden = !state.aptSale.enablePerSf;
-  elements.aptSaleIndicatedSfCard.hidden = !state.aptSale.enablePerSf;
-  elements.aptSaleAverageSf.textContent = calculations.averagePerSf === null ? "-" : `${formatCurrency(calculations.averagePerSf, 2)} / SF`;
-  elements.aptSaleIndicatedSf.textContent = calculations.indicatedPerSf === null ? "-" : formatCurrency(calculations.indicatedPerSf, 0);
-  elements.aptSaleIndicatedSf.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedPerSf) && calculations.indicatedPerSf > 0)));
-  derived.aptSaleCopyAmount = calculations.indicatedPerUnit;
-  setCopyButtonState(elements.aptSaleCopyBtn, calculations.indicatedPerUnit);
-  persistState();
-}
-
-function calculateAptSale() {
-  const rows = state.aptSale.rows.map((row) => {
+function calculateApartmentSale(unitMix) {
+  const rows = state.apartment.sale.rows.map((row) => {
     const price = parseLooseNumber(row.price);
     const units = parsePositiveWholeNumber(row.units);
     const sqft = parsePositiveWholeNumber(row.sqft);
@@ -1257,17 +1767,16 @@ function calculateAptSale() {
   let outlierIndex = -1;
   let highestMetric = -Infinity;
   rows.forEach((row, index) => {
-    const metric = row.perUnit;
-    if (metric === null) return;
-    if (metric > highestMetric) {
-      highestMetric = metric;
+    if (row.perUnit === null) return;
+    if (row.perUnit > highestMetric) {
+      highestMetric = row.perUnit;
       outlierIndex = index;
     }
   });
 
   rows.forEach((row, index) => {
     row.isOutlier = index === outlierIndex;
-    const sourceRow = state.aptSale.rows[index];
+    const sourceRow = state.apartment.sale.rows[index];
     if (!sourceRow) return;
     if (row.isOutlier) {
       if (sourceRow.userTouched !== true) sourceRow.include = false;
@@ -1276,623 +1785,574 @@ function calculateAptSale() {
     }
   });
 
-  const selectedRows = rows
-    .map((row, index) => ({ row, source: state.aptSale.rows[index] }))
-    .filter((entry) => entry.source?.include);
-
+  const selectedRows = rows.map((row, index) => ({ row, source: state.apartment.sale.rows[index] })).filter((entry) => entry.source?.include);
   const selectedPerUnit = selectedRows.filter((entry) => entry.row.perUnit !== null).map((entry) => entry.row.perUnit);
   const selectedPerSf = selectedRows.filter((entry) => entry.row.perSf !== null).map((entry) => entry.row.perSf);
-  const averagePerUnit = selectedPerUnit.length
-    ? selectedPerUnit.reduce((sum, value) => sum + value, 0) / selectedPerUnit.length
-    : null;
-  const averagePerSf = selectedPerSf.length
-    ? selectedPerSf.reduce((sum, value) => sum + value, 0) / selectedPerSf.length
-    : null;
-  const subjectUnits = parsePositiveWholeNumber(state.aptSale.subjectUnits);
-  const subjectSqft = parsePositiveWholeNumber(state.aptSale.subjectSqft);
-  const indicatedPerUnit = averagePerUnit === null || subjectUnits === null ? null : averagePerUnit * subjectUnits;
+  const averagePerUnit = selectedPerUnit.length ? selectedPerUnit.reduce((sum, value) => sum + value, 0) / selectedPerUnit.length : null;
+  const averagePerSf = selectedPerSf.length ? selectedPerSf.reduce((sum, value) => sum + value, 0) / selectedPerSf.length : null;
+  const subjectUnits = Object.values(unitMix).reduce((sum, value) => sum + value, 0);
+  const subjectSqft = parsePositiveWholeNumber(state.apartment.sale.subjectSqft);
+  const indicatedPerUnit = averagePerUnit === null || subjectUnits === 0 ? null : averagePerUnit * subjectUnits;
   const indicatedPerSf = averagePerSf === null || subjectSqft === null ? null : averagePerSf * subjectSqft;
   return { rows, averagePerUnit, averagePerSf, indicatedPerUnit, indicatedPerSf };
 }
 
-function bindAptSaleRowEvents() {
-  bindRepeatingRows(elements.aptSaleRows, {
-    removeAttr: "data-apt-sale-remove",
+function bindOneToFourSaleEvents() {
+  bindSaleEvents({
+    tbody: elements.oneToFour.rows,
+    rows: state.oneToFour.sale.rows,
+    render: renderOneToFour,
+    includeAttr: "data-sale-include",
+    typeAttr: "data-sale-type",
+    priceAttr: "data-sale-price",
+    sqftAttr: "data-sale-sqft",
+    psfAttr: "data-sale-psf",
+    removeAttr: "data-sale-remove",
+  });
+}
+
+function bindCommercialSaleEvents() {
+  bindSaleEvents({
+    tbody: elements.commercial.sale.rows,
+    rows: state.commercial.sale.rows,
+    render: renderCommercialSale,
+    includeAttr: "data-commercial-sale-include",
+    typeAttr: "data-commercial-sale-type",
+    priceAttr: "data-commercial-sale-price",
+    sqftAttr: "data-commercial-sale-sqft",
+    psfAttr: "data-commercial-sale-psf",
+    removeAttr: "data-commercial-sale-remove",
+  });
+}
+
+function bindSaleEvents({ tbody, rows, render, includeAttr, typeAttr, priceAttr, sqftAttr, psfAttr, removeAttr }) {
+  bindRepeatingRows(tbody, {
+    removeAttr,
     onRemove: (index) => {
-      if (state.aptSale.rows.length <= 1) return;
-      state.aptSale.rows.splice(index, 1);
-      renderAptSale();
+      if (rows.length <= 1) return;
+      rows.splice(index, 1);
+      render();
     },
   });
 
-  elements.aptSaleRows.querySelectorAll("[data-apt-sale-include]").forEach((input) => {
+  tbody.querySelectorAll(`[${includeAttr}]`).forEach((input) => {
     input.addEventListener("change", () => {
-      const index = Number(input.dataset.aptSaleInclude);
-      const row = state.aptSale.rows[index];
+      const row = rows[Number(input.getAttribute(includeAttr))];
       if (!row) return;
       row.include = input.checked;
       row.userTouched = true;
-      renderAptSale();
+      render();
     });
   });
-  elements.aptSaleRows.querySelectorAll("[data-apt-sale-price]").forEach((input) => {
-    input.addEventListener("input", () => updateAptSaleField(input.dataset.aptSalePrice, "price", input.value));
-    input.addEventListener("blur", () => {
-      const index = Number(input.dataset.aptSalePrice);
-      if (!state.aptSale.rows[index]) return;
-      state.aptSale.rows[index].price = formatMoneyInput(state.aptSale.rows[index].price, 0);
-      renderAptSale();
+  tbody.querySelectorAll(`[${typeAttr}]`).forEach((button) => {
+    const applyType = () => {
+      const row = rows[Number(button.getAttribute(typeAttr))];
+      if (!row) return;
+      row.listing = button.dataset.saleTypeValue === "listing";
+      render();
+    };
+    button.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      applyType();
+    });
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      applyType();
     });
   });
-  elements.aptSaleRows.querySelectorAll("[data-apt-sale-units]").forEach((input) => {
-    input.addEventListener("input", () => updateAptSaleField(input.dataset.aptSaleUnits, "units", input.value));
+  tbody.querySelectorAll(`[${sqftAttr}]`).forEach((input) => {
+    input.addEventListener("input", () => updateSaleField(rows, Number(input.getAttribute(sqftAttr)), "sqft", input.value, render));
     input.addEventListener("blur", () => {
-      const index = Number(input.dataset.aptSaleUnits);
-      if (!state.aptSale.rows[index]) return;
-      state.aptSale.rows[index].units = formatWholeInput(state.aptSale.rows[index].units);
-      renderAptSale();
+      const row = rows[Number(input.getAttribute(sqftAttr))];
+      if (!row) return;
+      row.sqft = formatWholeInput(row.sqft);
+      render();
     });
   });
-  elements.aptSaleRows.querySelectorAll("[data-apt-sale-sqft]").forEach((input) => {
-    input.addEventListener("input", () => updateAptSaleField(input.dataset.aptSaleSqft, "sqft", input.value));
+  tbody.querySelectorAll(`[${priceAttr}]`).forEach((input) => {
+    input.addEventListener("input", () => updateSaleField(rows, Number(input.getAttribute(priceAttr)), "price", input.value, render));
     input.addEventListener("blur", () => {
-      const index = Number(input.dataset.aptSaleSqft);
-      if (!state.aptSale.rows[index]) return;
-      state.aptSale.rows[index].sqft = formatWholeInput(state.aptSale.rows[index].sqft);
-      renderAptSale();
+      const row = rows[Number(input.getAttribute(priceAttr))];
+      if (!row) return;
+      row.price = formatMoneyInput(row.price, 0);
+      render();
+    });
+  });
+  tbody.querySelectorAll(`[${psfAttr}]`).forEach((input) => {
+    input.addEventListener("input", () => updateSaleField(rows, Number(input.getAttribute(psfAttr)), "psf", input.value, render));
+    input.addEventListener("blur", () => {
+      const row = rows[Number(input.getAttribute(psfAttr))];
+      if (!row) return;
+      row.psf = formatMoneyInput(row.psf, 2);
+      render();
     });
   });
 }
 
-function updateAptSaleField(indexRaw, field, value) {
-  const index = Number(indexRaw);
-  const row = state.aptSale.rows[index];
+function updateSaleField(rows, index, field, value, render) {
+  const row = rows[index];
   if (!row) return;
   row[field] = value;
-  renderAptSale();
-}
-
-function ensureAptSaleTrailingEmptyRow() {
-  if (!state.aptSale.rows.length) {
-    state.aptSale.rows.push(createAptSaleRow());
+  if (field === "psf" && parseLooseNumber(value) !== null) {
+    row.sqft = "";
+    row.price = "";
+    render();
     return;
   }
-  if (state.aptSale.rows.length === 1 && aptSaleRowHasData(state.aptSale.rows[0])) {
-    state.aptSale.rows.push(createAptSaleRow());
-    return;
+  if (field !== "psf" && parseLooseNumber(row.psf) !== null) {
+    row.psf = "";
   }
-  const emptyIndexes = state.aptSale.rows
-    .map((row, index) => ({ row, index }))
-    .filter((entry) => !aptSaleRowHasData(entry.row));
-  if (emptyIndexes.length > 1) {
-    emptyIndexes.slice(0, -1).reverse().forEach((entry) => state.aptSale.rows.splice(entry.index, 1));
-  }
-  const lastRow = state.aptSale.rows[state.aptSale.rows.length - 1];
-  if (aptSaleRowHasData(lastRow)) state.aptSale.rows.push(createAptSaleRow());
+  render();
 }
 
-function aptSaleRowHasData(row) {
-  return (
-    parseLooseNumber(row?.price || "") !== null ||
-    parseLooseNumber(row?.units || "") !== null ||
-    parseLooseNumber(row?.sqft || "") !== null
-  );
-}
-
-function renderAptRent() {
-  setControlValue(elements.aptRentStudio, state.aptRent.mix.studio);
-  setControlValue(elements.aptRentOnebed, state.aptRent.mix.onebed);
-  setControlValue(elements.aptRentTwobed, state.aptRent.mix.twobed);
-  setControlValue(elements.aptRentThreebed, state.aptRent.mix.threebed);
-  setControlValue(elements.aptRentVacancy, state.aptRent.vacancy);
-  setControlValue(elements.aptRentExpense, state.aptRent.expensePercent);
-  setControlValue(elements.aptRentStartCap, state.aptRent.startCap);
-
-  const calculations = calculateAptRent();
-  const focusState = captureActiveInputState(elements.aptRentRows);
-
-  elements.aptRentRows.innerHTML = state.aptRent.rows.map((row, index) => {
-    const rowCalc = calculations.rows[index];
-    const outlierButton = rowCalc?.showOutlierToggle
-      ? `<button class="mini-toggle ${rowCalc.outlierIncluded ? "" : "active"}" type="button" data-apt-rent-outlier="${index}" tabindex="-1">${rowCalc.outlierIncluded ? "Include Outlier" : "Remove Outlier"}</button>`
-      : "";
-    return `
-      <tr class="${rowCalc?.showOutlierToggle && !rowCalc.outlierIncluded ? "is-outlier" : ""}" ${rowCalc?.hidden ? 'style="display:none;"' : ""}>
-        <td><input type="checkbox" data-apt-rent-include="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
-        <td>${escapeHtml(getAptRentTypeLabel(row.type))}</td>
-        <td>
-          <div class="rent-sample-grid">
-            ${row.rents.map((value, rentIndex) => `
-              <input class="table-input" type="text" data-focus-key="apt-rent-${index}-${rentIndex}" data-apt-rent-sample="${index}" data-rent-index="${rentIndex}" value="${escapeHtml(value)}" placeholder="Rent ${rentIndex + 1}..." />
-            `).join("")}
-          </div>
-        </td>
-        <td>
-          <div class="metric-stack">
-            <span>${rowCalc?.displayLabel || "-"}</span>
-            ${outlierButton}
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join("");
-
-  bindAptRentRowEvents();
-  bindTabFlows();
-  if (!consumePendingFocus()) restoreActiveInputState(elements.aptRentRows, focusState);
-  renderAptRentMetrics(calculations);
-}
-
-function renderAptRentMetrics(calculations = calculateAptRent()) {
-  elements.aptRentAvgStudio.textContent = calculations.averageByType.studio === null ? "-" : formatCurrency(calculations.averageByType.studio, 0);
-  elements.aptRentAvgOnebed.textContent = calculations.averageByType.onebed === null ? "-" : formatCurrency(calculations.averageByType.onebed, 0);
-  elements.aptRentAvgTwobed.textContent = calculations.averageByType.twobed === null ? "-" : formatCurrency(calculations.averageByType.twobed, 0);
-  elements.aptRentAvgThreebed.textContent = calculations.averageByType.threebed === null ? "-" : formatCurrency(calculations.averageByType.threebed, 0);
-  elements.aptRentAnnualGross.textContent = calculations.annualGrossRent === null ? "-" : formatCurrency(calculations.annualGrossRent, 0);
-  elements.aptRentEffectiveGrossIncome.textContent = calculations.effectiveGrossIncome === null ? "-" : formatCurrency(calculations.effectiveGrossIncome, 0);
-  elements.aptRentAnnualNoi.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
-  elements.aptRentStartCapValue.textContent = calculations.startCapValue === null ? "-" : formatCurrency(calculations.startCapValue, 0);
-  derived.aptRentCopyAmount = calculations.selectedCapValue;
-  setCopyButtonState(elements.aptRentCopyBtn, calculations.selectedCapValue);
-
-  renderCapResults({
-    tbody: elements.aptRentCapResults,
-    startCapRaw: state.aptRent.startCap,
-    selectedCapRate: state.aptRent.selectedCapRate,
-    annualNoiAfterVacancy: calculations.annualNoi,
-    onSelect: (capRate) => {
-      state.aptRent.selectedCapRate = capRate;
-      renderAptRent();
-    },
-    emptyMessage: "Enter a starting cap rate to generate values.",
-    copyButton: elements.aptRentCopyBtn,
-    storeSelected: (capRate, value) => {
-      state.aptRent.selectedCapRate = capRate;
-      derived.aptRentCopyAmount = value;
-      setCopyButtonState(elements.aptRentCopyBtn, value);
+function bindCommercialRentEvents() {
+  bindRepeatingRows(elements.commercial.rent.rows, {
+    removeAttr: "data-commercial-rent-remove",
+    onRemove: (index) => {
+      if (state.commercial.rent.rows.length <= 1) return;
+      state.commercial.rent.rows.splice(index, 1);
+      renderCommercialRent();
     },
   });
-  persistState();
-}
 
-function calculateAptRent() {
-  const unitMix = {
-    studio: parseNonNegativeWholeNumber(state.aptRent.mix.studio || "0"),
-    onebed: parseNonNegativeWholeNumber(state.aptRent.mix.onebed || "0"),
-    twobed: parseNonNegativeWholeNumber(state.aptRent.mix.twobed || "0"),
-    threebed: parseNonNegativeWholeNumber(state.aptRent.mix.threebed || "0"),
-  };
-
-  const averageByType = {
-    studio: null,
-    onebed: null,
-    twobed: null,
-    threebed: null,
-  };
-
-  const rows = state.aptRent.rows.map((row) => {
-    const hasUnits = unitMix[row.type] > 0;
-    const rentEntries = row.rents
-      .map((value, index) => ({ index, value: parseLooseNumber(value || "") }))
-      .filter((entry) => entry.value !== null);
-
-    let outlierIndex = null;
-    if (rentEntries.length > 1) {
-      let highest = rentEntries[0];
-      rentEntries.slice(1).forEach((entry) => {
-        if (entry.value > highest.value) highest = entry;
-      });
-      outlierIndex = highest.index;
-    }
-    if (outlierIndex === null) row.includeOutlier = false;
-
-    const selectedValues = rentEntries
-      .filter((entry) => outlierIndex === null || row.includeOutlier || entry.index !== outlierIndex)
-      .map((entry) => entry.value);
-    const averageRent = hasUnits && selectedValues.length
-      ? selectedValues.reduce((sum, value) => sum + value, 0) / selectedValues.length
-      : null;
-    averageByType[row.type] = row.include ? averageRent : null;
-
-    return {
-      hidden: !hasUnits,
-      showOutlierToggle: hasUnits && outlierIndex !== null,
-      outlierIncluded: row.includeOutlier,
-      displayLabel: averageRent === null ? "-" : `${formatCurrency(averageRent, 0)} / mo`,
-      averageRent,
-    };
-  });
-
-  const totalUnits = Object.values(unitMix).reduce((sum, value) => sum + value, 0);
-  const annualGrossRent = totalUnits
-    ? Object.keys(unitMix).reduce((sum, key) => {
-        const averageRent = averageByType[key] || 0;
-        return sum + averageRent * unitMix[key] * 12;
-      }, 0)
-    : null;
-  const vacancyRate = clampPercent(state.aptRent.vacancy);
-  const expenseRate = clampPercent(state.aptRent.expensePercent);
-  const effectiveGrossIncome = annualGrossRent === null ? null : annualGrossRent * (1 - vacancyRate);
-  const annualNoi = effectiveGrossIncome === null ? null : effectiveGrossIncome * (1 - expenseRate);
-  const startCapRate = parseLooseNumber(state.aptRent.startCap);
-  const startCapValue =
-    annualNoi === null || startCapRate === null || startCapRate <= 0
-      ? null
-      : annualNoi / (startCapRate / 100);
-  const selectedCapValue = calculateSelectedCapValue(state.aptRent.startCap, state.aptRent.selectedCapRate, annualNoi, (nextRate) => {
-    state.aptRent.selectedCapRate = nextRate;
-  });
-
-  return {
-    rows,
-    averageByType,
-    annualGrossRent,
-    effectiveGrossIncome,
-    annualNoi,
-    startCapValue,
-    selectedCapValue,
-  };
-}
-
-function bindAptRentRowEvents() {
-  elements.aptRentRows.querySelectorAll("[data-apt-rent-include]").forEach((input) => {
+  elements.commercial.rent.rows.querySelectorAll("[data-commercial-rent-include]").forEach((input) => {
     input.addEventListener("change", () => {
-      const index = Number(input.dataset.aptRentInclude);
-      const row = state.aptRent.rows[index];
+      const row = state.commercial.rent.rows[Number(input.dataset.commercialRentInclude)];
       if (!row) return;
       row.include = input.checked;
       row.userTouched = true;
-      renderAptRent();
+      renderCommercialRent();
     });
   });
-  elements.aptRentRows.querySelectorAll("[data-apt-rent-sample]").forEach((input) => {
+  elements.commercial.rent.rows.querySelectorAll("[data-commercial-rent-rent]").forEach((input) => {
     input.addEventListener("input", () => {
-      const rowIndex = Number(input.dataset.aptRentSample);
-      const rentIndex = Number(input.dataset.rentIndex);
-      const row = state.aptRent.rows[rowIndex];
-      if (!row) return;
-      row.rents[rentIndex] = input.value;
-      renderAptRent();
-    });
-    input.addEventListener("blur", () => {
-      const rowIndex = Number(input.dataset.aptRentSample);
-      const rentIndex = Number(input.dataset.rentIndex);
-      const row = state.aptRent.rows[rowIndex];
-      if (!row) return;
-      row.rents[rentIndex] = formatMoneyInput(row.rents[rentIndex], 0);
-      renderAptRent();
-    });
-  });
-  elements.aptRentRows.querySelectorAll("[data-apt-rent-outlier]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const index = Number(button.dataset.aptRentOutlier);
-      const row = state.aptRent.rows[index];
-      if (!row) return;
-      row.includeOutlier = !row.includeOutlier;
-      renderAptRent();
-    });
-  });
-}
-
-function renderCurrentRent() {
-  const isCommercial = state.currentRent.mode === "commercial";
-  const commercialFocusState = captureActiveInputState(elements.currentRentCommercialRows);
-  const apartmentFocusState = captureActiveInputState(elements.currentRentApartmentRows);
-
-  if (isCommercial) {
-    ensureCurrentRentCommercialTrailingEmptyRow();
-  } else {
-    ensureCurrentRentApartmentTrailingEmptyRow();
-  }
-  const calculations = calculateCurrentRent();
-
-  elements.currentRentModeButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.currentRentMode === state.currentRent.mode);
-  });
-  setControlValue(elements.currentRentStartCap, state.currentRent.startCap);
-  setControlValue(elements.currentRentAdditionalIncome, state.currentRent.additionalIncome);
-  setControlValue(elements.currentRentVacancy, state.currentRent.vacancy);
-  setControlValue(elements.currentRentExpense, state.currentRent.apartment.expensePercent);
-  elements.currentRentExpenseField.hidden = isCommercial;
-  elements.currentRentCommercialTable.hidden = !isCommercial;
-  elements.currentRentApartmentTable.hidden = isCommercial;
-  elements.currentRentCommercialHint.hidden = !isCommercial;
-  elements.currentRentApartmentHint.hidden = isCommercial;
-
-  if (isCommercial) {
-    elements.currentRentCommercialRows.innerHTML = state.currentRent.commercial.rows.map((row, index) => {
-      const rowCalc = calculations.commercialRows[index];
-      return `
-        <tr>
-          <td><input class="table-input" type="text" data-focus-key="current-rent-commercial-rent-${index}" data-current-rent-commercial-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Current monthly rent..." /></td>
-          <td>
-            <select class="table-select" data-focus-key="current-rent-commercial-type-${index}" data-current-rent-commercial-type="${index}" tabindex="-1">
-              <option value="nnn" ${row.leaseType === "nnn" ? "selected" : ""}>NNN</option>
-              <option value="modified" ${row.leaseType === "modified" ? "selected" : ""}>Modified</option>
-              <option value="gross" ${row.leaseType === "gross" ? "selected" : ""}>Gross</option>
-            </select>
-          </td>
-          <td>${rowCalc?.expenseLabel || "10%"}</td>
-          <td>${rowCalc?.adjustedRentLabel || "-"}</td>
-          <td>${state.currentRent.commercial.rows.length > 1 ? `<button class="row-remove" type="button" data-current-rent-commercial-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
-        </tr>
-      `;
-    }).join("");
-    bindCurrentRentCommercialRowEvents();
-  } else {
-    elements.currentRentApartmentRows.innerHTML = state.currentRent.apartment.rows.map((row, index) => {
-      const rowCalc = calculations.apartmentRows[index];
-      return `
-        <tr class="${rowCalc?.isVacant ? "is-outlier" : ""}">
-          <td><input class="table-input" type="text" data-focus-key="current-rent-apartment-rent-${index}" data-current-rent-apartment-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Current monthly rent..." /></td>
-          <td>
-            <div class="metric-stack">
-              <span>${rowCalc?.statusLabel || "-"}</span>
-              ${rowCalc?.isVacant ? '<span class="chip outlier">Vacant Unit</span>' : ""}
-            </div>
-          </td>
-          <td>${state.currentRent.apartment.rows.length > 1 ? `<button class="row-remove" type="button" data-current-rent-apartment-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
-        </tr>
-      `;
-    }).join("");
-    bindCurrentRentApartmentRowEvents();
-  }
-
-  bindTabFlows();
-  if (!consumePendingFocus()) {
-    if (isCommercial) {
-      restoreActiveInputState(elements.currentRentCommercialRows, commercialFocusState);
-    } else {
-      restoreActiveInputState(elements.currentRentApartmentRows, apartmentFocusState);
-    }
-  }
-  renderCurrentRentMetrics(calculations);
-}
-
-function renderCurrentRentMetrics(calculations = calculateCurrentRent()) {
-  const isCommercial = state.currentRent.mode === "commercial";
-  const appliedVacancyLabel = state.currentRent.vacancy === "" ? "Optional Vacancy" : "Vacancy Applied";
-  if (elements.currentRentSummary7Card) {
-    elements.currentRentSummary7Card.hidden = isCommercial;
-  }
-
-  if (isCommercial) {
-    elements.currentRentSummary1Label.textContent = "Adjusted Monthly Rent";
-    elements.currentRentSummary1.textContent = calculations.baseMonthlyIncome === null ? "-" : formatCurrency(calculations.baseMonthlyIncome, 0);
-    elements.currentRentSummary2Label.textContent = "Monthly Fill Income";
-    elements.currentRentSummary2.textContent = formatCurrency(calculations.additionalIncome, 0);
-    elements.currentRentSummary3Label.textContent = "Annual Gross Income";
-    elements.currentRentSummary3.textContent = calculations.annualGrossIncome === null ? "-" : formatCurrency(calculations.annualGrossIncome, 0);
-    elements.currentRentSummary4Label.textContent = "Annual NOI";
-    elements.currentRentSummary4.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
-  } else {
-    elements.currentRentSummary1Label.textContent = "Current Monthly Rent";
-    elements.currentRentSummary1.textContent = calculations.baseMonthlyIncome === null ? "-" : formatCurrency(calculations.baseMonthlyIncome, 0);
-    elements.currentRentSummary2Label.textContent = "Annual Gross Income";
-    elements.currentRentSummary2.textContent = calculations.annualGrossIncome === null ? "-" : formatCurrency(calculations.annualGrossIncome, 0);
-    elements.currentRentSummary3Label.textContent = "Effective Gross Income";
-    elements.currentRentSummary3.textContent = calculations.effectiveGrossIncome === null ? "-" : formatCurrency(calculations.effectiveGrossIncome, 0);
-    elements.currentRentSummary4Label.textContent = "Annual NOI After Expenses";
-    elements.currentRentSummary4.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
-    elements.currentRentSummary7Label.textContent = "Vacant Units";
-    elements.currentRentSummary7.textContent = calculations.apartmentVacancyLabel;
-  }
-
-  elements.currentRentSummary5Label.textContent = "Value at Start Cap";
-  elements.currentRentSummary5.textContent = calculations.startCapValue === null ? "-" : formatCurrency(calculations.startCapValue, 0);
-  elements.currentRentSummary6Label.textContent = appliedVacancyLabel;
-  elements.currentRentSummary6.textContent = calculations.appliedVacancyLabel;
-
-  derived.currentRentCopyAmount = calculations.selectedCapValue;
-  setCopyButtonState(elements.currentRentCopyBtn, calculations.selectedCapValue);
-
-  renderCapResults({
-    tbody: elements.currentRentCapResults,
-    startCapRaw: state.currentRent.startCap,
-    selectedCapRate: state.currentRent.selectedCapRate,
-    annualNoiAfterVacancy: calculations.annualNoi,
-    onSelect: (capRate) => {
-      state.currentRent.selectedCapRate = capRate;
-      renderCurrentRent();
-    },
-    emptyMessage: "Enter a starting cap rate to generate values.",
-    copyButton: elements.currentRentCopyBtn,
-    storeSelected: (capRate, value) => {
-      state.currentRent.selectedCapRate = capRate;
-      derived.currentRentCopyAmount = value;
-      setCopyButtonState(elements.currentRentCopyBtn, value);
-    },
-  });
-  persistState();
-}
-
-function calculateCurrentRent() {
-  const isCommercial = state.currentRent.mode === "commercial";
-  const additionalIncome = parseLooseNumber(state.currentRent.additionalIncome);
-  const vacancyRate = clampPercent(state.currentRent.vacancy);
-  const commercialRows = state.currentRent.commercial.rows.map((row) => {
-    const rent = parseLooseNumber(row.rent);
-    const expenseRate = getLeaseExpenseRate(row.leaseType);
-    const adjustedRent = rent === null ? null : rent * (1 - expenseRate);
-    return {
-      adjustedRent,
-      expenseLabel: `${(expenseRate * 100).toFixed(0)}%`,
-      adjustedRentLabel: adjustedRent === null ? "-" : formatCurrency(adjustedRent, 0),
-    };
-  });
-  const apartmentRows = state.currentRent.apartment.rows.map((row) => {
-    const rent = parseLooseNumber(row.rent);
-    const isVacant = rent === 0;
-    return {
-      rent,
-      isVacant,
-      statusLabel: rent === null ? "-" : isVacant ? "$0" : formatCurrency(rent, 0),
-    };
-  });
-
-  const commercialValues = commercialRows.map((row) => row.adjustedRent).filter((value) => value !== null);
-  const apartmentValues = apartmentRows.map((row) => row.rent).filter((value) => value !== null);
-  const baseMonthlyIncome = isCommercial
-    ? (commercialValues.length ? commercialValues.reduce((sum, value) => sum + value, 0) : null)
-    : (apartmentValues.length ? apartmentValues.reduce((sum, value) => sum + value, 0) : null);
-  const totalAdditionalIncome = additionalIncome ?? 0;
-  const monthlyIncomeBeforeVacancy = baseMonthlyIncome === null ? (totalAdditionalIncome > 0 ? totalAdditionalIncome : null) : baseMonthlyIncome + totalAdditionalIncome;
-  const annualGrossIncome = monthlyIncomeBeforeVacancy === null ? null : monthlyIncomeBeforeVacancy * 12;
-  const annualIncomeAfterVacancy = annualGrossIncome === null ? null : annualGrossIncome * (1 - vacancyRate);
-  const expenseRate = isCommercial ? 0 : clampPercent(state.currentRent.apartment.expensePercent);
-  const effectiveGrossIncome = isCommercial ? annualIncomeAfterVacancy : annualIncomeAfterVacancy;
-  const annualNoi = effectiveGrossIncome === null ? null : effectiveGrossIncome * (1 - expenseRate);
-  const startCapRate = parseLooseNumber(state.currentRent.startCap);
-  const startCapValue =
-    annualNoi === null || startCapRate === null || startCapRate <= 0
-      ? null
-      : annualNoi / (startCapRate / 100);
-  const totalApartmentRows = apartmentRows.filter((row, index) => currentRentApartmentRowHasData(state.currentRent.apartment.rows[index])).length;
-  const vacantApartmentRows = apartmentRows.filter((row, index) => currentRentApartmentRowHasData(state.currentRent.apartment.rows[index]) && row.isVacant).length;
-  const apartmentVacancyRate = totalApartmentRows ? vacantApartmentRows / totalApartmentRows : null;
-  const selectedCapValue = calculateSelectedCapValue(state.currentRent.startCap, state.currentRent.selectedCapRate, annualNoi, (nextRate) => {
-    state.currentRent.selectedCapRate = nextRate;
-  });
-
-  return {
-    commercialRows,
-    apartmentRows,
-    additionalIncome: totalAdditionalIncome,
-    baseMonthlyIncome,
-    monthlyIncomeBeforeVacancy,
-    annualGrossIncome,
-    effectiveGrossIncome,
-    annualNoi,
-    startCapValue,
-    selectedCapValue,
-    appliedVacancyLabel: `${(vacancyRate * 100).toFixed(1).replace(/\.0$/, "")}%`,
-    apartmentVacancyLabel:
-      apartmentVacancyRate === null
-        ? "-"
-        : `${vacantApartmentRows} / ${totalApartmentRows} (${(apartmentVacancyRate * 100).toFixed(1).replace(/\.0$/, "")}%)`,
-  };
-}
-
-function bindCurrentRentCommercialRowEvents() {
-  bindRepeatingRows(elements.currentRentCommercialRows, {
-    removeAttr: "data-current-rent-commercial-remove",
-    onRemove: (index) => {
-      if (state.currentRent.commercial.rows.length <= 1) return;
-      state.currentRent.commercial.rows.splice(index, 1);
-      renderCurrentRent();
-    },
-  });
-
-  elements.currentRentCommercialRows.querySelectorAll("[data-current-rent-commercial-rent]").forEach((input) => {
-    input.addEventListener("input", () => {
-      const index = Number(input.dataset.currentRentCommercialRent);
-      const row = state.currentRent.commercial.rows[index];
+      const row = state.commercial.rent.rows[Number(input.dataset.commercialRentRent)];
       if (!row) return;
       row.rent = input.value;
-      renderCurrentRent();
+      renderCommercialRent();
     });
     input.addEventListener("blur", () => {
-      const index = Number(input.dataset.currentRentCommercialRent);
-      const row = state.currentRent.commercial.rows[index];
+      const row = state.commercial.rent.rows[Number(input.dataset.commercialRentRent)];
       if (!row) return;
-      row.rent = formatMoneyInput(row.rent, 0);
-      renderCurrentRent();
+      row.rent = formatMoneyInput(row.rent, 2);
+      renderCommercialRent();
     });
   });
-
-  elements.currentRentCommercialRows.querySelectorAll("[data-current-rent-commercial-type]").forEach((select) => {
+  elements.commercial.rent.rows.querySelectorAll("[data-commercial-rent-type]").forEach((select) => {
     select.addEventListener("change", () => {
-      const index = Number(select.dataset.currentRentCommercialType);
-      const row = state.currentRent.commercial.rows[index];
+      const row = state.commercial.rent.rows[Number(select.dataset.commercialRentType)];
       if (!row) return;
       row.leaseType = select.value;
-      renderCurrentRent();
+      renderCommercialRent();
     });
   });
 }
 
-function bindCurrentRentApartmentRowEvents() {
-  bindRepeatingRows(elements.currentRentApartmentRows, {
-    removeAttr: "data-current-rent-apartment-remove",
+function bindCommercialCurrentEvents() {
+  bindRepeatingRows(elements.commercial.current.rows, {
+    removeAttr: "data-commercial-current-remove",
     onRemove: (index) => {
-      if (state.currentRent.apartment.rows.length <= 1) return;
-      state.currentRent.apartment.rows.splice(index, 1);
-      renderCurrentRent();
+      if (state.commercial.current.rows.length <= 1) return;
+      state.commercial.current.rows.splice(index, 1);
+      renderCommercialCurrent();
     },
   });
 
-  elements.currentRentApartmentRows.querySelectorAll("[data-current-rent-apartment-rent]").forEach((input) => {
+  elements.commercial.current.rows.querySelectorAll("[data-commercial-current-rent]").forEach((input) => {
     input.addEventListener("input", () => {
-      const index = Number(input.dataset.currentRentApartmentRent);
-      const row = state.currentRent.apartment.rows[index];
+      const row = state.commercial.current.rows[Number(input.dataset.commercialCurrentRent)];
       if (!row) return;
       row.rent = input.value;
-      renderCurrentRent();
+      renderCommercialCurrent();
     });
     input.addEventListener("blur", () => {
-      const index = Number(input.dataset.currentRentApartmentRent);
-      const row = state.currentRent.apartment.rows[index];
+      const row = state.commercial.current.rows[Number(input.dataset.commercialCurrentRent)];
       if (!row) return;
       row.rent = formatMoneyInput(row.rent, 0);
-      renderCurrentRent();
+      renderCommercialCurrent();
     });
   });
+  elements.commercial.current.rows.querySelectorAll("[data-commercial-current-type]").forEach((select) => {
+    select.addEventListener("change", () => {
+      const row = state.commercial.current.rows[Number(select.dataset.commercialCurrentType)];
+      if (!row) return;
+      row.leaseType = select.value;
+      renderCommercialCurrent();
+    });
+  });
+}
+
+function bindApartmentCurrentEvents() {
+  if (state.apartment.current.rentRollMode === "grouped") {
+    bindRepeatingRows(elements.apartment.current.rows, {
+      removeAttr: "data-apartment-grouped-remove",
+      onRemove: (index) => {
+        if (state.apartment.current.groupedRows.length <= 1) return;
+        state.apartment.current.groupedRows.splice(index, 1);
+        renderApartment();
+      },
+    });
+
+    elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-type]").forEach((select) => {
+      select.addEventListener("change", () => {
+        const row = state.apartment.current.groupedRows[Number(select.dataset.apartmentGroupedType)];
+        if (!row) return;
+        row.type = select.value;
+        renderApartment();
+      });
+    });
+    elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-total-units]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedTotalUnits)];
+        if (!row) return;
+        row.totalUnits = input.value;
+      });
+      input.addEventListener("change", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedTotalUnits)];
+        if (!row) return;
+        row.totalUnits = input.value;
+        renderApartment();
+      });
+      input.addEventListener("blur", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedTotalUnits)];
+        if (!row) return;
+        row.totalUnits = formatWholeInput(row.totalUnits);
+        row.vacantUnits = formatWholeInput(clampGroupedVacantUnits(row.totalUnits, row.vacantUnits));
+        renderApartment();
+      });
+    });
+    elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-occupied-rent]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedOccupiedRent)];
+        if (!row) return;
+        row.occupiedRent = input.value;
+      });
+      input.addEventListener("change", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedOccupiedRent)];
+        if (!row) return;
+        row.occupiedRent = input.value;
+        renderApartment();
+      });
+      input.addEventListener("blur", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedOccupiedRent)];
+        if (!row) return;
+        const occupiedUnits = getGroupedOccupiedUnits(row);
+        row.occupiedRent = occupiedUnits === 0 ? formatMoneyInput("0", 0) : formatMoneyInput(row.occupiedRent, 0);
+        renderApartment();
+      });
+    });
+    elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-vacant-units]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedVacantUnits)];
+        if (!row) return;
+        row.vacantUnits = input.value;
+      });
+      input.addEventListener("change", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedVacantUnits)];
+        if (!row) return;
+        row.vacantUnits = input.value;
+        renderApartment();
+      });
+      input.addEventListener("blur", () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedVacantUnits)];
+        if (!row) return;
+        row.vacantUnits = formatWholeInput(clampGroupedVacantUnits(row.totalUnits, row.vacantUnits));
+        renderApartment();
+      });
+    });
+    return;
+  }
+
+  bindRepeatingRows(elements.apartment.current.rows, {
+    removeAttr: "data-apartment-current-remove",
+    onRemove: (index) => {
+      if (state.apartment.current.rows.length <= 1) return;
+      state.apartment.current.rows.splice(index, 1);
+      renderApartment();
+    },
+  });
+
+  elements.apartment.current.rows.querySelectorAll("[data-apartment-current-type]").forEach((select) => {
+    select.addEventListener("change", () => {
+      const row = state.apartment.current.rows[Number(select.dataset.apartmentCurrentType)];
+      if (!row) return;
+      row.type = select.value;
+      renderApartment();
+    });
+  });
+  elements.apartment.current.rows.querySelectorAll("[data-apartment-current-rent]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const row = state.apartment.current.rows[Number(input.dataset.apartmentCurrentRent)];
+      if (!row) return;
+      row.rent = input.value;
+      renderApartment();
+    });
+    input.addEventListener("blur", () => {
+      const row = state.apartment.current.rows[Number(input.dataset.apartmentCurrentRent)];
+      if (!row) return;
+      row.rent = formatMoneyInput(row.rent, 0);
+      renderApartment();
+    });
+  });
+}
+
+function bindApartmentMarketEvents() {
+  elements.apartment.market.rows.querySelectorAll("[data-apartment-market-include]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const row = state.apartment.market.rows[Number(input.dataset.apartmentMarketInclude)];
+      if (!row) return;
+      row.include = input.checked;
+      row.userTouched = true;
+      renderApartment();
+    });
+  });
+  elements.apartment.market.rows.querySelectorAll("[data-apartment-market-sample]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const row = state.apartment.market.rows[Number(input.dataset.apartmentMarketSample)];
+      if (!row) return;
+      row.rents[Number(input.dataset.rentIndex)] = input.value;
+      renderApartment();
+    });
+    input.addEventListener("blur", () => {
+      const row = state.apartment.market.rows[Number(input.dataset.apartmentMarketSample)];
+      if (!row) return;
+      const rentIndex = Number(input.dataset.rentIndex);
+      row.rents[rentIndex] = formatMoneyInput(row.rents[rentIndex], 0);
+      renderApartment();
+    });
+  });
+  elements.apartment.market.rows.querySelectorAll("[data-apartment-market-outlier]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const row = state.apartment.market.rows[Number(button.dataset.apartmentMarketOutlier)];
+      if (!row) return;
+      row.includeOutlier = !row.includeOutlier;
+      renderApartment();
+    });
+  });
+}
+
+function bindApartmentSaleEvents() {
+  bindRepeatingRows(elements.apartment.sale.rows, {
+    removeAttr: "data-apartment-sale-remove",
+    onRemove: (index) => {
+      if (state.apartment.sale.rows.length <= 1) return;
+      state.apartment.sale.rows.splice(index, 1);
+      renderApartment();
+    },
+  });
+
+  elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-include]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const row = state.apartment.sale.rows[Number(input.dataset.apartmentSaleInclude)];
+      if (!row) return;
+      row.include = input.checked;
+      row.userTouched = true;
+      renderApartment();
+    });
+  });
+  elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-price]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const row = state.apartment.sale.rows[Number(input.dataset.apartmentSalePrice)];
+      if (!row) return;
+      row.price = input.value;
+      renderApartment();
+    });
+    input.addEventListener("blur", () => {
+      const row = state.apartment.sale.rows[Number(input.dataset.apartmentSalePrice)];
+      if (!row) return;
+      row.price = formatMoneyInput(row.price, 0);
+      renderApartment();
+    });
+  });
+  elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-units]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const row = state.apartment.sale.rows[Number(input.dataset.apartmentSaleUnits)];
+      if (!row) return;
+      row.units = input.value;
+      renderApartment();
+    });
+    input.addEventListener("blur", () => {
+      const row = state.apartment.sale.rows[Number(input.dataset.apartmentSaleUnits)];
+      if (!row) return;
+      row.units = formatWholeInput(row.units);
+      renderApartment();
+    });
+  });
+  elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-sqft]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const row = state.apartment.sale.rows[Number(input.dataset.apartmentSaleSqft)];
+      if (!row) return;
+      row.sqft = input.value;
+      renderApartment();
+    });
+    input.addEventListener("blur", () => {
+      const row = state.apartment.sale.rows[Number(input.dataset.apartmentSaleSqft)];
+      if (!row) return;
+      row.sqft = formatWholeInput(row.sqft);
+      renderApartment();
+    });
+  });
+}
+
+function ensureLeaseTrailingEmptyRow(rows) {
+  if (!rows.length) {
+    rows.push(createLeaseRow());
+    return;
+  }
+  if (rows.length === 1 && leaseRowHasData(rows[0])) {
+    rows.push(createLeaseRow());
+    return;
+  }
+  const emptyIndexes = rows.map((row, index) => ({ row, index })).filter((entry) => !leaseRowHasData(entry.row));
+  if (emptyIndexes.length > 1) emptyIndexes.slice(0, -1).reverse().forEach((entry) => rows.splice(entry.index, 1));
+  const lastRow = rows[rows.length - 1];
+  if (leaseRowHasData(lastRow)) rows.push(createLeaseRow());
+}
+
+function ensureSaleTrailingEmptyRow(rows) {
+  if (!rows.length) {
+    rows.push(createSaleRow());
+    return;
+  }
+  if (rows.length === 1 && saleRowHasData(rows[0])) {
+    rows.push(createSaleRow());
+    return;
+  }
+  const emptyIndexes = rows.map((row, index) => ({ row, index })).filter((entry) => !saleRowHasData(entry.row));
+  if (emptyIndexes.length > 1) emptyIndexes.slice(0, -1).reverse().forEach((entry) => rows.splice(entry.index, 1));
+  const lastRow = rows[rows.length - 1];
+  if (saleRowHasData(lastRow)) rows.push(createSaleRow());
+}
+
+function ensureAptSaleTrailingEmptyRow(rows) {
+  if (!rows.length) {
+    rows.push(createAptSaleRow());
+    return;
+  }
+  if (rows.length === 1 && aptSaleRowHasData(rows[0])) {
+    rows.push(createAptSaleRow());
+    return;
+  }
+  const emptyIndexes = rows.map((row, index) => ({ row, index })).filter((entry) => !aptSaleRowHasData(entry.row));
+  if (emptyIndexes.length > 1) emptyIndexes.slice(0, -1).reverse().forEach((entry) => rows.splice(entry.index, 1));
+  const lastRow = rows[rows.length - 1];
+  if (aptSaleRowHasData(lastRow)) rows.push(createAptSaleRow());
 }
 
 function ensureCurrentRentCommercialTrailingEmptyRow() {
-  if (!state.currentRent.commercial.rows.length) {
-    state.currentRent.commercial.rows.push(createCurrentRentCommercialRow());
+  const rows = state.commercial.current.rows;
+  if (!rows.length) {
+    rows.push(createCurrentRentCommercialRow());
     return;
   }
-  if (
-    state.currentRent.commercial.rows.length === 1 &&
-    currentRentCommercialRowHasData(state.currentRent.commercial.rows[0])
-  ) {
-    state.currentRent.commercial.rows.push(createCurrentRentCommercialRow());
+  if (rows.length === 1 && currentRentCommercialRowHasData(rows[0])) {
+    rows.push(createCurrentRentCommercialRow());
     return;
   }
-  const emptyIndexes = state.currentRent.commercial.rows
-    .map((row, index) => ({ row, index }))
-    .filter((entry) => !currentRentCommercialRowHasData(entry.row));
-  if (emptyIndexes.length > 1) {
-    emptyIndexes.slice(0, -1).reverse().forEach((entry) => state.currentRent.commercial.rows.splice(entry.index, 1));
-  }
-  const lastRow = state.currentRent.commercial.rows[state.currentRent.commercial.rows.length - 1];
-  if (currentRentCommercialRowHasData(lastRow)) {
-    state.currentRent.commercial.rows.push(createCurrentRentCommercialRow());
-  }
+  const emptyIndexes = rows.map((row, index) => ({ row, index })).filter((entry) => !currentRentCommercialRowHasData(entry.row));
+  if (emptyIndexes.length > 1) emptyIndexes.slice(0, -1).reverse().forEach((entry) => rows.splice(entry.index, 1));
+  const lastRow = rows[rows.length - 1];
+  if (currentRentCommercialRowHasData(lastRow)) rows.push(createCurrentRentCommercialRow());
 }
 
-function ensureCurrentRentApartmentTrailingEmptyRow() {
-  if (!state.currentRent.apartment.rows.length) {
-    state.currentRent.apartment.rows.push(createCurrentRentApartmentRow());
+function ensureApartmentRentRollTrailingEmptyRow() {
+  const rows = state.apartment.current.rows;
+  if (!rows.length) {
+    rows.push(createApartmentRentRollRow());
     return;
   }
-  if (
-    state.currentRent.apartment.rows.length === 1 &&
-    currentRentApartmentRowHasData(state.currentRent.apartment.rows[0])
-  ) {
-    state.currentRent.apartment.rows.push(createCurrentRentApartmentRow());
+  if (rows.length === 1 && apartmentRentRollRowHasData(rows[0])) {
+    rows.push(createApartmentRentRollRow());
     return;
   }
-  const emptyIndexes = state.currentRent.apartment.rows
-    .map((row, index) => ({ row, index }))
-    .filter((entry) => !currentRentApartmentRowHasData(entry.row));
-  if (emptyIndexes.length > 1) {
-    emptyIndexes.slice(0, -1).reverse().forEach((entry) => state.currentRent.apartment.rows.splice(entry.index, 1));
+  const emptyIndexes = rows.map((row, index) => ({ row, index })).filter((entry) => !apartmentRentRollRowHasData(entry.row));
+  if (emptyIndexes.length > 1) emptyIndexes.slice(0, -1).reverse().forEach((entry) => rows.splice(entry.index, 1));
+  const lastRow = rows[rows.length - 1];
+  if (apartmentRentRollRowHasData(lastRow)) rows.push(createApartmentRentRollRow());
+}
+
+function ensureApartmentGroupedRentRollTrailingEmptyRow() {
+  const rows = state.apartment.current.groupedRows;
+  if (!rows.length) {
+    rows.push(createApartmentGroupedRentRollRow());
+    return;
   }
-  const lastRow = state.currentRent.apartment.rows[state.currentRent.apartment.rows.length - 1];
-  if (currentRentApartmentRowHasData(lastRow)) {
-    state.currentRent.apartment.rows.push(createCurrentRentApartmentRow());
+  if (rows.length === 1 && apartmentGroupedRentRollRowHasData(rows[0])) {
+    rows.push(createApartmentGroupedRentRollRow());
+    return;
   }
+  const emptyIndexes = rows.map((row, index) => ({ row, index })).filter((entry) => !apartmentGroupedRentRollRowHasData(entry.row));
+  if (emptyIndexes.length > 1) emptyIndexes.slice(0, -1).reverse().forEach((entry) => rows.splice(entry.index, 1));
+  const lastRow = rows[rows.length - 1];
+  if (apartmentGroupedRentRollRowHasData(lastRow)) rows.push(createApartmentGroupedRentRollRow());
+}
+
+function leaseRowHasData(row) {
+  return parseLooseNumber(row?.rent || "") !== null;
+}
+
+function saleRowHasData(row) {
+  return parseLooseNumber(row?.sqft || "") !== null || parseLooseNumber(row?.price || "") !== null || parseLooseNumber(row?.psf || "") !== null;
+}
+
+function aptSaleRowHasData(row) {
+  return parseLooseNumber(row?.price || "") !== null || parseLooseNumber(row?.units || "") !== null || parseLooseNumber(row?.sqft || "") !== null;
 }
 
 function currentRentCommercialRowHasData(row) {
   return parseLooseNumber(row?.rent || "") !== null;
 }
 
-function currentRentApartmentRowHasData(row) {
-  return parseLooseNumber(row?.rent || "") !== null;
+function apartmentRentRollRowHasData(row) {
+  return String(row?.type || "").trim() !== "" || parseLooseNumber(row?.rent || "") !== null;
+}
+
+function apartmentGroupedRentRollRowHasData(row) {
+  return String(row?.type || "").trim() !== ""
+    || parseLooseNumber(row?.totalUnits || "") !== null
+    || parseLooseNumber(row?.occupiedRent || "") !== null
+    || parseLooseNumber(row?.vacantUnits || "") !== null;
+}
+
+function clampGroupedVacantUnits(totalUnitsRaw, vacantUnitsRaw) {
+  const totalUnits = parsePositiveWholeNumber(totalUnitsRaw);
+  const vacantUnits = parseLooseNumber(vacantUnitsRaw);
+  if (vacantUnits === null) return "";
+  const roundedVacantUnits = Math.max(0, Math.round(vacantUnits));
+  if (totalUnits === null) return String(roundedVacantUnits);
+  return String(Math.min(totalUnits, roundedVacantUnits));
+}
+
+function getGroupedOccupiedUnits(row) {
+  const totalUnits = parsePositiveWholeNumber(row?.totalUnits);
+  if (totalUnits === null) return null;
+  const vacantUnits = parseLooseNumber(row?.vacantUnits);
+  const roundedVacantUnits = vacantUnits === null ? 0 : Math.max(0, Math.round(vacantUnits));
+  return Math.max(totalUnits - Math.min(totalUnits, roundedVacantUnits), 0);
+}
+
+function clearPageSection(sectionKey, button) {
+  const defaults = createDefaultState();
+  if (sectionKey === "oneToFourSale") state.oneToFour.sale = defaults.oneToFour.sale;
+  if (sectionKey === "commercialRent") state.commercial.rent = defaults.commercial.rent;
+  if (sectionKey === "commercialSale") state.commercial.sale = defaults.commercial.sale;
+  if (sectionKey === "commercialCurrent") state.commercial.current = defaults.commercial.current;
+  if (sectionKey === "apartmentCurrent") state.apartment.current = defaults.apartment.current;
+  if (sectionKey === "apartmentMarket") state.apartment.market = defaults.apartment.market;
+  if (sectionKey === "apartmentSale") state.apartment.sale = defaults.apartment.sale;
+  renderAll();
+  flashButton(button, "Cleared");
+}
+
+function bindCopyValueTrigger(element, getAmount, feedbackButton) {
+  if (!element) return;
+  const handler = () => copyAmount(getAmount(), feedbackButton, element);
+  element.addEventListener("click", handler);
+  element.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    handler();
+  });
 }
 
 function renderCapResults({ tbody, startCapRaw, selectedCapRate, annualNoiAfterVacancy, onSelect, emptyMessage, storeSelected, copyButton }) {
@@ -1906,11 +2366,7 @@ function renderCapResults({ tbody, startCapRaw, selectedCapRate, annualNoiAfterV
 
   const maxCap = startingCap + leaseCapStep * (leaseCapCount - 1);
   const offset = (selectedCapRate - startingCap) / leaseCapStep;
-  const isValidSelected =
-    Number.isFinite(selectedCapRate) &&
-    selectedCapRate >= startingCap &&
-    selectedCapRate <= maxCap &&
-    Math.abs(offset - Math.round(offset)) < 0.001;
+  const isValidSelected = Number.isFinite(selectedCapRate) && selectedCapRate >= startingCap && selectedCapRate <= maxCap && Math.abs(offset - Math.round(offset)) < 0.001;
   const resolvedSelected = isValidSelected ? selectedCapRate : Number(startingCap.toFixed(2));
   let selectedValue = null;
 
@@ -1920,10 +2376,7 @@ function renderCapResults({ tbody, startCapRaw, selectedCapRate, annualNoiAfterV
     const row = document.createElement("tr");
     const isSelected = Math.abs(capRate - resolvedSelected) < 0.001;
     row.className = `cap-row${isSelected ? " is-selected" : ""}`;
-    row.innerHTML = `
-      <td>${formatCapRateDisplay(capRate)}</td>
-      <td>${impliedValue === null ? "-" : formatCurrency(impliedValue, 0)}</td>
-    `;
+    row.innerHTML = `<td>${formatCapRateDisplay(capRate)}</td><td>${impliedValue === null ? "-" : formatCurrency(impliedValue, 0)}</td>`;
     row.tabIndex = 0;
     row.addEventListener("click", () => {
       onSelect(capRate);
@@ -1938,22 +2391,15 @@ function renderCapResults({ tbody, startCapRaw, selectedCapRate, annualNoiAfterV
     if (isSelected) selectedValue = impliedValue;
     tbody.appendChild(row);
   }
-
   storeSelected(resolvedSelected, selectedValue);
 }
 
 function calculateSelectedCapValue(startCapRaw, selectedCapRate, annualNoiAfterVacancy, setSelected) {
   const startingCap = parseLooseNumber(startCapRaw);
-  if (startingCap === null || startingCap <= 0 || annualNoiAfterVacancy === null) {
-    return null;
-  }
+  if (startingCap === null || startingCap <= 0 || annualNoiAfterVacancy === null) return null;
   const maxCap = startingCap + leaseCapStep * (leaseCapCount - 1);
   const offset = (selectedCapRate - startingCap) / leaseCapStep;
-  const isValidSelected =
-    Number.isFinite(selectedCapRate) &&
-    selectedCapRate >= startingCap &&
-    selectedCapRate <= maxCap &&
-    Math.abs(offset - Math.round(offset)) < 0.001;
+  const isValidSelected = Number.isFinite(selectedCapRate) && selectedCapRate >= startingCap && selectedCapRate <= maxCap && Math.abs(offset - Math.round(offset)) < 0.001;
   const resolvedSelected = isValidSelected ? selectedCapRate : Number(startingCap.toFixed(2));
   setSelected(resolvedSelected);
   return annualNoiAfterVacancy / (resolvedSelected / 100);
@@ -1994,9 +2440,7 @@ async function copyTextToClipboard(text) {
   textarea.select();
   const copied = document.execCommand("copy");
   document.body.removeChild(textarea);
-  if (!copied) {
-    throw new Error("Clipboard write failed");
-  }
+  if (!copied) throw new Error("Clipboard write failed");
 }
 
 function flashButton(button, text) {
@@ -2010,9 +2454,9 @@ function flashButton(button, text) {
   }, 1400);
 }
 
-function flashCopyTarget(target, state) {
+function flashCopyTarget(target, stateName) {
   if (!(target instanceof HTMLElement)) return;
-  target.dataset.copyState = state;
+  target.dataset.copyState = stateName;
   window.clearTimeout(target._copyStateTimer);
   target._copyStateTimer = window.setTimeout(() => {
     delete target.dataset.copyState;
@@ -2049,19 +2493,10 @@ function parsePositiveWholeNumber(raw) {
   return Math.round(parsed);
 }
 
-function parseNonNegativeWholeNumber(raw) {
-  const parsed = parseLooseNumber(raw);
-  if (parsed === null || parsed < 0) return 0;
-  return Math.round(parsed);
-}
-
 function formatCurrency(value, decimals = 0) {
   const normalized = Number.isFinite(value) ? Math.abs(value) : 0;
   const prefix = value < 0 ? "-" : "";
-  return `${prefix}$${normalized.toLocaleString("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })}`;
+  return `${prefix}$${normalized.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 }
 
 function formatClipboardAmount(value) {
@@ -2069,10 +2504,7 @@ function formatClipboardAmount(value) {
   const rounded = Math.round(value);
   const normalized = Math.abs(rounded);
   const prefix = rounded < 0 ? "-" : "";
-  return `${prefix}${normalized.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })}`;
+  return `${prefix}${normalized.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 function formatMoneyInput(raw, decimals = 0) {
@@ -2119,14 +2551,11 @@ function persistState() {
 }
 
 function escapeHtml(value) {
-  return String(value || "").replace(/[&<>"']/g, (match) => {
-    const map = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-    return map[match] || match;
-  });
+  return String(value || "").replace(/[&<>"']/g, (match) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[match] || match));
 }
