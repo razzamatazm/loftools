@@ -312,6 +312,62 @@ button {
   background: linear-gradient(180deg, rgba(244, 243, 240, 0.9), rgba(248, 247, 245, 0.96));
 }
 
+.subject-setup-panel {
+  display: flex;
+  align-items: end;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--panel-subtle);
+}
+
+.subject-setup-panel .setup-label {
+  display: block;
+  margin: 0;
+  padding-bottom: 12px;
+  flex: 0 0 auto;
+}
+
+.subject-setup-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
+  gap: 10px 14px;
+  align-items: end;
+  justify-content: start;
+  margin-bottom: 0;
+  flex: 1 1 320px;
+}
+
+.subject-setup-grid > .field,
+.subject-setup-grid .field-wide {
+  justify-self: start;
+}
+
+.subject-setup-input-only {
+  gap: 0;
+}
+
+.subject-setup-grid-apt-sale {
+  grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
+}
+
+.subject-setup-inline {
+  display: flex;
+  align-items: end;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.subject-setup-inline .setup-label {
+  margin: 0;
+  padding-bottom: 12px;
+  flex: 0 0 auto;
+}
+
+.subject-setup-inline .subject-setup-grid {
+  flex: 1 1 320px;
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -532,6 +588,39 @@ tbody tr.cap-row:hover {
   width: 80px;
 }
 
+#apartment-current-head th:nth-child(2),
+#apartment-current-head th:nth-child(3) {
+  width: 138px;
+}
+
+#apartment-current-head th:nth-child(4) {
+  width: 160px;
+}
+
+#apartment-current-head th:nth-child(5) {
+  width: 156px;
+}
+
+#apartment-current-rows td:nth-child(2) .table-input,
+#apartment-current-rows td:nth-child(3) .table-input {
+  max-width: 126px;
+  min-width: 0;
+}
+
+#apartment-current-rows td:nth-child(4) .table-input {
+  max-width: 144px;
+  min-width: 0;
+}
+
+#apartment-current-rows td:nth-child(5) .table-select {
+  max-width: 148px;
+  min-width: 0;
+}
+
+#apartment-current-rows td:nth-child(7) {
+  min-width: 170px;
+}
+
 /* ── Row buttons ─────────────────────────────────────────────── */
 
 .row-remove,
@@ -605,6 +694,18 @@ tbody tr.cap-row:hover {
 
 .setup-panel .mode-toggle {
   margin-bottom: 14px;
+}
+
+.section-inline-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 12px;
+}
+
+.section-inline-controls .setup-label {
+  margin: 0;
 }
 
 /* ── Metric stack & chips ────────────────────────────────────── */
@@ -930,6 +1031,11 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
   .summary-grid-five {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .subject-setup-grid,
+  .subject-setup-grid-apt-sale {
+    grid-template-columns: repeat(2, minmax(0, max-content));
+  }
 }
 
 @media (max-width: 720px) {
@@ -958,6 +1064,11 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
     align-items: stretch;
   }
 
+  .section-inline-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .copy-btn,
   .secondary-btn {
     width: 100%;
@@ -978,6 +1089,29 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
   .compact-field-row-sale,
   .compact-field-row-apt-rent {
     grid-template-columns: 1fr;
+  }
+
+  .subject-setup-grid,
+  .subject-setup-grid-apt-sale {
+    grid-template-columns: 1fr;
+  }
+
+  .subject-setup-panel {
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .subject-setup-panel .setup-label {
+    padding-bottom: 0;
+  }
+
+  .subject-setup-inline {
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .subject-setup-inline .setup-label {
+    padding-bottom: 0;
   }
 
   .current-rent-grid {

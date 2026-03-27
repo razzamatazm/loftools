@@ -199,14 +199,14 @@ function createDefaultState() {
         rentRollMode: "perUnit",
         startCap: "5",
         vacancy: "",
-        expensePercent: "20",
+        expensePercent: "30",
         selectedCapRate: null,
         rows: [createApartmentRentRollRow()],
         groupedRows: [createApartmentGroupedRentRollRow()],
       },
       market: {
         vacancy: "5",
-        expensePercent: "20",
+        expensePercent: "30",
         startCap: "5",
         selectedCapRate: null,
         rows: aptRentTypeOptions.map((type) => createAptRentRow(type.value)),
@@ -374,6 +374,8 @@ function normalizeApartmentCurrent(input, fallback) {
       ? input.rows.map((row) => ({
           type: aptRentTypeOptions.some((type) => type.value === row?.type) ? row.type : "",
           rent: String(row?.rent || ""),
+          isVacant: row?.isVacant === true || (row?.isVacant == null && parseLooseNumber(row?.rent || "") === 0),
+          fillMethod: row?.fillMethod === "fixed" ? "fixed" : "market",
         }))
       : fallback.rows,
     groupedRows: Array.isArray(input?.groupedRows) && input.groupedRows.length
@@ -382,6 +384,7 @@ function normalizeApartmentCurrent(input, fallback) {
           totalUnits: String(row?.totalUnits || ""),
           occupiedRent: String(row?.occupiedRent || ""),
           vacantUnits: String(row?.vacantUnits || ""),
+          fillMethod: row?.fillMethod === "fixed" ? "fixed" : "market",
         }))
       : fallback.groupedRows,
   };
@@ -447,11 +450,11 @@ function createCurrentRentCommercialRow() {
 }
 
 function createApartmentRentRollRow() {
-  return { type: "", rent: "" };
+  return { type: "", rent: "", isVacant: false, fillMethod: "market" };
 }
 
 function createApartmentGroupedRentRollRow() {
-  return { type: "", totalUnits: "", occupiedRent: "", vacantUnits: "" };
+  return { type: "", totalUnits: "", occupiedRent: "", vacantUnits: "", fillMethod: "market" };
 }
 
 function bindStaticEvents() {
@@ -810,7 +813,7 @@ function bindTabFlows() {
     elements.apartment.current.startCap,
     elements.apartment.current.vacancy,
     elements.apartment.current.expense,
-    ...Array.from(elements.apartment.current.rows.querySelectorAll("[data-apartment-current-type], [data-apartment-current-rent], [data-apartment-grouped-type], [data-apartment-grouped-total-units], [data-apartment-grouped-occupied-rent], [data-apartment-grouped-vacant-units]")).sort(sortApartmentCurrentInputs),
+    ...Array.from(elements.apartment.current.rows.querySelectorAll("[data-apartment-current-type], [data-apartment-current-rent], [data-apartment-current-vacant], [data-apartment-current-fill-method], [data-apartment-grouped-type], [data-apartment-grouped-total-units], [data-apartment-grouped-occupied-rent], [data-apartment-grouped-vacant-units], [data-apartment-grouped-fill-method]")).sort(sortApartmentCurrentInputs),
     elements.apartment.market.vacancy,
     elements.apartment.market.expense,
     elements.apartment.market.startCap,
@@ -855,18 +858,24 @@ function sortApartmentCurrentInputs(left, right) {
   const leftRow = Number(
     left.getAttribute("data-apartment-current-type")
     ?? left.getAttribute("data-apartment-current-rent")
+    ?? left.getAttribute("data-apartment-current-vacant")
+    ?? left.getAttribute("data-apartment-current-fill-method")
     ?? left.getAttribute("data-apartment-grouped-type")
     ?? left.getAttribute("data-apartment-grouped-total-units")
     ?? left.getAttribute("data-apartment-grouped-occupied-rent")
-    ?? left.getAttribute("data-apartment-grouped-vacant-units"),
+    ?? left.getAttribute("data-apartment-grouped-vacant-units")
+    ?? left.getAttribute("data-apartment-grouped-fill-method"),
   );
   const rightRow = Number(
     right.getAttribute("data-apartment-current-type")
     ?? right.getAttribute("data-apartment-current-rent")
+    ?? right.getAttribute("data-apartment-current-vacant")
+    ?? right.getAttribute("data-apartment-current-fill-method")
     ?? right.getAttribute("data-apartment-grouped-type")
     ?? right.getAttribute("data-apartment-grouped-total-units")
     ?? right.getAttribute("data-apartment-grouped-occupied-rent")
-    ?? right.getAttribute("data-apartment-grouped-vacant-units"),
+    ?? right.getAttribute("data-apartment-grouped-vacant-units")
+    ?? right.getAttribute("data-apartment-grouped-fill-method"),
   );
   if (leftRow !== rightRow) return leftRow - rightRow;
   return apartmentCurrentFieldOrder(left) - apartmentCurrentFieldOrder(right);
@@ -900,9 +909,11 @@ function apartmentSaleFieldOrder(element) {
 function apartmentCurrentFieldOrder(element) {
   if (element.hasAttribute("data-apartment-current-type") || element.hasAttribute("data-apartment-grouped-type")) return 0;
   if (element.hasAttribute("data-apartment-current-rent") || element.hasAttribute("data-apartment-grouped-total-units")) return 1;
-  if (element.hasAttribute("data-apartment-grouped-vacant-units")) return 2;
+  if (element.hasAttribute("data-apartment-current-vacant") || element.hasAttribute("data-apartment-grouped-vacant-units")) return 2;
+  if (element.hasAttribute("data-apartment-current-fill-method")) return 3;
   if (element.hasAttribute("data-apartment-grouped-occupied-rent")) return 3;
-  return 4;
+  if (element.hasAttribute("data-apartment-grouped-fill-method")) return 4;
+  return 5;
 }
 
 function renderAll() {
@@ -1124,7 +1135,8 @@ function renderApartmentCurrent(unitMix) {
           <th>Unit Type</th>
           <th>Total Units</th>
           <th>Vacant Units</th>
-          <th>Occupied Total Rent</th>
+          <th>Occupied Rent</th>
+          <th>Fill Method</th>
           <th>Occupied Units</th>
           <th>Avg Occupied Rent</th>
           <th class="action-col"></th>
@@ -1133,14 +1145,16 @@ function renderApartmentCurrent(unitMix) {
     : `
         <tr>
           <th>Unit Type</th>
-          <th>Current Monthly Rent</th>
+          <th>Rent Amount</th>
+          <th class="checkbox-col">Vacant</th>
+          <th>Fill Method</th>
           <th>Status</th>
           <th class="action-col"></th>
         </tr>
       `;
   elements.apartment.current.hint.textContent = isGroupedMode
-    ? "Enter grouped occupied rent and vacancy totals by unit type. Vacant units feed the automatic vacancy fill plan from the market-rent averages below."
-    : "Each apartment unit is entered as its own row. Any row entered as $0 is treated as vacant and feeds the automatic vacancy fill plan by unit type.";
+    ? "Enter occupied rent and vacant units by type. Use Fixed Rent when vacant units should fill at the row's implied rent instead of market."
+    : "Enter one unit per row. Use Vacant to mark an empty unit, then choose whether it fills from Market Rent or Fixed Rent.";
   if (isGroupedMode) ensureApartmentGroupedRentRollTrailingEmptyRow();
   else ensureApartmentRentRollTrailingEmptyRow();
   const marketCalculations = calculateApartmentMarket(unitMix);
@@ -1160,7 +1174,13 @@ function renderApartmentCurrent(unitMix) {
             </td>
             <td><input class="table-input" type="text" data-focus-key="apartment-grouped-total-units-${index}" data-apartment-grouped-total-units="${index}" value="${escapeHtml(row.totalUnits)}" placeholder="Total units..." /></td>
             <td><input class="table-input" type="text" data-focus-key="apartment-grouped-vacant-units-${index}" data-apartment-grouped-vacant-units="${index}" value="${escapeHtml(row.vacantUnits)}" placeholder="Vacant units..." /></td>
-            <td><input class="table-input" type="text" data-focus-key="apartment-grouped-occupied-rent-${index}" data-apartment-grouped-occupied-rent="${index}" value="${escapeHtml(row.occupiedRent)}" placeholder="Occupied total rent..." /></td>
+            <td><input class="table-input" type="text" data-focus-key="apartment-grouped-occupied-rent-${index}" data-apartment-grouped-occupied-rent="${index}" value="${escapeHtml(row.occupiedRent)}" placeholder="Occupied rent..." /></td>
+            <td>
+              <select class="table-select" data-focus-key="apartment-grouped-fill-method-${index}" data-apartment-grouped-fill-method="${index}">
+                <option value="market" ${row.fillMethod !== "fixed" ? "selected" : ""}>Market Rent</option>
+                <option value="fixed" ${row.fillMethod === "fixed" ? "selected" : ""}>Fixed Rent</option>
+              </select>
+            </td>
             <td>${rowCalc?.occupiedUnitsLabel || "-"}</td>
             <td><div class="metric-stack"><span>${rowCalc?.averageOccupiedRentLabel || "-"}</span>${rowCalc?.fillLabel ? `<span class="chip">${escapeHtml(rowCalc.fillLabel)}</span>` : ""}</div></td>
             <td>${state.apartment.current.groupedRows.length > 1 ? `<button class="row-remove" type="button" data-apartment-grouped-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
@@ -1177,7 +1197,14 @@ function renderApartmentCurrent(unitMix) {
                 ${aptRentTypeOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${row.type === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
               </select>
             </td>
-            <td><input class="table-input" type="text" data-focus-key="apartment-current-rent-${index}" data-apartment-current-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Current monthly rent..." /></td>
+            <td><input class="table-input" type="text" data-focus-key="apartment-current-rent-${index}" data-apartment-current-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Rent amount..." /></td>
+            <td><input type="checkbox" data-focus-key="apartment-current-vacant-${index}" data-apartment-current-vacant="${index}" tabindex="-1" ${row.isVacant ? "checked" : ""} /></td>
+            <td>
+              <select class="table-select" data-focus-key="apartment-current-fill-method-${index}" data-apartment-current-fill-method="${index}">
+                <option value="market" ${row.fillMethod !== "fixed" ? "selected" : ""}>Market Rent</option>
+                <option value="fixed" ${row.fillMethod === "fixed" ? "selected" : ""}>Fixed Rent</option>
+              </select>
+            </td>
             <td><div class="metric-stack"><span>${rowCalc?.statusLabel || "-"}</span>${rowCalc?.fillLabel ? `<span class="chip">${escapeHtml(rowCalc.fillLabel)}</span>` : ""}</div></td>
             <td>${state.apartment.current.rows.length > 1 ? `<button class="row-remove" type="button" data-apartment-current-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
           </tr>
@@ -1192,11 +1219,12 @@ function renderApartmentCurrent(unitMix) {
         <tr data-unit-type="${escapeHtml(row.type)}">
           <td>${escapeHtml(getAptRentTypeLabel(row.type))}</td>
           <td>${escapeHtml(String(row.vacantUnits))}</td>
-          <td>${row.marketRent === null ? "Needs Market Rent Avg" : formatCurrency(row.marketRent, 0)}</td>
+          <td>${escapeHtml(row.sourceLabel)}</td>
+          <td>${row.rentUsed === null ? row.missingLabel || "-" : formatCurrency(row.rentUsed, 0)}</td>
           <td>${row.monthlyIncome === null ? "-" : formatCurrency(row.monthlyIncome, 0)}</td>
         </tr>
       `).join("")
-    : `<tr><td colspan="4" class="empty-cell">${escapeHtml(isGroupedMode ? "Enter grouped unit counts and vacant units to build the fill plan." : "Assign unit types on vacant rent-roll rows to build the fill plan.")}</td></tr>`;
+    : `<tr><td colspan="5" class="empty-cell">${escapeHtml(isGroupedMode ? "Enter grouped unit counts and vacant units to build the fill plan." : "Mark units vacant to build the fill plan.")}</td></tr>`;
   elements.apartment.current.fillTotal.textContent = calculations.monthlyFillIncome === null ? "-" : formatCurrency(calculations.monthlyFillIncome, 0);
 
   elements.apartment.current.summary1.textContent = calculations.baseMonthlyIncome === null ? "-" : formatCurrency(calculations.baseMonthlyIncome, 0);
@@ -1514,8 +1542,7 @@ function getApartmentUnitMix() {
     return mix;
   }
   state.apartment.current.rows.forEach((row) => {
-    const rent = parseLooseNumber(row.rent);
-    if (!row.type || rent === null) return;
+    if (!row.type) return;
     mix[row.type] += 1;
   });
   return mix;
@@ -1580,7 +1607,8 @@ function calculateApartmentCurrent(unitMix, marketRentAverages) {
   let totalUnits = 0;
 
   if (state.apartment.current.rentRollMode === "grouped") {
-    const fillPlanByType = Object.fromEntries(aptRentTypeOptions.map((type) => [type.value, 0]));
+    const marketFillPlanByType = Object.fromEntries(aptRentTypeOptions.map((type) => [type.value, 0]));
+    const fixedFillPlanRows = [];
     rows = state.apartment.current.groupedRows.map((row) => {
       const totalUnitsValue = parsePositiveWholeNumber(row.totalUnits);
       const rawVacantUnits = parseLooseNumber(row.vacantUnits);
@@ -1590,10 +1618,22 @@ function calculateApartmentCurrent(unitMix, marketRentAverages) {
       const occupiedRent = occupiedUnits === 0 ? 0 : parseLooseNumber(row.occupiedRent);
       const averageOccupiedRent = occupiedUnits && occupiedRent !== null ? occupiedRent / occupiedUnits : null;
       const marketRent = row.type ? marketRentAverages[row.type] ?? null : null;
+      const usesFixedRent = row.fillMethod === "fixed";
       if (row.type && totalUnitsValue !== null) {
         totalUnits += totalUnitsValue;
         vacantUnits += vacantCount;
-        fillPlanByType[row.type] += vacantCount;
+        if (!usesFixedRent) {
+          marketFillPlanByType[row.type] += vacantCount;
+        } else if (vacantCount > 0) {
+          fixedFillPlanRows.push({
+            type: row.type,
+            vacantUnits: vacantCount,
+            sourceLabel: "Fixed Rent",
+            rentUsed: averageOccupiedRent,
+            monthlyIncome: averageOccupiedRent === null ? null : vacantCount * averageOccupiedRent,
+            missingLabel: averageOccupiedRent === null ? "Needs Occupied Avg" : "",
+          });
+        }
       }
       if (row.type && totalUnitsValue !== null && occupiedRent !== null) baseMonthlyIncome = (baseMonthlyIncome ?? 0) + occupiedRent;
       return {
@@ -1606,28 +1646,38 @@ function calculateApartmentCurrent(unitMix, marketRentAverages) {
         occupiedUnitsLabel: occupiedUnits === null ? "-" : String(occupiedUnits),
         averageOccupiedRentLabel: averageOccupiedRent === null ? "-" : formatCurrency(averageOccupiedRent, 0),
         fillLabel: row.type && vacantCount > 0
-          ? marketRent === null
-            ? "Needs Market Rent"
-            : `Fill at ${formatCurrency(marketRent, 0)}`
+          ? usesFixedRent
+            ? averageOccupiedRent === null
+              ? "Needs Occupied Avg"
+              : `Fill at ${formatCurrency(averageOccupiedRent, 0)}`
+            : marketRent === null
+              ? "Needs Market Rent"
+              : `Fill at ${formatCurrency(marketRent, 0)}`
           : "",
       };
     });
-    fillPlanRows = aptRentTypeOptions.map((type) => {
-      const fillVacantUnits = fillPlanByType[type.value];
-      const marketRent = marketRentAverages[type.value] ?? null;
-      return {
-        type: type.value,
-        vacantUnits: fillVacantUnits,
-        marketRent,
-        monthlyIncome: fillVacantUnits && marketRent !== null ? fillVacantUnits * marketRent : null,
-      };
-    }).filter((row) => row.vacantUnits > 0);
+    fillPlanRows = [
+      ...aptRentTypeOptions.map((type) => {
+        const fillVacantUnits = marketFillPlanByType[type.value];
+        const marketRent = marketRentAverages[type.value] ?? null;
+        return {
+          type: type.value,
+          vacantUnits: fillVacantUnits,
+          sourceLabel: "Market Rent Avg",
+          rentUsed: marketRent,
+          monthlyIncome: fillVacantUnits && marketRent !== null ? fillVacantUnits * marketRent : null,
+          missingLabel: marketRent === null ? "Needs Market Rent Avg" : "",
+        };
+      }).filter((row) => row.vacantUnits > 0),
+      ...fixedFillPlanRows,
+    ];
   } else {
     rows = state.apartment.current.rows.map((row) => {
       const rent = parseLooseNumber(row.rent);
-      const isVacant = rent === 0;
+      const isVacant = row.isVacant === true;
       const marketRent = row.type ? marketRentAverages[row.type] ?? null : null;
-      if (row.type && rent !== null) {
+      const usesFixedRent = row.fillMethod === "fixed";
+      if (row.type) {
         totalUnits += 1;
         if (isVacant) vacantUnits += 1;
       }
@@ -1636,29 +1686,48 @@ function calculateApartmentCurrent(unitMix, marketRentAverages) {
         rent,
         isVacant,
         marketRent,
-        statusLabel: rent === null ? "-" : isVacant ? "$0" : formatCurrency(rent, 0),
+        statusLabel: isVacant ? "Vacant" : rent === null ? "-" : formatCurrency(rent, 0),
         fillLabel: isVacant
           ? row.type
-            ? marketRent === null
-              ? "Needs Market Rent"
-              : `Fill at ${formatCurrency(marketRent, 0)}`
+            ? usesFixedRent
+              ? rent === null
+                ? "Needs Fixed Rent"
+                : `Fill at ${formatCurrency(rent, 0)}`
+              : marketRent === null
+                ? "Needs Market Rent"
+                : `Fill at ${formatCurrency(marketRent, 0)}`
             : "Select Unit Type"
           : "",
+        usesFixedRent,
       };
     });
 
-    fillPlanRows = aptRentTypeOptions.map((type) => {
-      const fillVacantUnits = rows.filter((row) => row.rent === 0 && row.type === type.value).length;
-      const marketRent = marketRentAverages[type.value] ?? null;
-      return {
-        type: type.value,
-        vacantUnits: fillVacantUnits,
-        marketRent,
-        monthlyIncome: fillVacantUnits && marketRent !== null ? fillVacantUnits * marketRent : null,
-      };
-    }).filter((row) => row.vacantUnits > 0);
+    fillPlanRows = [
+      ...aptRentTypeOptions.map((type) => {
+        const fillVacantUnits = rows.filter((row) => row.isVacant && row.type === type.value && !row.usesFixedRent).length;
+        const marketRent = marketRentAverages[type.value] ?? null;
+        return {
+          type: type.value,
+          vacantUnits: fillVacantUnits,
+          sourceLabel: "Market Rent Avg",
+          rentUsed: marketRent,
+          monthlyIncome: fillVacantUnits && marketRent !== null ? fillVacantUnits * marketRent : null,
+          missingLabel: marketRent === null ? "Needs Market Rent Avg" : "",
+        };
+      }).filter((row) => row.vacantUnits > 0),
+      ...rows
+        .filter((row) => row.isVacant && row.type && row.usesFixedRent)
+        .map((row) => ({
+          type: row.type,
+          vacantUnits: 1,
+          sourceLabel: "Fixed Rent",
+          rentUsed: row.rent,
+          monthlyIncome: row.rent === null ? null : row.rent,
+          missingLabel: row.rent === null ? "Needs Fixed Rent" : "",
+        })),
+    ];
 
-    const incomeRows = rows.filter((row) => row.rent !== null && row.type);
+    const incomeRows = rows.filter((row) => !row.isVacant && row.rent !== null && row.type);
     baseMonthlyIncome = incomeRows.length ? incomeRows.reduce((sum, row) => sum + row.rent, 0) : null;
   }
 
@@ -2006,6 +2075,14 @@ function bindApartmentCurrentEvents() {
         renderApartment();
       });
     });
+    elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-fill-method]").forEach((select) => {
+      select.addEventListener("change", () => {
+        const row = state.apartment.current.groupedRows[Number(select.dataset.apartmentGroupedFillMethod)];
+        if (!row) return;
+        row.fillMethod = select.value === "fixed" ? "fixed" : "market";
+        renderApartment();
+      });
+    });
     elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-total-units]").forEach((input) => {
       input.addEventListener("input", () => {
         const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedTotalUnits)];
@@ -2082,6 +2159,22 @@ function bindApartmentCurrentEvents() {
       const row = state.apartment.current.rows[Number(select.dataset.apartmentCurrentType)];
       if (!row) return;
       row.type = select.value;
+      renderApartment();
+    });
+  });
+  elements.apartment.current.rows.querySelectorAll("[data-apartment-current-vacant]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const row = state.apartment.current.rows[Number(input.dataset.apartmentCurrentVacant)];
+      if (!row) return;
+      row.isVacant = input.checked;
+      renderApartment();
+    });
+  });
+  elements.apartment.current.rows.querySelectorAll("[data-apartment-current-fill-method]").forEach((select) => {
+    select.addEventListener("change", () => {
+      const row = state.apartment.current.rows[Number(select.dataset.apartmentCurrentFillMethod)];
+      if (!row) return;
+      row.fillMethod = select.value === "fixed" ? "fixed" : "market";
       renderApartment();
     });
   });
@@ -2309,14 +2402,18 @@ function currentRentCommercialRowHasData(row) {
 }
 
 function apartmentRentRollRowHasData(row) {
-  return String(row?.type || "").trim() !== "" || parseLooseNumber(row?.rent || "") !== null;
+  return String(row?.type || "").trim() !== ""
+    || parseLooseNumber(row?.rent || "") !== null
+    || row?.isVacant === true
+    || row?.fillMethod === "fixed";
 }
 
 function apartmentGroupedRentRollRowHasData(row) {
   return String(row?.type || "").trim() !== ""
     || parseLooseNumber(row?.totalUnits || "") !== null
     || parseLooseNumber(row?.occupiedRent || "") !== null
-    || parseLooseNumber(row?.vacantUnits || "") !== null;
+    || parseLooseNumber(row?.vacantUnits || "") !== null
+    || row?.fillMethod === "fixed";
 }
 
 function clampGroupedVacantUnits(totalUnitsRaw, vacantUnitsRaw) {

@@ -38,11 +38,10 @@
               </div>
             </div>
 
-            <div class="setup-panel">
-              <p class="setup-label">Subject Setup</p>
-              <div class="config-grid sale-grid compact-field-row">
-                <label class="field field-width-md">
-                  <span>Subject Property SF</span>
+            <div class="subject-setup-inline">
+              <p class="setup-label">Subject Property SF</p>
+              <div class="config-grid subject-setup-grid">
+                <label class="field field-width-md subject-setup-input-only">
                   <input id="one-four-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
                 </label>
                 <label class="field field-width-xs listing-discount-field" id="one-four-listing-discount-field" hidden>
@@ -97,11 +96,10 @@
               </div>
             </div>
 
-            <div class="setup-panel">
-              <p class="setup-label">Shared Subject Setup</p>
-              <div class="config-grid compact-field-row compact-field-row-rent">
-                <label class="field field-width-md">
-                  <span>Subject Property SF</span>
+            <div class="subject-setup-inline">
+              <p class="setup-label">Subject Property SF</p>
+              <div class="config-grid subject-setup-grid">
+                <label class="field field-width-md subject-setup-input-only">
                   <input id="commercial-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
                 </label>
               </div>
@@ -354,8 +352,7 @@
             <section class="valuation-stack-section">
               <div class="panel-head panel-head-subsection">
                 <div>
-                  <p class="panel-kicker">Current Income</p>
-                  <h2>Rent Roll Valuation</h2>
+                  <h2>Rent Roll</h2>
                 </div>
                 <div class="panel-actions">
                   <button class="secondary-btn" type="button" id="apartment-current-clear-btn">Clear Values</button>
@@ -365,10 +362,6 @@
 
               <div class="setup-panel">
                 <p class="setup-label">Valuation Inputs</p>
-                <div class="mode-toggle" role="tablist" aria-label="Apartment rent roll mode">
-                  <button type="button" id="apartment-current-mode-per-unit" data-apartment-roll-mode="perUnit">Per Unit</button>
-                  <button type="button" id="apartment-current-mode-grouped" data-apartment-roll-mode="grouped">Grouped by Unit Type</button>
-                </div>
                 <div class="config-grid current-rent-grid">
                   <label class="field">
                     <span>Starting Cap Rate</span>
@@ -387,10 +380,18 @@
                   <label class="field">
                     <span>Expenses</span>
                     <div class="input-suffix">
-                      <input id="apartment-current-expense" type="text" inputmode="decimal" placeholder="20" />
+                      <input id="apartment-current-expense" type="text" inputmode="decimal" placeholder="30" />
                       <span>%</span>
                     </div>
                   </label>
+                </div>
+              </div>
+
+              <div class="section-inline-controls">
+                <p class="setup-label">Rent Roll Format</p>
+                <div class="mode-toggle" role="tablist" aria-label="Apartment rent roll mode">
+                  <button type="button" id="apartment-current-mode-per-unit" data-apartment-roll-mode="perUnit">Per Unit</button>
+                  <button type="button" id="apartment-current-mode-grouped" data-apartment-roll-mode="grouped">Grouped by Unit Type</button>
                 </div>
               </div>
 
@@ -400,7 +401,7 @@
                   <tbody id="apartment-current-rows"></tbody>
                 </table>
               </div>
-              <p class="hint" id="apartment-current-hint">Each apartment unit is entered as its own row. Any row entered as $0 is treated as vacant and feeds the automatic vacancy fill plan by unit type.</p>
+              <p class="hint" id="apartment-current-hint">Enter one unit per row. Use Vacant to mark an empty unit, then choose whether it fills from Market Rent or Fixed Rent.</p>
 
               <div class="vacancy-fill-plan">
                 <div class="vacancy-fill-plan-head">
@@ -413,14 +414,15 @@
                       <tr>
                         <th>Unit Type</th>
                         <th>Vacant Units</th>
-                        <th>Market Rent Used</th>
+                        <th>Fill Source</th>
+                        <th>Rent Used</th>
                         <th>Monthly Fill Income</th>
                       </tr>
                     </thead>
                     <tbody id="apartment-current-fill-rows"></tbody>
                   </table>
                 </div>
-                <p class="hint">Vacant units pull market rent from the Apartment Market Rent Comps section below.</p>
+                <p class="hint">Market-rent vacancies use the Apartment Market Rent Comps below. Fixed-rent vacancies use entered or implied fixed rent.</p>
               </div>
 
               <div class="summary-grid summary-grid-four">
@@ -519,7 +521,7 @@
                   <label class="field field-width-xs">
                     <span>Expenses</span>
                     <div class="input-suffix">
-                      <input id="apartment-market-expense" type="text" inputmode="decimal" placeholder="20" />
+                      <input id="apartment-market-expense" type="text" inputmode="decimal" placeholder="30" />
                       <span>%</span>
                     </div>
                   </label>
@@ -616,9 +618,9 @@
                 </div>
               </div>
 
-              <div class="setup-panel">
+              <div class="setup-panel subject-setup-panel">
                 <p class="setup-label">Subject Setup</p>
-                <div class="config-grid apt-sale-grid compact-field-row compact-field-row-sale">
+                <div class="config-grid subject-setup-grid subject-setup-grid-apt-sale">
                   <label class="field field-width-md">
                     <span>Subject Units</span>
                     <div class="readonly-display" id="apartment-sale-subject-units">0</div>
