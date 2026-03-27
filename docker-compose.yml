@@ -4,5 +4,11 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "8087:80"
     restart: unless-stopped
+    networks:
+      - popcornbowl
+
+networks:
+  popcornbowl:
+    external: true

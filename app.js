@@ -11,7 +11,7 @@ const aptRentTypeOptions = [
 const leaseExpenseRates = {
   nnn: 0.1,
   modified: 0.2,
-  gross: 0.35,
+  gross: 0.25,
 };
 
 const state = loadState();
