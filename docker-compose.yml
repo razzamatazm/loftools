@@ -1,5 +1,6 @@
 services:
-  loftools:
+  valuetools:
+    container_name: loftools
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,6 +9,9 @@ services:
     restart: unless-stopped
     networks:
       - popcornbowl
+    labels:
+      - "swag=enable"
+      - "swag_port=80"
 
 networks:
   popcornbowl:
