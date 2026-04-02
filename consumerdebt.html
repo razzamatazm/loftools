@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Is This Consumer Debt? (Ultra-Optimized)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .bubble { 
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .bubble:hover {
+      transform: translateX(4px);
+      z-index: 9999;
+    }
+    .optimization-note {
+      background-color: #e0e7ff;
+      border: 1px solid #6366f1;
+      color: #312e81;
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .pale-blue-tip {
+      background-color: #eef4ff;
+      border: 1px solid #a5b4fc;
+      color: #373f56;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.97rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-start justify-center p-6">
+  <main id="app" class="w-full max-w-2xl"></main>
+
+<script>
+const OUTCOME = {
+  "Commercial Property": {
+    "Purchase": "✅ We can lend! This is a business purpose loan.",
+    "Refinance of Existing Debt": "✅ We can lend! This is a business purpose loan.",
+    "Cash Out to Improve Subject Property": "✅ We can lend! This is a business purpose loan.",
+    "Cash Out for Business Purpose": "✅ We can lend! This is a business purpose loan.",
+    "Cash Out for Personal Use": "✅ We can lend, BUT a loan on a commercial property for consumer purposes does not require an NMLS license, yet it does require special disclosure forms that would need attorney assistance."
+  },
+  "Rental 1–4 Unit": {
+    "Purchase": "✅ We can lend! This is a business purpose loan.",
+    "Refinance of Existing Debt": "✅ We can lend! This is a business purpose loan.",
+    "Cash Out to Improve Subject Property": "✅ We can lend! This is a business purpose loan.",
+    "Cash Out for Business Purpose": "✅ We can lend! This is a business purpose loan.",
+    "Cash Out for Personal Use": "❌ PASS – Cash‑out for personal use on 1–4 unit properties is considered a consumer loan and requires an NMLS license."
+  },
+  "Flip 1–4 Unit": {
+    "Purchase": "flipper-check",
+    "Refinance of Existing Debt": "flipper-check",
+    "Cash Out to Improve Subject Property": "flipper-check",
+    "Cash Out for Business Purpose": "✅ We can lend! This is a business purpose loan.",
+    "Cash Out for Personal Use": "❌ PASS – Cash‑out for personal use on 1–4 unit properties is considered a consumer loan and requires an NMLS license."
+  },
+  "OO SFR or Duplex": {
+    "Purchase": "❌ PASS – Loans to purchase owner‑occupied homes are consumer loans and require an NMLS license.",
+    "Refinance of Existing Debt": "❌ PASS – Loans to refinance owner‑occupied homes are consumer loans and require an NMLS license.",
+    "Cash Out to Improve Subject Property": "❌ PASS – Loans to improve an owner‑occupied 1–4 unit property are consumer loans and require an NMLS license.",
+    "Cash Out for Business Purpose": "⚠️ We can lend, BUT cash‑out on an OO residential property for business purpose is exempt from consumer‑loan regulation. HOWEVER, read carefully and see OO‑lending primary‑residence guidelines.",
+    "Cash Out for Personal Use": "❌ PASS – Cash‑out for personal use on 1–4 unit properties is considered a consumer loan and requires an NMLS license."
+  },
+  "OO 3–4 Unit": {
+    "Purchase": "✅ We can lend! This is a business purpose loan; even if one unit is owner‑occupied, the majority of units are rented.",
+    "Refinance of Existing Debt": "✅ We can lend! This is a business purpose loan; even if one unit is owner‑occupied, the majority of units are rented.",
+    "Cash Out to Improve Subject Property": "✅ We can lend! This is a business purpose loan; even if one unit is owner‑occupied, the majority of units are rented.",
+    "Cash Out for Business Purpose": "✅ We can lend! This is a business purpose loan; even if one unit is owner‑occupied, the majority of units are rented.",
+    "Cash Out for Personal Use": "❌ PASS – Cash‑out for personal use on 1–4 unit properties is considered a consumer loan and requires an NMLS license."
+  }
+};
+
+const app = document.getElementById('app');
+let state = {
+  step: 0,
+  history: [],
+  entityChoice: null,
+  managerAsked: false,
+  managerChoice: null,
+  isCommercial: null,
+  isPersonalCashOut: null,
+  loanPurpose: null,
+  inherited: null,
+  inheritedOccupied: null,
+  inheritedRentalIntent: null,
+  propertyChoice: null,
+  ownerOcc: null,
+  ooConfig: null,
+  useChoice: null,
+  flipperCheck: null
+};
+
+function clearAnswersAfterStep(step) {
+  const fields = [
+    'entityChoice',
+    'managerChoice',
+    'isCommercial',
+    'isPersonalCashOut',
+    'loanPurpose',
+    'inherited',
+    'inheritedOccupied',
+    'inheritedRentalIntent',
+    'propertyChoice',
+    'ownerOcc',
+    'ooConfig',
+    'useChoice',
+    'flipperCheck'
+  ];
+  for (let i = step; i < fields.length; ++i) {
+    state[fields[i]] = null;
+  }
+}
+
+function reset() {
+  state = {
+    step: 0,
+    history: [],
+    entityChoice: null,
+    managerAsked: false,
+    managerChoice: null,
+    isCommercial: null,
+    isPersonalCashOut: null,
+    loanPurpose: null,
+    inherited: null,
+    inheritedOccupied: null,
+    inheritedRentalIntent: null,
+    propertyChoice: null,
+    ownerOcc: null,
+    ooConfig: null,
+    useChoice: null,
+    flipperCheck: null
+  };
+  render();
+}
+
+function goBack() {
+  if (state.history.length > 0) {
+    const prevStep = state.history.pop();
+    clearAnswersAfterStep(prevStep);
+    state.step = prevStep;
+    render();
+  }
+}
+
+function advanceStep(nextStep) {
+  state.history.push(state.step);
+  clearAnswersAfterStep(nextStep);
+  state.step = nextStep;
+  render();
+}
+
+function matrixKey() {
+  if (state.isCommercial) return 'Commercial Property';
+  if (state.ownerOcc === 'No') {
+    return state.useChoice === 'Flip' ? 'Flip 1–4 Unit' : 'Rental 1–4 Unit';
+  }
+  if (state.ooConfig === 'SFR_Duplex' || (state.propertyChoice && ['SFR', 'Duplex'].includes(state.propertyChoice))) {
+    return 'OO SFR or Duplex';
+  }
+  if (
+    state.propertyChoice &&
+    (state.propertyChoice === 'Triplex' || state.propertyChoice === 'Quadruplex') &&
+    state.ownerOcc === 'Yes'
+  ) {
+    return 'OO 3–4 Unit';
+  }
+  return 'OO 3–4 Unit';
+}
+
+// --- Breadcrumbs: Only show actual Q&A steps ---
+function bubbleHistory(container) {
+  const items = [];
+  const hist = state.history;
+
+  if (hist.length > 0 && state.entityChoice) {
+    items.push(['Held in a pre-existing entity?', state.entityChoice]);
+  }
+  if (hist.includes(1) && state.managerAsked && state.managerChoice) {
+    items.push(['Manager entity?', state.managerChoice]);
+  }
+  if (hist.includes(2) && state.isCommercial !== null) {
+    items.push(['Commercial property?', state.isCommercial ? 'Yes' : 'No']);
+  }
+  if (hist.includes(3) && state.isPersonalCashOut !== null) {
+    items.push(['Cash out for personal use?', state.isPersonalCashOut ? 'Yes' : 'No']);
+  }
+  if (hist.includes(4) && state.loanPurpose) {
+    items.push(['Loan Purpose:', state.loanPurpose]);
+  }
+  if (hist.includes(5) && state.inherited !== null) {
+    items.push(['Inherited?', state.inherited]);
+  }
+  if (hist.includes(6) && state.inherited === 'Yes' && state.inheritedOccupied !== null) {
+    items.push([
+      'Previously occupied by deceased or will be borrower/family residence?',
+      state.inheritedOccupied === 'Yes' ? 'Yes' : 'No'
+    ]);
+  }
+  if (hist.includes(9) && state.inherited === 'Yes' && state.inheritedOccupied === 'No' && state.inheritedRentalIntent !== null) {
+    items.push([
+      'Always rental/investment and borrower plans to rent or sell?',
+      state.inheritedRentalIntent === 'Yes' ? 'Yes' : 'No'
+    ]);
+  }
+  if (hist.includes(7) && state.inherited === 'No' && state.propertyChoice) {
+    items.push(['Property Type:', state.propertyChoice]);
+  }
+  if (hist.includes(10) && state.inherited === 'No' && state.propertyChoice && state.ownerOcc !== null) {
+    items.push(['Owner‑Occupied?', state.ownerOcc]);
+  }
+  if (hist.includes(13) &&
+    state.inherited === 'No' &&
+    state.propertyChoice &&
+    (state.propertyChoice === 'Triplex' || state.propertyChoice === 'Quadruplex') &&
+    state.ownerOcc === 'Yes' &&
+    state.ooConfig) {
+      if (state.ooConfig === 'MajorityRented') {
+        items.push(['Majority of units rented to 3rd party tenants?', 'Yes']);
+      } else if (state.ooConfig === 'NotMajority') {
+        items.push(['Majority of units rented to 3rd party tenants?', 'No']);
+      }
+  }
+  if (hist.includes(14) &&
+    state.inherited === 'No' &&
+    state.propertyChoice &&
+    state.ownerOcc === 'No' &&
+    state.useChoice
+  ) {
+    items.push(['Will it be a rental or a flip?', state.useChoice]);
+  }
+  if (hist.includes(15) && state.flipperCheck !== null) {
+    items.push(['Borrower in the business of real estate/active flipper?', state.flipperCheck]);
+  }
+
+  if (!items.length) return;
+
+  const stack = document.createElement('div');
+  stack.className = 'relative pl-2 mb-6';
+  const visibleCount = 3;
+  const visibleItems = items.slice(-visibleCount);
+  const hiddenCount = items.length - visibleCount;
+
+  // Render a single faded bubble with count if there are more than three
+  if (hiddenCount > 0) {
+    const div = document.createElement('div');
+    div.className = 'bubble rounded-full bg-white text-slate-700 text-base px-4 py-2 border border-slate-300 flex items-center justify-center';
+    div.style.marginTop = '0';
+    div.style.opacity = '0.5';
+    div.style.zIndex = 1;
+    div.style.position = 'absolute';
+    div.style.top = '0';
+    div.style.left = '0';
+    div.style.fontWeight = 'bold';
+    div.textContent = `+${hiddenCount} more`;
+    stack.appendChild(div);
+  }
+
+  // Render the last three items with moderate overlap (oldest first, most recent last)
+  visibleItems.forEach((row, i) => {
+    const div = document.createElement('div');
+    div.className = 'bubble rounded-full bg-white text-slate-700 text-base px-4 py-2 border border-slate-300';
+    div.style.marginTop = i ? '-0.75rem' : '0';
+    div.style.zIndex = i + 2; // Each next is above the previous
+    div.innerHTML = `<span class='font-medium'>${row[0]}</span> ${row[1]}`;
+    stack.appendChild(div);
+  });
+  container.appendChild(stack);
+}
+
+function buildButtons(container, question, options, note) {
+  const h = document.createElement('h2');
+  h.className = 'text-xl font-semibold mb-4 text-slate-800';
+  h.textContent = question;
+  container.appendChild(h);
+
+  if (note) {
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'pale-blue-tip mb-4';
+    noteDiv.innerHTML = note;
+    container.appendChild(noteDiv);
+  }
+
+  const list = document.createElement('div');
+  list.className = 'space-y-3';
+  options.forEach(({ label, onClick }) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.className = 'block w-full text-left px-4 py-3 rounded-lg border border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-colors';
+    btn.onclick = () => onClick();
+    list.appendChild(btn);
+  });
+  container.appendChild(list);
+}
+
+function buildGrid(container, header, items, onPick, note) {
+  const h = document.createElement('h2');
+  h.className = 'text-xl font-semibold mb-4 text-slate-800';
+  h.textContent = header;
+  container.appendChild(h);
+
+  if (note) {
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'pale-blue-tip mb-4';
+    noteDiv.innerHTML = note;
+    container.appendChild(noteDiv);
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'grid md:grid-cols-2 gap-3';
+  items.forEach(it => {
+    const btn = document.createElement('button');
+    btn.textContent = it;
+    btn.className = 'px-4 py-3 rounded-lg border border-slate-300 text-left hover:bg-slate-50 hover:border-slate-400 transition-colors';
+    btn.onclick = () => onPick(it);
+    grid.appendChild(btn);
+  });
+  container.appendChild(grid);
+}
+
+function render() {
+  app.innerHTML = '';
+  const card = document.createElement('section');
+  card.className = 'bg-white shadow-lg rounded-2xl p-8 space-y-6 relative';
+
+  // Create navigation box
+  const navBox = document.createElement('div');
+  navBox.className = 'flex justify-between items-center mb-6';
+
+  // Back button
+  if (state.step > 0) {
+    const back = document.createElement('button');
+    back.className = 'flex items-center px-5 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors gap-2';
+    back.innerHTML = `
+      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      <span>Back</span>
+    `;
+    back.onclick = goBack;
+    navBox.appendChild(back);
+  } else {
+    // Add empty div to maintain spacing when back button isn't shown
+    const spacer = document.createElement('div');
+    navBox.appendChild(spacer);
+  }
+
+  // Start Over (reset) button
+  if (state.step > 0) {
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'flex items-center px-5 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors gap-2';
+    resetBtn.onclick = reset;
+    resetBtn.innerHTML = `
+      <span>Start Over</span>
+    `;
+    navBox.appendChild(resetBtn);
+  }
+
+  card.appendChild(navBox);
+
+  bubbleHistory(card);
+
+  switch (state.step) {
+    case 0:
+      buildButtons(card, "Is title held in a pre‑existing LLC, corporation, LP or GP that owns other assets?", [
+        { label: 'Yes', onClick: () => { state.entityChoice = 'Yes'; advanceStep(20); } },
+        { label: 'No — Individual / Trust', onClick: () => { state.entityChoice = 'No — Individual / Trust'; state.managerAsked = false; advanceStep(2); } },
+        { label: 'No — New Single‑Purpose Entity', onClick: () => { state.entityChoice = 'No — New Single‑Purpose Entity'; state.managerAsked = true; advanceStep(1); } }
+      ]);
+      break;
+
+    case 1:
+      buildButtons(card, "Is manager of the holding entity a pre‑existing LLC, corporation, LP or GP that owns other entities?", [
+        { label: 'Yes', onClick: () => { state.managerChoice = 'Yes'; advanceStep(20); } },
+        { label: 'No — Manager is individual / family trust', onClick: () => { state.managerChoice = 'No — Manager is individual / family trust'; advanceStep(2); } }
+      ]);
+      break;
+
+    case 2:
+      buildButtons(card, "Is this a commercial property? (Not a 1-4 unit residential property)", [
+        { label: 'Yes', onClick: () => { state.isCommercial = true; advanceStep(3); } },
+        { label: 'No', onClick: () => { state.isCommercial = false; advanceStep(3); } }
+      ]);
+      break;
+
+    case 3:
+      buildButtons(
+        card,
+        "Is this loan for cash out for personal use?",
+        [
+          { label: 'Yes', onClick: () => {
+            state.isPersonalCashOut = true;
+            state.loanPurpose = 'Cash Out for Personal Use';
+            advanceStep(20);
+          }},
+          { label: 'No', onClick: () => {
+            state.isPersonalCashOut = false;
+            if (
+              (state.entityChoice === 'No — Individual / Trust' && state.isCommercial) ||
+              (state.entityChoice === 'No — New Single‑Purpose Entity' && state.managerChoice === 'No — Manager is individual / family trust' && state.isCommercial)
+            ) {
+              state.loanPurpose = 'BusinessPurposeAuto';
+              advanceStep(20);
+            } else if (state.isCommercial) {
+              advanceStep(4);
+            } else {
+              advanceStep(4);
+            }
+          }}
+        ],
+        `<span style="font-size:1.3em;line-height:1.2em;">💡</span><span><strong>Example:</strong> Buying a personal home or car, paying off personal credit card or student loan debt, personal legal fees.</span>`
+      );
+      break;
+
+    case 4:
+      buildGrid(
+        card,
+        'Select the loan purpose:',
+        ['Purchase', 'Refinance of Existing Debt', 'Cash Out to Improve Subject Property', 'Cash Out for Business Purpose'],
+        purpose => {
+          state.loanPurpose = purpose;
+          advanceStep(5);
+        },
+        `<span style="font-size:1.3em;line-height:1.2em;">💡</span><span><strong>Cash Out for Business Purposes</strong> would include uses such as investments into borrower's business, purchasing a commercial property or paying off company debt.</span>`
+      );
+      break;
+
+    case 5:
+      buildButtons(card, 'Was this property inherited?', [
+        { label: 'Yes', onClick: () => {
+          state.inherited = 'Yes';
+          state.inheritedOccupied = null;
+          state.inheritedRentalIntent = null;
+          advanceStep(6);
+        }},
+        { label: 'No', onClick: () => {
+          state.inherited = 'No';
+          advanceStep(7);
+        }}
+      ]);
+      break;
+
+    case 6:
+      buildButtons(card, 'Was the property previously occupied by the deceased, or will the borrower or a family member live there?', [
+        { label: 'Yes', onClick: () => {
+          state.inheritedOccupied = 'Yes';
+          advanceStep(8);
+        }},
+        { label: 'No', onClick: () => {
+          state.inheritedOccupied = 'No';
+          advanceStep(9);
+        }}
+      ]);
+      break;
+
+    case 7:
+      buildGrid(card, 'Select the property type:', ['SFR', 'Duplex', 'Triplex', 'Quadruplex'], choice => {
+        state.propertyChoice = choice;
+        advanceStep(10);
+      });
+      break;
+
+    case 8:
+      {
+        const h = document.createElement('h2');
+        h.className = 'text-xl font-semibold mb-4 text-slate-800';
+        h.textContent = 'Result:';
+        card.appendChild(h);
+
+        const box = document.createElement('div');
+        box.className = 'whitespace-pre-wrap rounded-lg p-4 border font-medium';
+        box.textContent = '❌ PASS – The property was previously occupied by the deceased, or will be used as a primary or secondary residence by the borrower/family member. This is not eligible for business purpose lending.';
+        box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+        card.appendChild(box);
+      }
+      break;
+
+    case 9:
+      buildButtons(card, 'Has the property always been a rental/investment, and does the borrower plan to rent or sell?', [
+        { label: 'Yes', onClick: () => {
+          state.inheritedRentalIntent = 'Yes';
+          advanceStep(11);
+        }},
+        { label: 'No', onClick: () => {
+          state.inheritedRentalIntent = 'No';
+          advanceStep(12);
+        }}
+      ]);
+      break;
+
+    case 10:
+      buildButtons(card, 'Will it be owner‑occupied?', [
+        { label: 'Yes', onClick: () => {
+          state.ownerOcc = 'Yes';
+          state.useChoice = null;
+          if (['SFR', 'Duplex'].includes(state.propertyChoice)) {
+            state.ooConfig = 'SFR_Duplex';
+            advanceStep(20);
+          } else {
+            state.ooConfig = null;
+            advanceStep(13);
+          }
+        }},
+        { label: 'No', onClick: () => {
+          state.ownerOcc = 'No';
+          state.ooConfig = null;
+          advanceStep(14);
+        }}
+      ]);
+      break;
+
+    case 11:
+      {
+        const h = document.createElement('h2');
+        h.className = 'text-xl font-semibold mb-4 text-slate-800';
+        h.textContent = 'Result:';
+        card.appendChild(h);
+
+        const box = document.createElement('div');
+        box.className = 'whitespace-pre-wrap rounded-lg p-4 border font-medium';
+        box.textContent = '✅ We can lend! The property has always been a rental/investment and the borrower plans to rent or sell.';
+        box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+        card.appendChild(box);
+      }
+      break;
+
+    case 12:
+      {
+        const h = document.createElement('h2');
+        h.className = 'text-xl font-semibold mb-4 text-slate-800';
+        h.textContent = 'Result:';
+        card.appendChild(h);
+
+        const box = document.createElement('div');
+        box.className = 'whitespace-pre-wrap rounded-lg p-4 border font-medium';
+        box.textContent = '❌ PASS – The property has not always been a rental/investment, or the borrower does not plan to rent or sell.';
+        box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+        card.appendChild(box);
+      }
+      break;
+
+    case 13:
+      buildButtons(card, 'Does the borrower rent the majority of the units to 3rd party tenants?', [
+        { label: 'Yes', onClick: () => { state.ooConfig = 'MajorityRented'; advanceStep(18); } },
+        { label: 'No', onClick: () => { state.ooConfig = 'NotMajority'; advanceStep(19); } }
+      ]);
+      break;
+
+    case 18:
+      {
+        const h = document.createElement('h2');
+        h.className = 'text-xl font-semibold mb-4 text-slate-800';
+        h.textContent = 'Result:';
+        card.appendChild(h);
+
+        const box = document.createElement('div');
+        box.className = 'whitespace-pre-wrap rounded-lg p-4 border font-medium';
+        box.textContent = '✅ We can lend! This is a business purpose loan.';
+        box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+        card.appendChild(box);
+      }
+      break;
+
+    case 19:
+      {
+        const h = document.createElement('h2');
+        h.className = 'text-xl font-semibold mb-4 text-slate-800';
+        h.textContent = 'Result:';
+        card.appendChild(h);
+
+        const box = document.createElement('div');
+        box.className = 'whitespace-pre-wrap rounded-lg p-4 border font-medium';
+        box.textContent = '❌ PASS – Not a business purpose loan unless majority of units are rented to 3rd parties.';
+        box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+        card.appendChild(box);
+      }
+      break;
+
+    case 14:
+      buildButtons(card, 'Will it be a rental or a flip?', [
+        { label: 'Rental', onClick: () => { state.useChoice = 'Rental'; advanceStep(20); } },
+        { label: 'Flip', onClick: () => { state.useChoice = 'Flip'; advanceStep(15); } }
+      ]);
+      break;
+
+    case 15:
+      buildButtons(
+        card,
+        'Is the borrower in the business of real estate and/or an active flipper?',
+        [
+          { label: 'Yes', onClick: () => { state.flipperCheck = 'Yes'; advanceStep(16); } },
+          { label: 'No', onClick: () => { state.flipperCheck = 'No'; advanceStep(17); } }
+        ],
+        `<span style="font-size:1.3em;line-height:1.2em;">💡</span><span>When trying to determine if a borrower is "in the business of real estate", ask what is their primary occupation and how many real estate transactions do they do in a year.</span>`
+      );
+      break;
+
+    case 16:
+      {
+        const h = document.createElement('h2');
+        h.className = 'text-xl font-semibold mb-4 text-slate-800';
+        h.textContent = 'Result:';
+        card.appendChild(h);
+
+        const box = document.createElement('div');
+        box.className = 'whitespace-pre-wrap rounded-lg p-4 border font-medium';
+        box.textContent = '✅ We can lend! The borrower is in the business of real estate or is an active flipper.';
+        box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+        card.appendChild(box);
+      }
+      break;
+
+    case 17:
+      {
+        const h = document.createElement('h2');
+        h.className = 'text-xl font-semibold mb-4 text-slate-800';
+        h.textContent = 'Result:';
+        card.appendChild(h);
+
+        const box = document.createElement('div');
+        box.className = 'whitespace-pre-wrap rounded-lg p-4 border font-medium';
+        box.textContent = '❌ PASS IF this is the borrower\'s first flip ever (or first in a while). If they are not in the business of flipping, it is considered a personal investment.';
+        box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+        card.appendChild(box);
+      }
+      break;
+
+    case 20:
+    default:
+      if (state.step < 10) break;
+      const h = document.createElement('h2');
+      h.className = 'text-xl font-semibold mb-4 text-slate-800';
+      h.textContent = 'Result:';
+      card.appendChild(h);
+
+      const box = document.createElement('div');
+      box.className = 'whitespace-pre-wrap rounded-lg p-4 border font-medium';
+      let resultText;
+
+      if (state.entityChoice === 'Yes' || state.managerChoice === 'Yes') {
+        resultText = '✅ We can lend! Loans to bona‑fide entities are exempt from consumer‑loan regulations, no matter the scenario.';
+        box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+      }
+      else if (state.loanPurpose === 'BusinessPurposeAuto') {
+        resultText = '✅ We can lend! This is a business purpose loan.';
+        box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+      }
+      else if (state.isPersonalCashOut) {
+        if (state.isCommercial) {
+          resultText = '⚠️ We can lend, BUT a loan on a commercial property for consumer purposes does not require an NMLS license, yet it does require special disclosure forms that would need attorney assistance.';
+          box.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-800');
+        } else {
+          resultText = '❌ PASS – Cash‑out for personal use on 1–4 unit properties is considered a consumer loan and requires an NMLS license.';
+          box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+        }
+      }
+      else if (state.isCommercial && !state.isPersonalCashOut) {
+        resultText = '✅ We can lend! This is a business purpose loan.';
+        box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+      }
+      else {
+        const key = matrixKey();
+        let value = OUTCOME[key][state.loanPurpose];
+        if (value === "flipper-check") {
+          // Go to active flipper question if not already handled
+          if (state.flipperCheck === null) {
+            advanceStep(15);
+            return;
+          } else if (state.flipperCheck === "Yes") {
+            value = "✅ We can lend! The borrower is in the business of real estate or is an active flipper.";
+            box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+          } else {
+            value = "❌ PASS IF this is the borrower's first flip ever (or first in a while). If they are not in the business of flipping, it is considered a personal investment.";
+            box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+          }
+        } else if (value && (value.includes('PASS') || value.includes('❌'))) {
+          box.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+        } else if (value && value.includes('BUT')) {
+          box.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-800');
+        } else {
+          box.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+        }
+        resultText = value;
+      }
+
+      box.textContent = resultText;
+      card.appendChild(box);
+      break;
+  }
+
+  app.appendChild(card);
+}
+
+render();
+</script>
+</body>
+</html>

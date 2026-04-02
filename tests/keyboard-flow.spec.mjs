@@ -197,7 +197,7 @@ test("apartment mode switching preserves both per-unit and grouped inputs while 
 });
 
 test("td loi flow tabs from 1st td inputs through 2nd td inputs into blended outputs", async ({ page }) => {
-  await page.getByRole("button", { name: "TD LOI", exact: true }).click();
+  await page.getByRole("button", { name: "Blended LOI Checker", exact: true }).click();
   await expect(page.locator("#loi-first-loan-amount")).toBeVisible();
 
   await page.locator("#loi-first-loan-amount").fill("1000000");
@@ -210,15 +210,9 @@ test("td loi flow tabs from 1st td inputs through 2nd td inputs into blended out
 
   await page.locator("#loi-first-origination-points").fill("2");
   await pressTab(page);
-  await expectFocused(page, "#loi-first-origination-fee");
-
-  await pressTab(page);
   await expectFocused(page, "#loi-first-broker-points");
 
   await page.locator("#loi-first-broker-points").fill("1");
-  await pressTab(page);
-  await expectFocused(page, "#loi-first-broker-fee");
-
   await pressTab(page);
   await expectFocused(page, "#loi-second-loan-amount");
 
@@ -232,21 +226,15 @@ test("td loi flow tabs from 1st td inputs through 2nd td inputs into blended out
 
   await page.locator("#loi-second-origination-points").fill("1");
   await pressTab(page);
-  await expectFocused(page, "#loi-second-origination-fee");
-
-  await pressTab(page);
   await expectFocused(page, "#loi-second-broker-points");
 
   await page.locator("#loi-second-broker-points").fill("0.5");
-  await pressTab(page);
-  await expectFocused(page, "#loi-second-broker-fee");
-
   await pressTab(page);
   await expectFocused(page, "#loi-blended-loan-amount");
 });
 
 test("td loi calculates blended values, syncs fees, clears, and persists", async ({ page }) => {
-  await page.getByRole("button", { name: "TD LOI", exact: true }).click();
+  await page.getByRole("button", { name: "Blended LOI Checker", exact: true }).click();
 
   await page.locator("#loi-first-loan-amount").fill("1000000");
   await page.locator("#loi-first-interest-rate").fill("1");
@@ -279,7 +267,7 @@ test("td loi calculates blended values, syncs fees, clears, and persists", async
   await expect(page.locator("#loi-second-monthly-payment")).toHaveText("$7,500");
 
   await page.reload();
-  await page.getByRole("button", { name: "TD LOI", exact: true }).click();
+  await page.getByRole("button", { name: "Blended LOI Checker", exact: true }).click();
   await expect(page.locator("#loi-first-loan-amount")).toHaveValue("$1,000,000");
   await expect(page.locator("#loi-first-interest-rate")).toHaveValue("1");
   await expect(page.locator("#loi-second-origination-fee")).toHaveValue("$10,000");
@@ -288,4 +276,91 @@ test("td loi calculates blended values, syncs fees, clears, and persists", async
   await page.locator("#loi-clear-btn").click();
   await expect(page.locator("#loi-first-loan-amount")).toHaveValue("");
   await expect(page.locator("#loi-blended-interest-rate")).toHaveText("-");
+});
+
+test("consumer debt tab renders first question and tabs through visible choices", async ({ page }) => {
+  const tab = page.getByRole("button", { name: "Consumer Debt Checker", exact: true });
+  await tab.click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("Is title held in a pre-existing LLC");
+
+  await tab.focus();
+  await pressTab(page);
+  await expectFocused(page, '[data-consumer-debt-action="entity-yes"]');
+
+  await pressTab(page);
+  await expectFocused(page, '[data-consumer-debt-action="entity-individual"]');
+});
+
+test("consumer debt supports commercial, residential personal cash-out, and persistence flows", async ({ page }) => {
+  await page.getByRole("button", { name: "Consumer Debt Checker", exact: true }).click();
+
+  await page.getByRole("button", { name: "No - Individual / Trust", exact: true }).click();
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("We can lend. This is a business purpose loan.");
+
+  await page.locator("#consumer-debt-clear-btn").click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("Is title held in a pre-existing LLC");
+
+  await page.getByRole("button", { name: "No - Individual / Trust", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("Cash-out for personal use on 1-4 unit properties");
+
+  await page.locator("#consumer-debt-clear-btn").click();
+  await page.getByRole("button", { name: "No - New Single-Purpose Entity", exact: true }).click();
+  await page.getByRole("button", { name: "No - Manager is individual / family trust", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.reload();
+  await page.getByRole("button", { name: "Consumer Debt Checker", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("Is this loan for cash out for personal use?");
+
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("Is this a commercial property?");
+});
+
+test("consumer debt inherited and flip branches produce expected results", async ({ page }) => {
+  await page.getByRole("button", { name: "Consumer Debt Checker", exact: true }).click();
+
+  await page.getByRole("button", { name: "No - Individual / Trust", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Purchase", exact: true }).click();
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("not eligible for business purpose lending");
+
+  await page.locator("#consumer-debt-clear-btn").click();
+  await page.getByRole("button", { name: "No - Individual / Trust", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Purchase", exact: true }).click();
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("The property has always been a rental or investment");
+
+  await page.locator("#consumer-debt-clear-btn").click();
+  await page.getByRole("button", { name: "No - Individual / Trust", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Purchase", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "SFR", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Flip", exact: true }).click();
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("active flipper");
+
+  await page.locator("#consumer-debt-clear-btn").click();
+  await page.getByRole("button", { name: "No - Individual / Trust", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Purchase", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "SFR", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Flip", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("first flip ever");
 });

@@ -13,6 +13,43 @@ const leaseExpenseRates = {
   modified: 0.2,
   gross: 0.25,
 };
+const consumerDebtOutcomeMatrix = {
+  "Commercial Property": {
+    Purchase: "We can lend. This is a business purpose loan.",
+    "Refinance of Existing Debt": "We can lend. This is a business purpose loan.",
+    "Cash Out to Improve Subject Property": "We can lend. This is a business purpose loan.",
+    "Cash Out for Business Purpose": "We can lend. This is a business purpose loan.",
+    "Cash Out for Personal Use": "We can lend, but a loan on a commercial property for consumer purposes does not require an NMLS license and does require special disclosure forms with attorney assistance.",
+  },
+  "Rental 1-4 Unit": {
+    Purchase: "We can lend. This is a business purpose loan.",
+    "Refinance of Existing Debt": "We can lend. This is a business purpose loan.",
+    "Cash Out to Improve Subject Property": "We can lend. This is a business purpose loan.",
+    "Cash Out for Business Purpose": "We can lend. This is a business purpose loan.",
+    "Cash Out for Personal Use": "Pass. Cash-out for personal use on 1-4 unit properties is considered a consumer loan and requires an NMLS license.",
+  },
+  "Flip 1-4 Unit": {
+    Purchase: "flipper-check",
+    "Refinance of Existing Debt": "flipper-check",
+    "Cash Out to Improve Subject Property": "flipper-check",
+    "Cash Out for Business Purpose": "We can lend. This is a business purpose loan.",
+    "Cash Out for Personal Use": "Pass. Cash-out for personal use on 1-4 unit properties is considered a consumer loan and requires an NMLS license.",
+  },
+  "OO SFR or Duplex": {
+    Purchase: "Pass. Loans to purchase owner-occupied homes are consumer loans and require an NMLS license.",
+    "Refinance of Existing Debt": "Pass. Loans to refinance owner-occupied homes are consumer loans and require an NMLS license.",
+    "Cash Out to Improve Subject Property": "Pass. Loans to improve an owner-occupied 1-4 unit property are consumer loans and require an NMLS license.",
+    "Cash Out for Business Purpose": "We can lend, but cash-out on an owner-occupied residential property for business purpose is exempt from consumer-loan regulation. Read the owner-occupied lending primary-residence guidelines carefully.",
+    "Cash Out for Personal Use": "Pass. Cash-out for personal use on 1-4 unit properties is considered a consumer loan and requires an NMLS license.",
+  },
+  "OO 3-4 Unit": {
+    Purchase: "We can lend. This is a business purpose loan; even if one unit is owner-occupied, the majority of units are rented.",
+    "Refinance of Existing Debt": "We can lend. This is a business purpose loan; even if one unit is owner-occupied, the majority of units are rented.",
+    "Cash Out to Improve Subject Property": "We can lend. This is a business purpose loan; even if one unit is owner-occupied, the majority of units are rented.",
+    "Cash Out for Business Purpose": "We can lend. This is a business purpose loan; even if one unit is owner-occupied, the majority of units are rented.",
+    "Cash Out for Personal Use": "Pass. Cash-out for personal use on 1-4 unit properties is considered a consumer loan and requires an NMLS license.",
+  },
+};
 
 const state = loadState();
 
@@ -140,6 +177,11 @@ const elements = {
       addRowBtn: document.getElementById("apartment-sale-add-row"),
     },
   },
+  consumerDebt: {
+    backBtn: document.getElementById("consumer-debt-back-btn"),
+    clearBtn: document.getElementById("consumer-debt-clear-btn"),
+    content: document.getElementById("consumer-debt-content"),
+  },
   loi: {
     clearBtn: document.getElementById("loi-clear-btn"),
     first: {
@@ -245,6 +287,7 @@ function createDefaultState() {
         rows: [createAptSaleRow()],
       },
     },
+    consumerDebt: createConsumerDebtDefaults(),
     loi: {
       first: createLoiLoanDefaults(),
       second: createLoiLoanDefaults(),
@@ -285,6 +328,7 @@ function normalizeNewShape(input, fallback) {
       market: normalizeApartmentMarket(input?.apartment?.market, fallback.apartment.market),
       sale: normalizeApartmentSale(input?.apartment?.sale, fallback.apartment.sale),
     },
+    consumerDebt: normalizeConsumerDebt(input?.consumerDebt, fallback.consumerDebt),
     loi: {
       first: normalizeLoiLoan(input?.loi?.first, fallback.loi.first),
       second: normalizeLoiLoan(input?.loi?.second, fallback.loi.second),
@@ -336,6 +380,7 @@ function normalizeLegacyShape(input, fallback) {
       market: normalizeApartmentMarket(input?.aptRent, fallback.apartment.market),
       sale: normalizeApartmentSale(input?.aptSale, fallback.apartment.sale),
     },
+    consumerDebt: fallback.consumerDebt,
     loi: {
       first: fallback.loi.first,
       second: fallback.loi.second,
@@ -344,7 +389,7 @@ function normalizeLegacyShape(input, fallback) {
 }
 
 function normalizeActiveTab(activeTab, fallback) {
-  if (["oneToFour", "commercial", "apartment", "loi"].includes(activeTab)) return activeTab;
+  if (["oneToFour", "commercial", "apartment", "consumerDebt", "loi"].includes(activeTab)) return activeTab;
   return fallback;
 }
 
@@ -353,6 +398,68 @@ function normalizeLegacyActiveTab(activeTab) {
   if (activeTab === "rent" || activeTab === "lease" || activeTab === "currentRent") return "commercial";
   if (activeTab === "aptSale" || activeTab === "aptRent") return "apartment";
   return "oneToFour";
+}
+
+function createConsumerDebtDefaults() {
+  return {
+    step: 0,
+    history: [],
+    entityChoice: null,
+    managerAsked: false,
+    managerChoice: null,
+    isCommercial: null,
+    isPersonalCashOut: null,
+    loanPurpose: null,
+    inherited: null,
+    inheritedOccupied: null,
+    inheritedRentalIntent: null,
+    propertyChoice: null,
+    ownerOcc: null,
+    ooConfig: null,
+    useChoice: null,
+    flipperCheck: null,
+  };
+}
+
+function normalizeConsumerDebt(input, fallback) {
+  const normalizeYesNo = (value) => (value === "Yes" || value === "No" ? value : null);
+  const normalizeChoice = (value, allowed) => (allowed.includes(value) ? value : null);
+  const history = Array.isArray(input?.history)
+    ? input.history.map((value) => Number.parseInt(value, 10)).filter((value) => Number.isFinite(value))
+    : fallback.history;
+
+  return {
+    step: Number.isFinite(input?.step) ? input.step : fallback.step,
+    history,
+    entityChoice: normalizeChoice(input?.entityChoice, [
+      "Yes",
+      "No - Individual / Trust",
+      "No - New Single-Purpose Entity",
+    ]),
+    managerAsked: input?.managerAsked === true,
+    managerChoice: normalizeChoice(input?.managerChoice, [
+      "Yes",
+      "No - Manager is individual / family trust",
+    ]),
+    isCommercial: typeof input?.isCommercial === "boolean" ? input.isCommercial : null,
+    isPersonalCashOut: typeof input?.isPersonalCashOut === "boolean" ? input.isPersonalCashOut : null,
+    loanPurpose: normalizeChoice(input?.loanPurpose, [
+      "Purchase",
+      "Refinance of Existing Debt",
+      "Cash Out to Improve Subject Property",
+      "Cash Out for Business Purpose",
+      "Cash Out for Personal Use",
+      "BusinessPurposeAuto",
+    ]),
+    inherited: normalizeYesNo(input?.inherited),
+    inheritedOccupied: normalizeYesNo(input?.inheritedOccupied),
+    inheritedRentalIntent: normalizeYesNo(input?.inheritedRentalIntent),
+    propertyChoice: normalizeChoice(input?.propertyChoice, ["SFR", "Duplex", "Triplex", "Quadruplex"]),
+    ownerOcc: normalizeYesNo(input?.ownerOcc),
+    ooConfig: normalizeChoice(input?.ooConfig, ["SFR_Duplex", "MajorityRented", "NotMajority"]),
+    useChoice: normalizeChoice(input?.useChoice, ["Rental", "Flip"]),
+    flipperCheck: normalizeYesNo(input?.flipperCheck),
+  };
 }
 
 function normalizeLoiLoan(input, fallback) {
@@ -730,6 +837,9 @@ function bindStaticEvents() {
   elements.apartment.sale.copyBtn?.addEventListener("click", () => copyAmount(derived.apartmentSaleCopy, elements.apartment.sale.copyBtn));
   elements.apartment.sale.clearBtn?.addEventListener("click", () => clearPageSection("apartmentSale", elements.apartment.sale.clearBtn));
 
+  elements.consumerDebt.backBtn?.addEventListener("click", () => consumerDebtGoBack());
+  elements.consumerDebt.clearBtn?.addEventListener("click", () => clearPageSection("consumerDebt", elements.consumerDebt.clearBtn));
+
   bindLoiLoanFieldEvents("first");
   bindLoiLoanFieldEvents("second");
   elements.loi.clearBtn?.addEventListener("click", () => clearPageSection("loi", elements.loi.clearBtn));
@@ -910,6 +1020,16 @@ function bindTabFlows() {
     return;
   }
 
+  if (state.activeTab === "consumerDebt") {
+    bindTabSequence([
+      activeTabButton,
+      ...(elements.consumerDebt.backBtn?.hidden ? [] : [elements.consumerDebt.backBtn]),
+      ...(elements.consumerDebt.clearBtn ? [elements.consumerDebt.clearBtn] : []),
+      ...Array.from(elements.consumerDebt.content.querySelectorAll("[data-consumer-debt-answer]")),
+    ]);
+    return;
+  }
+
   bindTabSequence([
     activeTabButton,
     elements.loi.first.loanAmount,
@@ -1036,6 +1156,7 @@ function renderAll() {
   renderOneToFour();
   renderCommercial();
   renderApartment();
+  renderConsumerDebt();
   renderLoi();
 }
 
@@ -1463,6 +1584,277 @@ function renderApartmentSale(unitMix) {
   elements.apartment.sale.indicatedSf.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedPerSf) && calculations.indicatedPerSf > 0)));
   derived.apartmentSaleCopy = calculations.indicatedPerUnit;
   setCopyButtonState(elements.apartment.sale.copyBtn, calculations.indicatedPerUnit);
+}
+
+function renderConsumerDebt() {
+  const container = elements.consumerDebt.content;
+  if (!container) return;
+
+  const view = getConsumerDebtView();
+  if (view?.redirectStep !== undefined) {
+    consumerDebtAdvanceStep(view.redirectStep);
+    return;
+  }
+
+  const historyItems = getConsumerDebtHistoryItems();
+  const showNav = state.consumerDebt.step > 0;
+  if (elements.consumerDebt.backBtn) elements.consumerDebt.backBtn.hidden = !showNav;
+  if (elements.consumerDebt.clearBtn) elements.consumerDebt.clearBtn.disabled = !showNav;
+
+  container.innerHTML = `
+    <section class="consumer-debt-flow">
+      <section class="consumer-debt-stage-card">
+        ${view.type === "result" ? `
+          <div class="consumer-debt-result-card" data-status="${escapeHtml(view.status)}">
+            <div class="consumer-debt-result-hero">
+              <h3 class="consumer-debt-result-headline">${escapeHtml(getConsumerDebtResultHeadline(view.status))}</h3>
+            </div>
+            <p class="consumer-debt-result-text">${escapeHtml(view.text)}</p>
+          </div>
+          ${historyItems.length ? `
+            <div class="consumer-debt-history-list consumer-debt-history-list-inline">
+              ${renderConsumerDebtHistory(historyItems)}
+            </div>
+          ` : ""}
+        ` : `
+          <div class="consumer-debt-question-card">
+            <h3 class="consumer-debt-question">${escapeHtml(view.question)}</h3>
+            ${view.note ? `
+              <div class="consumer-debt-note">
+                <span class="consumer-debt-note-mark">i</span>
+                <div>${view.note}</div>
+              </div>
+            ` : ""}
+            <div class="consumer-debt-options ${view.layout === "grid" ? "consumer-debt-options-grid" : ""}">
+              ${view.options.map((option, index) => `
+                <button class="consumer-debt-answer" type="button" data-focus-key="consumer-debt-answer-${index}" data-consumer-debt-answer data-consumer-debt-action="${escapeHtml(option.action)}">${escapeHtml(option.label)}</button>
+              `).join("")}
+            </div>
+            ${historyItems.length ? `
+              <div class="consumer-debt-history-list consumer-debt-history-list-inline">
+                ${renderConsumerDebtHistory(historyItems)}
+              </div>
+            ` : ""}
+          </div>
+        `}
+      </section>
+    </section>
+  `;
+
+  bindConsumerDebtEvents();
+  bindTabFlows();
+  persistState();
+}
+
+function renderConsumerDebtHistory(items) {
+  const visibleItems = items.slice(-4);
+  const hiddenCount = items.length - visibleItems.length;
+  const bubbles = [];
+
+  if (hiddenCount > 0) {
+    bubbles.push(`
+      <div class="consumer-debt-history-item consumer-debt-history-more">
+        <div class="consumer-debt-history-marker"></div>
+        <div class="consumer-debt-history-copy">+${hiddenCount} earlier answer${hiddenCount === 1 ? "" : "s"}</div>
+      </div>
+    `);
+  }
+
+  visibleItems.forEach(([question, answer]) => {
+    bubbles.push(`
+      <div class="consumer-debt-history-item">
+        <div class="consumer-debt-history-marker"></div>
+        <div class="consumer-debt-history-copy">
+          <span>${escapeHtml(question)}</span>
+          <strong>${escapeHtml(answer)}</strong>
+        </div>
+      </div>
+    `);
+  });
+
+  return bubbles.join("");
+}
+
+function getConsumerDebtView() {
+  switch (state.consumerDebt.step) {
+    case 0:
+      return {
+        type: "question",
+        question: "Is title held in a pre-existing LLC, corporation, LP, or GP that owns other assets?",
+        options: [
+          { label: "Yes", action: "entity-yes" },
+          { label: "No - Individual / Trust", action: "entity-individual" },
+          { label: "No - New Single-Purpose Entity", action: "entity-spe" },
+        ],
+      };
+    case 1:
+      return {
+        type: "question",
+        question: "Is manager of the holding entity a pre-existing LLC, corporation, LP, or GP that owns other entities?",
+        options: [
+          { label: "Yes", action: "manager-yes" },
+          { label: "No - Manager is individual / family trust", action: "manager-no" },
+        ],
+      };
+    case 2:
+      return {
+        type: "question",
+        question: "Is this a commercial property? Not a 1-4 unit residential property.",
+        options: [
+          { label: "Yes", action: "commercial-yes" },
+          { label: "No", action: "commercial-no" },
+        ],
+      };
+    case 3:
+      return {
+        type: "question",
+        question: "Is this loan for cash out for personal use?",
+        note: "<strong>Example:</strong> Buying a personal home or car, paying off personal credit card or student loan debt, or covering personal legal fees.",
+        options: [
+          { label: "Yes", action: "personal-cashout-yes" },
+          { label: "No", action: "personal-cashout-no" },
+        ],
+      };
+    case 4:
+      return {
+        type: "question",
+        question: "Select the loan purpose:",
+        note: "<strong>Cash Out for Business Purpose</strong> includes uses such as investing into the borrower's business, purchasing a commercial property, or paying off company debt.",
+        options: [
+          { label: "Purchase", action: "purpose-purchase" },
+          { label: "Refinance of Existing Debt", action: "purpose-refinance" },
+          { label: "Cash Out to Improve Subject Property", action: "purpose-improve" },
+          { label: "Cash Out for Business Purpose", action: "purpose-business" },
+        ],
+      };
+    case 5:
+      return {
+        type: "question",
+        question: "Was this property inherited?",
+        options: [
+          { label: "Yes", action: "inherited-yes" },
+          { label: "No", action: "inherited-no" },
+        ],
+      };
+    case 6:
+      return {
+        type: "question",
+        question: "Was the property previously occupied by the deceased, or will the borrower or a family member live there?",
+        options: [
+          { label: "Yes", action: "inherited-occupied-yes" },
+          { label: "No", action: "inherited-occupied-no" },
+        ],
+      };
+    case 7:
+      return {
+        type: "question",
+        question: "Select the property type:",
+        layout: "grid",
+        options: [
+          { label: "SFR", action: "property-sfr" },
+          { label: "Duplex", action: "property-duplex" },
+          { label: "Triplex", action: "property-triplex" },
+          { label: "Quadruplex", action: "property-quadruplex" },
+        ],
+      };
+    case 8:
+      return {
+        type: "result",
+        status: "pass",
+        text: "Pass. The property was previously occupied by the deceased, or it will be used as a primary or secondary residence by the borrower or family member. This is not eligible for business purpose lending.",
+      };
+    case 9:
+      return {
+        type: "question",
+        question: "Has the property always been a rental or investment, and does the borrower plan to rent or sell?",
+        options: [
+          { label: "Yes", action: "inherited-rental-yes" },
+          { label: "No", action: "inherited-rental-no" },
+        ],
+      };
+    case 10:
+      return {
+        type: "question",
+        question: "Will it be owner-occupied?",
+        options: [
+          { label: "Yes", action: "owner-occ-yes" },
+          { label: "No", action: "owner-occ-no" },
+        ],
+      };
+    case 11:
+      return {
+        type: "result",
+        status: "approve",
+        text: "We can lend. The property has always been a rental or investment and the borrower plans to rent or sell.",
+      };
+    case 12:
+      return {
+        type: "result",
+        status: "pass",
+        text: "Pass. The property has not always been a rental or investment, or the borrower does not plan to rent or sell.",
+      };
+    case 13:
+      return {
+        type: "question",
+        question: "Does the borrower rent the majority of the units to 3rd party tenants?",
+        options: [
+          { label: "Yes", action: "majority-rented-yes" },
+          { label: "No", action: "majority-rented-no" },
+        ],
+      };
+    case 14:
+      return {
+        type: "question",
+        question: "Will it be a rental or a flip?",
+        options: [
+          { label: "Rental", action: "use-rental" },
+          { label: "Flip", action: "use-flip" },
+        ],
+      };
+    case 15:
+      return {
+        type: "question",
+        question: "Is the borrower in the business of real estate and/or an active flipper?",
+        note: "When trying to determine whether a borrower is in the business of real estate, ask what their primary occupation is and how many real estate transactions they complete in a year.",
+        options: [
+          { label: "Yes", action: "flipper-yes" },
+          { label: "No", action: "flipper-no" },
+        ],
+      };
+    case 16:
+      return {
+        type: "result",
+        status: "approve",
+        text: "We can lend. The borrower is in the business of real estate or is an active flipper.",
+      };
+    case 17:
+      return {
+        type: "result",
+        status: "pass",
+        text: "Pass if this is the borrower's first flip ever, or first in a while. If they are not in the business of flipping, it is considered a personal investment.",
+      };
+    case 18:
+      return {
+        type: "result",
+        status: "approve",
+        text: "We can lend. This is a business purpose loan.",
+      };
+    case 19:
+      return {
+        type: "result",
+        status: "pass",
+        text: "Pass. This is not a business purpose loan unless the majority of units are rented to 3rd parties.",
+      };
+    case 20:
+    default:
+      return getConsumerDebtResult();
+  }
+}
+
+function bindConsumerDebtEvents() {
+  elements.consumerDebt.content.querySelectorAll("[data-consumer-debt-action]").forEach((button) => {
+    button.addEventListener("click", () => handleConsumerDebtAction(button.dataset.consumerDebtAction));
+  });
 }
 
 function renderLoi() {
@@ -2483,6 +2875,288 @@ function bindApartmentSaleEvents() {
   });
 }
 
+function handleConsumerDebtAction(action) {
+  switch (action) {
+    case "entity-yes":
+      state.consumerDebt.entityChoice = "Yes";
+      state.consumerDebt.managerAsked = false;
+      state.consumerDebt.managerChoice = null;
+      consumerDebtAdvanceStep(20);
+      return;
+    case "entity-individual":
+      state.consumerDebt.entityChoice = "No - Individual / Trust";
+      state.consumerDebt.managerAsked = false;
+      state.consumerDebt.managerChoice = null;
+      consumerDebtAdvanceStep(2);
+      return;
+    case "entity-spe":
+      state.consumerDebt.entityChoice = "No - New Single-Purpose Entity";
+      state.consumerDebt.managerAsked = true;
+      state.consumerDebt.managerChoice = null;
+      consumerDebtAdvanceStep(1);
+      return;
+    case "manager-yes":
+      state.consumerDebt.managerChoice = "Yes";
+      consumerDebtAdvanceStep(20);
+      return;
+    case "manager-no":
+      state.consumerDebt.managerChoice = "No - Manager is individual / family trust";
+      consumerDebtAdvanceStep(2);
+      return;
+    case "commercial-yes":
+      state.consumerDebt.isCommercial = true;
+      consumerDebtAdvanceStep(3);
+      return;
+    case "commercial-no":
+      state.consumerDebt.isCommercial = false;
+      consumerDebtAdvanceStep(3);
+      return;
+    case "personal-cashout-yes":
+      state.consumerDebt.isPersonalCashOut = true;
+      state.consumerDebt.loanPurpose = "Cash Out for Personal Use";
+      consumerDebtAdvanceStep(20);
+      return;
+    case "personal-cashout-no":
+      state.consumerDebt.isPersonalCashOut = false;
+      if (
+        (state.consumerDebt.entityChoice === "No - Individual / Trust" && state.consumerDebt.isCommercial)
+        || (
+          state.consumerDebt.entityChoice === "No - New Single-Purpose Entity"
+          && state.consumerDebt.managerChoice === "No - Manager is individual / family trust"
+          && state.consumerDebt.isCommercial
+        )
+      ) {
+        state.consumerDebt.loanPurpose = "BusinessPurposeAuto";
+        consumerDebtAdvanceStep(20);
+        return;
+      }
+      consumerDebtAdvanceStep(4);
+      return;
+    case "purpose-purchase":
+      state.consumerDebt.loanPurpose = "Purchase";
+      consumerDebtAdvanceStep(5);
+      return;
+    case "purpose-refinance":
+      state.consumerDebt.loanPurpose = "Refinance of Existing Debt";
+      consumerDebtAdvanceStep(5);
+      return;
+    case "purpose-improve":
+      state.consumerDebt.loanPurpose = "Cash Out to Improve Subject Property";
+      consumerDebtAdvanceStep(5);
+      return;
+    case "purpose-business":
+      state.consumerDebt.loanPurpose = "Cash Out for Business Purpose";
+      consumerDebtAdvanceStep(5);
+      return;
+    case "inherited-yes":
+      state.consumerDebt.inherited = "Yes";
+      state.consumerDebt.inheritedOccupied = null;
+      state.consumerDebt.inheritedRentalIntent = null;
+      consumerDebtAdvanceStep(6);
+      return;
+    case "inherited-no":
+      state.consumerDebt.inherited = "No";
+      state.consumerDebt.inheritedOccupied = null;
+      state.consumerDebt.inheritedRentalIntent = null;
+      consumerDebtAdvanceStep(7);
+      return;
+    case "inherited-occupied-yes":
+      state.consumerDebt.inheritedOccupied = "Yes";
+      consumerDebtAdvanceStep(8);
+      return;
+    case "inherited-occupied-no":
+      state.consumerDebt.inheritedOccupied = "No";
+      consumerDebtAdvanceStep(9);
+      return;
+    case "inherited-rental-yes":
+      state.consumerDebt.inheritedRentalIntent = "Yes";
+      consumerDebtAdvanceStep(11);
+      return;
+    case "inherited-rental-no":
+      state.consumerDebt.inheritedRentalIntent = "No";
+      consumerDebtAdvanceStep(12);
+      return;
+    case "property-sfr":
+      state.consumerDebt.propertyChoice = "SFR";
+      consumerDebtAdvanceStep(10);
+      return;
+    case "property-duplex":
+      state.consumerDebt.propertyChoice = "Duplex";
+      consumerDebtAdvanceStep(10);
+      return;
+    case "property-triplex":
+      state.consumerDebt.propertyChoice = "Triplex";
+      consumerDebtAdvanceStep(10);
+      return;
+    case "property-quadruplex":
+      state.consumerDebt.propertyChoice = "Quadruplex";
+      consumerDebtAdvanceStep(10);
+      return;
+    case "owner-occ-yes":
+      state.consumerDebt.ownerOcc = "Yes";
+      state.consumerDebt.useChoice = null;
+      if (["SFR", "Duplex"].includes(state.consumerDebt.propertyChoice)) {
+        state.consumerDebt.ooConfig = "SFR_Duplex";
+        consumerDebtAdvanceStep(20);
+        return;
+      }
+      state.consumerDebt.ooConfig = null;
+      consumerDebtAdvanceStep(13);
+      return;
+    case "owner-occ-no":
+      state.consumerDebt.ownerOcc = "No";
+      state.consumerDebt.ooConfig = null;
+      consumerDebtAdvanceStep(14);
+      return;
+    case "majority-rented-yes":
+      state.consumerDebt.ooConfig = "MajorityRented";
+      consumerDebtAdvanceStep(18);
+      return;
+    case "majority-rented-no":
+      state.consumerDebt.ooConfig = "NotMajority";
+      consumerDebtAdvanceStep(19);
+      return;
+    case "use-rental":
+      state.consumerDebt.useChoice = "Rental";
+      consumerDebtAdvanceStep(20);
+      return;
+    case "use-flip":
+      state.consumerDebt.useChoice = "Flip";
+      consumerDebtAdvanceStep(15);
+      return;
+    case "flipper-yes":
+      state.consumerDebt.flipperCheck = "Yes";
+      consumerDebtAdvanceStep(16);
+      return;
+    case "flipper-no":
+      state.consumerDebt.flipperCheck = "No";
+      consumerDebtAdvanceStep(17);
+      return;
+    default:
+      return;
+  }
+}
+
+function consumerDebtAdvanceStep(nextStep) {
+  state.consumerDebt.history.push(state.consumerDebt.step);
+  resetConsumerDebtBranch(nextStep);
+  state.consumerDebt.step = nextStep;
+  renderConsumerDebt();
+}
+
+function consumerDebtGoBack() {
+  if (!state.consumerDebt.history.length) return;
+  const previousStep = state.consumerDebt.history.pop();
+  resetConsumerDebtBranch(previousStep);
+  state.consumerDebt.step = previousStep;
+  renderConsumerDebt();
+}
+
+function resetConsumerDebtBranch(step) {
+  const section = state.consumerDebt;
+  const clearFromCommercial = () => {
+    section.isCommercial = null;
+    section.isPersonalCashOut = null;
+    section.loanPurpose = null;
+    section.inherited = null;
+    section.inheritedOccupied = null;
+    section.inheritedRentalIntent = null;
+    section.propertyChoice = null;
+    section.ownerOcc = null;
+    section.ooConfig = null;
+    section.useChoice = null;
+    section.flipperCheck = null;
+  };
+
+  switch (step) {
+    case 0:
+      state.consumerDebt = createConsumerDebtDefaults();
+      return;
+    case 1:
+      section.managerChoice = null;
+      clearFromCommercial();
+      return;
+    case 2:
+      clearFromCommercial();
+      return;
+    case 3:
+      section.isPersonalCashOut = null;
+      section.loanPurpose = null;
+      section.inherited = null;
+      section.inheritedOccupied = null;
+      section.inheritedRentalIntent = null;
+      section.propertyChoice = null;
+      section.ownerOcc = null;
+      section.ooConfig = null;
+      section.useChoice = null;
+      section.flipperCheck = null;
+      return;
+    case 4:
+      section.loanPurpose = null;
+      section.inherited = null;
+      section.inheritedOccupied = null;
+      section.inheritedRentalIntent = null;
+      section.propertyChoice = null;
+      section.ownerOcc = null;
+      section.ooConfig = null;
+      section.useChoice = null;
+      section.flipperCheck = null;
+      return;
+    case 5:
+      section.inherited = null;
+      section.inheritedOccupied = null;
+      section.inheritedRentalIntent = null;
+      section.propertyChoice = null;
+      section.ownerOcc = null;
+      section.ooConfig = null;
+      section.useChoice = null;
+      section.flipperCheck = null;
+      return;
+    case 6:
+      section.inheritedOccupied = null;
+      section.inheritedRentalIntent = null;
+      return;
+    case 7:
+      section.propertyChoice = null;
+      section.ownerOcc = null;
+      section.ooConfig = null;
+      section.useChoice = null;
+      section.flipperCheck = null;
+      return;
+    case 8:
+      section.inheritedOccupied = "Yes";
+      section.inheritedRentalIntent = null;
+      return;
+    case 9:
+      section.inheritedRentalIntent = null;
+      return;
+    case 10:
+      section.ownerOcc = null;
+      section.ooConfig = null;
+      section.useChoice = null;
+      section.flipperCheck = null;
+      return;
+    case 11:
+      section.inheritedRentalIntent = "Yes";
+      return;
+    case 12:
+      section.inheritedRentalIntent = "No";
+      return;
+    case 13:
+      section.ooConfig = null;
+      return;
+    case 14:
+      section.useChoice = null;
+      section.flipperCheck = null;
+      return;
+    case 15:
+      section.flipperCheck = null;
+      return;
+    default:
+      return;
+  }
+}
+
 function bindLoiLoanFieldEvents(loanKey) {
   const loanElements = elements.loi[loanKey];
   const getLoanState = () => state.loi[loanKey];
@@ -2731,6 +3405,155 @@ function syncLoiFeeFields(loanState, feeType) {
     : formatMoneyInput(loanAmount * (points / 100), 0);
 }
 
+function getConsumerDebtHistoryItems() {
+  const items = [];
+  const consumerDebt = state.consumerDebt;
+  const history = consumerDebt.history;
+
+  if (history.length > 0 && consumerDebt.entityChoice) {
+    items.push(["Held in a pre-existing entity?", consumerDebt.entityChoice]);
+  }
+  if (history.includes(1) && consumerDebt.managerAsked && consumerDebt.managerChoice) {
+    items.push(["Manager entity?", consumerDebt.managerChoice]);
+  }
+  if (history.includes(2) && consumerDebt.isCommercial !== null) {
+    items.push(["Commercial property?", consumerDebt.isCommercial ? "Yes" : "No"]);
+  }
+  if (history.includes(3) && consumerDebt.isPersonalCashOut !== null) {
+    items.push(["Cash out for personal use?", consumerDebt.isPersonalCashOut ? "Yes" : "No"]);
+  }
+  if (history.includes(4) && consumerDebt.loanPurpose && consumerDebt.loanPurpose !== "BusinessPurposeAuto") {
+    items.push(["Loan purpose:", consumerDebt.loanPurpose]);
+  }
+  if (history.includes(5) && consumerDebt.inherited !== null) {
+    items.push(["Inherited?", consumerDebt.inherited]);
+  }
+  if (history.includes(6) && consumerDebt.inherited === "Yes" && consumerDebt.inheritedOccupied !== null) {
+    items.push(["Borrower or family occupancy?", consumerDebt.inheritedOccupied]);
+  }
+  if (history.includes(9) && consumerDebt.inherited === "Yes" && consumerDebt.inheritedOccupied === "No" && consumerDebt.inheritedRentalIntent !== null) {
+    items.push(["Always rental or investment?", consumerDebt.inheritedRentalIntent]);
+  }
+  if (history.includes(7) && consumerDebt.inherited === "No" && consumerDebt.propertyChoice) {
+    items.push(["Property type:", consumerDebt.propertyChoice]);
+  }
+  if (history.includes(10) && consumerDebt.inherited === "No" && consumerDebt.propertyChoice && consumerDebt.ownerOcc !== null) {
+    items.push(["Owner-occupied?", consumerDebt.ownerOcc]);
+  }
+  if (history.includes(13) && consumerDebt.ownerOcc === "Yes" && consumerDebt.ooConfig) {
+    items.push(["Majority rented to 3rd parties?", consumerDebt.ooConfig === "MajorityRented" ? "Yes" : "No"]);
+  }
+  if (history.includes(14) && consumerDebt.ownerOcc === "No" && consumerDebt.useChoice) {
+    items.push(["Rental or flip?", consumerDebt.useChoice]);
+  }
+  if (history.includes(15) && consumerDebt.flipperCheck !== null) {
+    items.push(["Borrower in real estate business?", consumerDebt.flipperCheck]);
+  }
+
+  return items;
+}
+
+function getConsumerDebtResult() {
+  const consumerDebt = state.consumerDebt;
+
+  if (consumerDebt.entityChoice === "Yes" || consumerDebt.managerChoice === "Yes") {
+    return {
+      type: "result",
+      status: "approve",
+      text: "We can lend. Loans to bona-fide entities are exempt from consumer-loan regulations, regardless of scenario.",
+    };
+  }
+
+  if (consumerDebt.loanPurpose === "BusinessPurposeAuto") {
+    return {
+      type: "result",
+      status: "approve",
+      text: "We can lend. This is a business purpose loan.",
+    };
+  }
+
+  if (consumerDebt.isPersonalCashOut) {
+    if (consumerDebt.isCommercial) {
+      return {
+        type: "result",
+        status: "caution",
+        text: "We can lend, but a loan on a commercial property for consumer purposes does not require an NMLS license and does require special disclosure forms with attorney assistance.",
+      };
+    }
+    return {
+      type: "result",
+      status: "pass",
+      text: "Pass. Cash-out for personal use on 1-4 unit properties is considered a consumer loan and requires an NMLS license.",
+    };
+  }
+
+  if (consumerDebt.isCommercial && consumerDebt.isPersonalCashOut === false) {
+    return {
+      type: "result",
+      status: "approve",
+      text: "We can lend. This is a business purpose loan.",
+    };
+  }
+
+  const matrixKey = getConsumerDebtMatrixKey();
+  const matrixValue = matrixKey && consumerDebt.loanPurpose ? consumerDebtOutcomeMatrix[matrixKey]?.[consumerDebt.loanPurpose] : null;
+  if (matrixValue === "flipper-check") {
+    if (consumerDebt.flipperCheck === null) return { redirectStep: 15 };
+    return consumerDebt.flipperCheck === "Yes"
+      ? {
+          type: "result",
+          status: "approve",
+          text: "We can lend. The borrower is in the business of real estate or is an active flipper.",
+        }
+      : {
+          type: "result",
+          status: "pass",
+          text: "Pass if this is the borrower's first flip ever, or first in a while. If they are not in the business of flipping, it is considered a personal investment.",
+        };
+  }
+
+  if (!matrixValue) {
+    return {
+      type: "result",
+      status: "pass",
+      text: "Complete the decision path to determine eligibility.",
+    };
+  }
+
+  return {
+    type: "result",
+    status: classifyConsumerDebtResultStatus(matrixValue),
+    text: matrixValue,
+  };
+}
+
+function getConsumerDebtMatrixKey() {
+  const consumerDebt = state.consumerDebt;
+  if (consumerDebt.isCommercial) return "Commercial Property";
+  if (consumerDebt.ownerOcc === "No") {
+    return consumerDebt.useChoice === "Flip" ? "Flip 1-4 Unit" : "Rental 1-4 Unit";
+  }
+  if (consumerDebt.ooConfig === "SFR_Duplex" || ["SFR", "Duplex"].includes(consumerDebt.propertyChoice)) {
+    return "OO SFR or Duplex";
+  }
+  if (["Triplex", "Quadruplex"].includes(consumerDebt.propertyChoice) && consumerDebt.ownerOcc === "Yes") {
+    return "OO 3-4 Unit";
+  }
+  return "OO 3-4 Unit";
+}
+
+function classifyConsumerDebtResultStatus(text) {
+  if (text.includes("but")) return "caution";
+  if (text.startsWith("Pass")) return "pass";
+  return "approve";
+}
+
+function getConsumerDebtResultHeadline(status) {
+  if (status === "approve") return "Eligible";
+  if (status === "caution") return "Eligible With Caution";
+  return "Pass";
+}
+
 function clearPageSection(sectionKey, button) {
   const defaults = createDefaultState();
   if (sectionKey === "oneToFourSale") state.oneToFour.sale = defaults.oneToFour.sale;
@@ -2740,6 +3563,7 @@ function clearPageSection(sectionKey, button) {
   if (sectionKey === "apartmentCurrent") state.apartment.current = defaults.apartment.current;
   if (sectionKey === "apartmentMarket") state.apartment.market = defaults.apartment.market;
   if (sectionKey === "apartmentSale") state.apartment.sale = defaults.apartment.sale;
+  if (sectionKey === "consumerDebt") state.consumerDebt = defaults.consumerDebt;
   if (sectionKey === "loi") state.loi = defaults.loi;
   renderAll();
   flashButton(button, "Cleared");

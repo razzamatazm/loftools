@@ -24,6 +24,7 @@
             <button class="tab active" type="button" data-tab="oneToFour" aria-selected="true">1-4 Unit Valuations</button>
             <button class="tab" type="button" data-tab="commercial" aria-selected="false">Commercial Valuations</button>
             <button class="tab" type="button" data-tab="apartment" aria-selected="false">Apartment Valuations</button>
+            <button class="tab" type="button" data-tab="consumerDebt" aria-selected="false">Consumer Debt Checker</button>
             <button class="tab" type="button" data-tab="loi" aria-selected="false">Blended LOI Checker</button>
           </div>
 
@@ -683,10 +684,23 @@
             </section>
           </section>
 
+          <section class="panel" data-panel="consumerDebt" hidden>
+            <div class="panel-head">
+              <div>
+                <h2>Consumer Debt Checker</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="consumer-debt-back-btn" hidden>Back</button>
+                <button class="secondary-btn" type="button" id="consumer-debt-clear-btn" disabled>Start Over</button>
+              </div>
+            </div>
+
+            <div class="consumer-debt-shell" id="consumer-debt-content"></div>
+          </section>
+
           <section class="panel" data-panel="loi" hidden>
             <div class="panel-head">
               <div>
-                <p class="panel-kicker">Debt Terms</p>
                 <h2>Blended LOI Checker</h2>
               </div>
               <div class="panel-actions">
@@ -697,8 +711,7 @@
             <div class="loi-grid">
               <section class="loi-card">
                 <div class="loi-card-head">
-                  <p class="panel-kicker">Senior Debt</p>
-                  <h3>1st TD</h3>
+                  <h3>1st TD Terms</h3>
                 </div>
 
                 <div class="loi-card-body">
@@ -708,7 +721,7 @@
                       <input id="loi-first-loan-amount" type="text" inputmode="decimal" placeholder="Loan amount..." />
                     </label>
 
-                    <label class="field">
+                    <label class="field field-width-xxs compact">
                       <span>Interest Rate</span>
                       <div class="input-suffix">
                         <input id="loi-first-interest-rate" type="text" inputmode="decimal" placeholder="Rate..." />
@@ -760,8 +773,7 @@
 
               <section class="loi-card">
                 <div class="loi-card-head">
-                  <p class="panel-kicker">Junior Debt</p>
-                  <h3>2nd TD</h3>
+                  <h3>2nd TD Terms</h3>
                 </div>
 
                 <div class="loi-card-body">
@@ -771,7 +783,7 @@
                       <input id="loi-second-loan-amount" type="text" inputmode="decimal" placeholder="Loan amount..." />
                     </label>
 
-                    <label class="field">
+                    <label class="field field-width-xxs compact">
                       <span>Interest Rate</span>
                       <div class="input-suffix">
                         <input id="loi-second-interest-rate" type="text" inputmode="decimal" placeholder="Rate..." />
@@ -823,8 +835,7 @@
 
               <section class="loi-card loi-card-blended">
                 <div class="loi-card-head">
-                  <p class="panel-kicker">Combined View</p>
-                  <h3>Blended</h3>
+                  <h3>Blended Terms</h3>
                 </div>
 
                 <div class="loi-blended-highlights">

@@ -1116,6 +1116,230 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
   font-size: 13.5px;
 }
 
+/* ── Consumer debt checker ───────────────────────────────────── */
+
+.consumer-debt-shell {
+  display: grid;
+  gap: 26px;
+}
+
+.consumer-debt-flow {
+  display: grid;
+  gap: 0;
+}
+
+.consumer-debt-stage-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 247, 244, 0.98));
+  box-shadow: var(--shadow);
+  padding: 24px 26px;
+}
+
+.consumer-debt-stage-head {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.consumer-debt-stage-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.consumer-debt-history-list {
+  display: grid;
+  gap: 14px;
+}
+
+.consumer-debt-history-list-inline {
+  margin-top: 22px;
+  margin-bottom: 2px;
+  padding: 2px 0 4px;
+}
+
+.consumer-debt-history-item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.consumer-debt-history-marker {
+  position: relative;
+  width: 14px;
+  min-height: 14px;
+}
+
+.consumer-debt-history-marker::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 3px rgba(26, 122, 98, 0.12);
+}
+
+.consumer-debt-history-item:not(:last-child) .consumer-debt-history-marker::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 5px;
+  bottom: -18px;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(26, 122, 98, 0.25), rgba(26, 122, 98, 0.06));
+}
+
+.consumer-debt-history-more {
+  color: var(--muted);
+}
+
+.consumer-debt-history-copy {
+  display: grid;
+  gap: 4px;
+  padding: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.consumer-debt-history-copy span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.consumer-debt-history-copy strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.consumer-debt-question-card {
+  display: grid;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.consumer-debt-question {
+  margin: 0;
+  font-family: "Lora", Georgia, serif;
+  font-size: clamp(1.45rem, 2.2vw, 2rem);
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+}
+
+.consumer-debt-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid rgba(26, 122, 98, 0.22);
+  border-radius: var(--radius-md);
+  background: var(--brand-light);
+  color: #214c42;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.consumer-debt-note-mark {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.consumer-debt-options {
+  display: grid;
+  gap: 12px;
+}
+
+.consumer-debt-options-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.consumer-debt-answer {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 247, 244, 0.98));
+  color: var(--ink);
+  padding: 17px 18px;
+  min-height: 66px;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.consumer-debt-answer:hover,
+.consumer-debt-answer:focus-visible {
+  border-color: rgba(26, 122, 98, 0.45);
+  background: rgba(26, 122, 98, 0.05);
+  box-shadow: 0 0 0 3px rgba(26, 122, 98, 0.08);
+  outline: none;
+}
+
+.consumer-debt-answer:hover {
+  transform: translateY(-1px);
+}
+
+.consumer-debt-result-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: 24px 26px 26px;
+  margin-top: 20px;
+  box-shadow: 0 10px 28px rgba(20, 18, 12, 0.08);
+}
+
+.consumer-debt-result-hero {
+  display: grid;
+  gap: 0;
+  margin-bottom: 10px;
+}
+
+.consumer-debt-result-headline {
+  margin: 0;
+  font-family: "Lora", Georgia, serif;
+  font-size: clamp(1.45rem, 2.1vw, 1.95rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.consumer-debt-result-text {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 16px;
+  line-height: 1.65;
+  font-weight: 600;
+}
+
+.consumer-debt-result-card[data-status="approve"] {
+  background: linear-gradient(180deg, rgba(26, 122, 98, 0.12), rgba(26, 122, 98, 0.05));
+  border-color: rgba(26, 122, 98, 0.32);
+  color: var(--brand-deep);
+  box-shadow: 0 10px 26px rgba(26, 122, 98, 0.12);
+}
+
+.consumer-debt-result-card[data-status="caution"] {
+  background: linear-gradient(180deg, rgba(199, 94, 30, 0.12), rgba(199, 94, 30, 0.05));
+  border-color: rgba(199, 94, 30, 0.34);
+  color: #834316;
+  box-shadow: 0 10px 26px rgba(199, 94, 30, 0.12);
+}
+
+.consumer-debt-result-card[data-status="pass"] {
+  background: linear-gradient(180deg, rgba(184, 58, 34, 0.11), rgba(184, 58, 34, 0.05));
+  border-color: rgba(184, 58, 34, 0.32);
+  color: #7c2f21;
+  box-shadow: 0 10px 26px rgba(184, 58, 34, 0.12);
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 
 @media (max-width: 1024px) {
@@ -1149,6 +1373,10 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
   }
 
   .loi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .consumer-debt-options-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1269,6 +1497,27 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
 
   .loi-field-span-2 {
     grid-column: auto;
+  }
+
+  .consumer-debt-history-card,
+  .consumer-debt-stage-card {
+    padding: 18px;
+  }
+
+  .consumer-debt-stage-head,
+  .consumer-debt-stage-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .consumer-debt-question-card {
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .consumer-debt-question {
+    font-size: clamp(1.28rem, 7vw, 1.6rem);
   }
 }
 
