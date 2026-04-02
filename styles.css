@@ -976,7 +976,7 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
 
 .loi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 0.92fr) minmax(0, 1.16fr);
   gap: 18px;
 }
 
@@ -1008,21 +1008,37 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
   gap: 16px;
 }
 
+.loi-primary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 96px) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.loi-field-span-2 {
+  grid-column: span 2;
+}
+
 .loi-fee-row {
   display: grid;
-  grid-template-columns: minmax(112px, 132px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 96px) minmax(0, 1fr);
   gap: 12px;
   align-items: end;
 }
 
 .loi-fee-section {
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+  min-width: 0;
 }
 
 .loi-fee-section .setup-label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.loi-fee-section .field,
+.loi-fee-row .field,
+.loi-fee-row .input-suffix,
+.loi-fee-row input {
+  min-width: 0;
 }
 
 .loi-blended-highlights,
@@ -1032,7 +1048,11 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
 }
 
 .loi-blended-highlights {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.loi-highlight-card-wide {
+  grid-column: 1 / -1;
 }
 
 .loi-blended-secondary {
@@ -1051,14 +1071,16 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
 
 .loi-highlight-card strong {
   font-size: clamp(1.4rem, 2.2vw, 2rem);
+  min-width: 0;
 }
 
-.loi-secondary-card {
-  background: rgba(255, 255, 255, 0.74);
+.loi-blended-secondary .loi-highlight-card {
+  min-width: 0;
 }
 
-.loi-secondary-card strong {
-  font-size: clamp(1rem, 1.35vw, 1.2rem);
+.loi-blended-secondary .loi-highlight-card strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ── Rent sample grid ────────────────────────────────────────── */
@@ -1239,9 +1261,14 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
     padding: 16px;
   }
 
+  .loi-primary-grid,
   .loi-fee-row,
   .loi-blended-secondary {
     grid-template-columns: 1fr;
+  }
+
+  .loi-field-span-2 {
+    grid-column: auto;
   }
 }
 

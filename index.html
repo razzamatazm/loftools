@@ -24,7 +24,7 @@
             <button class="tab active" type="button" data-tab="oneToFour" aria-selected="true">1-4 Unit Valuations</button>
             <button class="tab" type="button" data-tab="commercial" aria-selected="false">Commercial Valuations</button>
             <button class="tab" type="button" data-tab="apartment" aria-selected="false">Apartment Valuations</button>
-            <button class="tab" type="button" data-tab="loi" aria-selected="false">TD LOI</button>
+            <button class="tab" type="button" data-tab="loi" aria-selected="false">Blended LOI Checker</button>
           </div>
 
           <section class="panel active" data-panel="oneToFour">
@@ -687,7 +687,7 @@
             <div class="panel-head">
               <div>
                 <p class="panel-kicker">Debt Terms</p>
-                <h2>TD LOI</h2>
+                <h2>Blended LOI Checker</h2>
               </div>
               <div class="panel-actions">
                 <button class="secondary-btn" type="button" id="loi-clear-btn">Clear Values</button>
@@ -702,22 +702,24 @@
                 </div>
 
                 <div class="loi-card-body">
-                  <label class="field">
-                    <span>Loan Amount</span>
-                    <input id="loi-first-loan-amount" type="text" inputmode="decimal" placeholder="Loan amount..." />
-                  </label>
+                  <div class="loi-primary-grid">
+                    <label class="field loi-field-span-2">
+                      <span>Loan Amount</span>
+                      <input id="loi-first-loan-amount" type="text" inputmode="decimal" placeholder="Loan amount..." />
+                    </label>
 
-                  <label class="field">
-                    <span>Interest Rate</span>
-                    <div class="input-suffix">
-                      <input id="loi-first-interest-rate" type="text" inputmode="decimal" placeholder="Rate..." />
-                      <span>%</span>
+                    <label class="field">
+                      <span>Interest Rate</span>
+                      <div class="input-suffix">
+                        <input id="loi-first-interest-rate" type="text" inputmode="decimal" placeholder="Rate..." />
+                        <span>%</span>
+                      </div>
+                    </label>
+
+                    <div class="field">
+                      <span>Monthly Payment</span>
+                      <div class="readonly-display" id="loi-first-monthly-payment">-</div>
                     </div>
-                  </label>
-
-                  <div class="field">
-                    <span>Monthly Payment</span>
-                    <div class="readonly-display" id="loi-first-monthly-payment">-</div>
                   </div>
 
                   <div class="loi-fee-section">
@@ -763,22 +765,24 @@
                 </div>
 
                 <div class="loi-card-body">
-                  <label class="field">
-                    <span>Loan Amount</span>
-                    <input id="loi-second-loan-amount" type="text" inputmode="decimal" placeholder="Loan amount..." />
-                  </label>
+                  <div class="loi-primary-grid">
+                    <label class="field loi-field-span-2">
+                      <span>Loan Amount</span>
+                      <input id="loi-second-loan-amount" type="text" inputmode="decimal" placeholder="Loan amount..." />
+                    </label>
 
-                  <label class="field">
-                    <span>Interest Rate</span>
-                    <div class="input-suffix">
-                      <input id="loi-second-interest-rate" type="text" inputmode="decimal" placeholder="Rate..." />
-                      <span>%</span>
+                    <label class="field">
+                      <span>Interest Rate</span>
+                      <div class="input-suffix">
+                        <input id="loi-second-interest-rate" type="text" inputmode="decimal" placeholder="Rate..." />
+                        <span>%</span>
+                      </div>
+                    </label>
+
+                    <div class="field">
+                      <span>Monthly Payment</span>
+                      <div class="readonly-display" id="loi-second-monthly-payment">-</div>
                     </div>
-                  </label>
-
-                  <div class="field">
-                    <span>Monthly Payment</span>
-                    <div class="readonly-display" id="loi-second-monthly-payment">-</div>
                   </div>
 
                   <div class="loi-fee-section">
@@ -824,7 +828,7 @@
                 </div>
 
                 <div class="loi-blended-highlights">
-                  <article class="summary-card loi-highlight-card">
+                  <article class="summary-card loi-highlight-card loi-highlight-card-wide">
                     <span>Combined Loan Amount</span>
                     <strong id="loi-blended-loan-amount" tabindex="0" data-loi-blended-output="0">-</strong>
                   </article>
@@ -839,13 +843,13 @@
                 </div>
 
                 <div class="loi-blended-secondary">
-                  <article class="summary-card loi-secondary-card">
-                    <span>Blended Lender Fee</span>
-                    <strong id="loi-blended-origination-fee" tabindex="0" data-loi-blended-output="3">-</strong>
-                  </article>
-                  <article class="summary-card loi-secondary-card">
+                  <article class="summary-card loi-highlight-card">
                     <span>Blended Lender Fee Points</span>
-                    <strong id="loi-blended-origination-points" tabindex="0" data-loi-blended-output="4">-</strong>
+                    <strong id="loi-blended-origination-points" tabindex="0" data-loi-blended-output="3">-</strong>
+                  </article>
+                  <article class="summary-card loi-highlight-card">
+                    <span>Blended Lender Fee</span>
+                    <strong id="loi-blended-origination-fee" tabindex="0" data-loi-blended-output="4">-</strong>
                   </article>
                 </div>
 

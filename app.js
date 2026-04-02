@@ -915,15 +915,15 @@ function bindTabFlows() {
     elements.loi.first.loanAmount,
     elements.loi.first.interestRate,
     elements.loi.first.originationPoints,
-    elements.loi.first.originationFeeAmount,
+    ...(shouldIncludeLoiFeeAmountInTabFlow(state.loi.first, "origination") ? [elements.loi.first.originationFeeAmount] : []),
     elements.loi.first.brokerPoints,
-    elements.loi.first.brokerFeeAmount,
+    ...(shouldIncludeLoiFeeAmountInTabFlow(state.loi.first, "broker") ? [elements.loi.first.brokerFeeAmount] : []),
     elements.loi.second.loanAmount,
     elements.loi.second.interestRate,
     elements.loi.second.originationPoints,
-    elements.loi.second.originationFeeAmount,
+    ...(shouldIncludeLoiFeeAmountInTabFlow(state.loi.second, "origination") ? [elements.loi.second.originationFeeAmount] : []),
     elements.loi.second.brokerPoints,
-    elements.loi.second.brokerFeeAmount,
+    ...(shouldIncludeLoiFeeAmountInTabFlow(state.loi.second, "broker") ? [elements.loi.second.brokerFeeAmount] : []),
     ...Array.from(document.querySelectorAll("[data-loi-blended-output]")).sort(sortLoiOutputs),
   ]);
 }
@@ -1022,6 +1022,13 @@ function sortLoiOutputs(left, right) {
   const leftOutput = Number(left.getAttribute("data-loi-blended-output"));
   const rightOutput = Number(right.getAttribute("data-loi-blended-output"));
   return leftOutput - rightOutput;
+}
+
+function shouldIncludeLoiFeeAmountInTabFlow(loanState, feeType) {
+  const isOrigination = feeType === "origination";
+  const pointsKey = isOrigination ? "originationPoints" : "brokerPoints";
+  const sourceKey = isOrigination ? "originationFeeSource" : "brokerFeeSource";
+  return loanState[sourceKey] === "amount" || parseLooseNumber(loanState[pointsKey]) === null;
 }
 
 function renderAll() {
