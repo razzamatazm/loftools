@@ -972,6 +972,95 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
   font-size: 1rem;
 }
 
+/* ── LOI layout ──────────────────────────────────────────────── */
+
+.loi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.loi-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(254, 254, 254, 0.98), rgba(244, 243, 240, 0.88));
+}
+
+.loi-card-blended {
+  background: linear-gradient(180deg, rgba(26, 122, 98, 0.06), rgba(248, 247, 245, 0.98));
+}
+
+.loi-card-head {
+  margin-bottom: 16px;
+}
+
+.loi-card-head h3 {
+  margin: 0;
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.loi-card-body {
+  display: grid;
+  gap: 16px;
+}
+
+.loi-fee-row {
+  display: grid;
+  grid-template-columns: minmax(112px, 132px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.loi-fee-section {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.loi-fee-section .setup-label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.loi-blended-highlights,
+.loi-blended-secondary {
+  display: grid;
+  gap: 12px;
+}
+
+.loi-blended-highlights {
+  grid-template-columns: 1fr;
+}
+
+.loi-blended-secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.loi-highlight-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(244, 247, 244, 0.98));
+}
+
+.loi-highlight-card::before {
+  width: 4px;
+  background: var(--brand);
+}
+
+.loi-highlight-card strong {
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+}
+
+.loi-secondary-card {
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.loi-secondary-card strong {
+  font-size: clamp(1rem, 1.35vw, 1.2rem);
+}
+
 /* ── Rent sample grid ────────────────────────────────────────── */
 
 .rent-sample-grid {
@@ -1035,6 +1124,10 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
   .subject-setup-grid,
   .subject-setup-grid-apt-sale {
     grid-template-columns: repeat(2, minmax(0, max-content));
+  }
+
+  .loi-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1140,6 +1233,15 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
 
   .rent-sample-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .loi-card {
+    padding: 16px;
+  }
+
+  .loi-fee-row,
+  .loi-blended-secondary {
+    grid-template-columns: 1fr;
   }
 }
 

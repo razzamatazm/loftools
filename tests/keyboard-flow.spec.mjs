@@ -195,3 +195,97 @@ test("apartment mode switching preserves both per-unit and grouped inputs while 
   await expect(page.locator('[data-apartment-grouped-vacant-units="0"]')).toHaveValue("3");
   await expect(page.locator("#apartment-sale-subject-units")).toHaveText("20");
 });
+
+test("td loi flow tabs from 1st td inputs through 2nd td inputs into blended outputs", async ({ page }) => {
+  await page.getByRole("button", { name: "TD LOI", exact: true }).click();
+  await expect(page.locator("#loi-first-loan-amount")).toBeVisible();
+
+  await page.locator("#loi-first-loan-amount").fill("1000000");
+  await pressTab(page);
+  await expectFocused(page, "#loi-first-interest-rate");
+
+  await page.locator("#loi-first-interest-rate").fill("1");
+  await pressTab(page);
+  await expectFocused(page, "#loi-first-origination-points");
+
+  await page.locator("#loi-first-origination-points").fill("2");
+  await pressTab(page);
+  await expectFocused(page, "#loi-first-origination-fee");
+
+  await pressTab(page);
+  await expectFocused(page, "#loi-first-broker-points");
+
+  await page.locator("#loi-first-broker-points").fill("1");
+  await pressTab(page);
+  await expectFocused(page, "#loi-first-broker-fee");
+
+  await pressTab(page);
+  await expectFocused(page, "#loi-second-loan-amount");
+
+  await page.locator("#loi-second-loan-amount").fill("500000");
+  await pressTab(page);
+  await expectFocused(page, "#loi-second-interest-rate");
+
+  await page.locator("#loi-second-interest-rate").fill("1.5");
+  await pressTab(page);
+  await expectFocused(page, "#loi-second-origination-points");
+
+  await page.locator("#loi-second-origination-points").fill("1");
+  await pressTab(page);
+  await expectFocused(page, "#loi-second-origination-fee");
+
+  await pressTab(page);
+  await expectFocused(page, "#loi-second-broker-points");
+
+  await page.locator("#loi-second-broker-points").fill("0.5");
+  await pressTab(page);
+  await expectFocused(page, "#loi-second-broker-fee");
+
+  await pressTab(page);
+  await expectFocused(page, "#loi-blended-loan-amount");
+});
+
+test("td loi calculates blended values, syncs fees, clears, and persists", async ({ page }) => {
+  await page.getByRole("button", { name: "TD LOI", exact: true }).click();
+
+  await page.locator("#loi-first-loan-amount").fill("1000000");
+  await page.locator("#loi-first-interest-rate").fill("1");
+  await page.locator("#loi-first-origination-points").fill("2");
+  await page.locator("#loi-first-origination-points").blur();
+  await expect(page.locator("#loi-first-origination-fee")).toHaveValue("$20,000");
+
+  await page.locator("#loi-first-broker-points").fill("0.5");
+  await page.locator("#loi-first-broker-points").blur();
+  await expect(page.locator("#loi-first-broker-fee")).toHaveValue("$5,000");
+  await page.locator("#loi-first-interest-rate").blur();
+
+  await page.locator("#loi-second-loan-amount").fill("500000");
+  await page.locator("#loi-second-interest-rate").fill("1.5");
+  await page.locator("#loi-second-origination-fee").fill("10000");
+  await page.locator("#loi-second-origination-fee").blur();
+  await expect(page.locator("#loi-second-origination-points")).toHaveValue("2");
+
+  await page.locator("#loi-second-broker-fee").fill("2500");
+  await page.locator("#loi-second-broker-fee").blur();
+  await expect(page.locator("#loi-second-broker-points")).toHaveValue("0.5");
+  await page.locator("#loi-second-interest-rate").blur();
+
+  await expect(page.locator("#loi-blended-loan-amount")).toHaveText("$1,500,000");
+  await expect(page.locator("#loi-blended-origination-fee")).toHaveText("$30,000");
+  await expect(page.locator("#loi-blended-origination-points")).toHaveText("2.0000%");
+  await expect(page.locator("#loi-blended-interest-rate")).toHaveText("1.17%");
+  await expect(page.locator("#loi-blended-monthly-payment")).toHaveText("$17,500");
+  await expect(page.locator("#loi-first-monthly-payment")).toHaveText("$10,000");
+  await expect(page.locator("#loi-second-monthly-payment")).toHaveText("$7,500");
+
+  await page.reload();
+  await page.getByRole("button", { name: "TD LOI", exact: true }).click();
+  await expect(page.locator("#loi-first-loan-amount")).toHaveValue("$1,000,000");
+  await expect(page.locator("#loi-first-interest-rate")).toHaveValue("1");
+  await expect(page.locator("#loi-second-origination-fee")).toHaveValue("$10,000");
+  await expect(page.locator("#loi-blended-monthly-payment")).toHaveText("$17,500");
+
+  await page.locator("#loi-clear-btn").click();
+  await expect(page.locator("#loi-first-loan-amount")).toHaveValue("");
+  await expect(page.locator("#loi-blended-interest-rate")).toHaveText("-");
+});

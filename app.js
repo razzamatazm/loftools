@@ -140,6 +140,34 @@ const elements = {
       addRowBtn: document.getElementById("apartment-sale-add-row"),
     },
   },
+  loi: {
+    clearBtn: document.getElementById("loi-clear-btn"),
+    first: {
+      loanAmount: document.getElementById("loi-first-loan-amount"),
+      interestRate: document.getElementById("loi-first-interest-rate"),
+      monthlyPayment: document.getElementById("loi-first-monthly-payment"),
+      originationPoints: document.getElementById("loi-first-origination-points"),
+      originationFeeAmount: document.getElementById("loi-first-origination-fee"),
+      brokerPoints: document.getElementById("loi-first-broker-points"),
+      brokerFeeAmount: document.getElementById("loi-first-broker-fee"),
+    },
+    second: {
+      loanAmount: document.getElementById("loi-second-loan-amount"),
+      interestRate: document.getElementById("loi-second-interest-rate"),
+      monthlyPayment: document.getElementById("loi-second-monthly-payment"),
+      originationPoints: document.getElementById("loi-second-origination-points"),
+      originationFeeAmount: document.getElementById("loi-second-origination-fee"),
+      brokerPoints: document.getElementById("loi-second-broker-points"),
+      brokerFeeAmount: document.getElementById("loi-second-broker-fee"),
+    },
+    blended: {
+      loanAmount: document.getElementById("loi-blended-loan-amount"),
+      interestRate: document.getElementById("loi-blended-interest-rate"),
+      originationFee: document.getElementById("loi-blended-origination-fee"),
+      originationPoints: document.getElementById("loi-blended-origination-points"),
+      monthlyPayment: document.getElementById("loi-blended-monthly-payment"),
+    },
+  },
 };
 
 const derived = {
@@ -217,6 +245,10 @@ function createDefaultState() {
         rows: [createAptSaleRow()],
       },
     },
+    loi: {
+      first: createLoiLoanDefaults(),
+      second: createLoiLoanDefaults(),
+    },
   };
 }
 
@@ -252,6 +284,10 @@ function normalizeNewShape(input, fallback) {
       current: normalizeApartmentCurrent(input?.apartment?.current, fallback.apartment.current),
       market: normalizeApartmentMarket(input?.apartment?.market, fallback.apartment.market),
       sale: normalizeApartmentSale(input?.apartment?.sale, fallback.apartment.sale),
+    },
+    loi: {
+      first: normalizeLoiLoan(input?.loi?.first, fallback.loi.first),
+      second: normalizeLoiLoan(input?.loi?.second, fallback.loi.second),
     },
   };
 }
@@ -300,11 +336,15 @@ function normalizeLegacyShape(input, fallback) {
       market: normalizeApartmentMarket(input?.aptRent, fallback.apartment.market),
       sale: normalizeApartmentSale(input?.aptSale, fallback.apartment.sale),
     },
+    loi: {
+      first: fallback.loi.first,
+      second: fallback.loi.second,
+    },
   };
 }
 
 function normalizeActiveTab(activeTab, fallback) {
-  if (["oneToFour", "commercial", "apartment"].includes(activeTab)) return activeTab;
+  if (["oneToFour", "commercial", "apartment", "loi"].includes(activeTab)) return activeTab;
   return fallback;
 }
 
@@ -313,6 +353,23 @@ function normalizeLegacyActiveTab(activeTab) {
   if (activeTab === "rent" || activeTab === "lease" || activeTab === "currentRent") return "commercial";
   if (activeTab === "aptSale" || activeTab === "aptRent") return "apartment";
   return "oneToFour";
+}
+
+function normalizeLoiLoan(input, fallback) {
+  const migratedInterestRate = Array.isArray(input?.ratePeriods)
+    ? input.ratePeriods.find((period) => parseLooseNumber(period?.monthlyRatePercent) !== null)?.monthlyRatePercent
+    : null;
+
+  return {
+    loanAmount: String(input?.loanAmount || ""),
+    interestRate: String(input?.interestRate ?? migratedInterestRate ?? fallback.interestRate),
+    originationPoints: String(input?.originationPoints || ""),
+    originationFeeAmount: String(input?.originationFeeAmount || ""),
+    brokerPoints: String(input?.brokerPoints || ""),
+    brokerFeeAmount: String(input?.brokerFeeAmount || ""),
+    originationFeeSource: input?.originationFeeSource === "amount" || input?.feeSource === "amount" ? "amount" : "points",
+    brokerFeeSource: input?.brokerFeeSource === "amount" ? "amount" : "points",
+  };
 }
 
 function normalizeSaleSection(input, fallback) {
@@ -455,6 +512,19 @@ function createApartmentRentRollRow() {
 
 function createApartmentGroupedRentRollRow() {
   return { type: "", totalUnits: "", occupiedRent: "", vacantUnits: "", fillMethod: "market" };
+}
+
+function createLoiLoanDefaults() {
+  return {
+    loanAmount: "",
+    interestRate: "",
+    originationPoints: "",
+    originationFeeAmount: "",
+    brokerPoints: "",
+    brokerFeeAmount: "",
+    originationFeeSource: "points",
+    brokerFeeSource: "points",
+  };
 }
 
 function bindStaticEvents() {
@@ -660,6 +730,10 @@ function bindStaticEvents() {
   elements.apartment.sale.copyBtn?.addEventListener("click", () => copyAmount(derived.apartmentSaleCopy, elements.apartment.sale.copyBtn));
   elements.apartment.sale.clearBtn?.addEventListener("click", () => clearPageSection("apartmentSale", elements.apartment.sale.clearBtn));
 
+  bindLoiLoanFieldEvents("first");
+  bindLoiLoanFieldEvents("second");
+  elements.loi.clearBtn?.addEventListener("click", () => clearPageSection("loi", elements.loi.clearBtn));
+
   bindCopyValueTrigger(elements.oneToFour.indicatedValue, () => derived.oneToFourSaleCopy, elements.oneToFour.copyBtn);
   bindCopyValueTrigger(elements.commercial.sale.indicatedValue, () => derived.commercialSaleCopy, elements.commercial.sale.copyBtn);
   bindCopyValueTrigger(elements.apartment.sale.indicatedUnit, () => calculateApartmentSale(getApartmentUnitMix()).indicatedPerUnit, elements.apartment.sale.copyBtn);
@@ -785,44 +859,72 @@ function bindTabSequence(sequence) {
 }
 
 function bindTabFlows() {
-  bindTabSequence([
-    ...elements.tabs,
-    elements.oneToFour.subjectSqft,
-    ...(elements.oneToFour.listingDiscountField?.hidden ? [] : [elements.oneToFour.listingDiscount]),
-    ...Array.from(elements.oneToFour.rows.querySelectorAll("[data-sale-price], [data-sale-sqft], [data-sale-psf]")).sort(sortSaleInputs),
-  ]);
+  const activeTabButton = elements.tabs.find((tab) => tab.dataset.tab === state.activeTab);
+
+  if (state.activeTab === "oneToFour") {
+    bindTabSequence([
+      activeTabButton,
+      elements.oneToFour.subjectSqft,
+      ...(elements.oneToFour.listingDiscountField?.hidden ? [] : [elements.oneToFour.listingDiscount]),
+      ...Array.from(elements.oneToFour.rows.querySelectorAll("[data-sale-price], [data-sale-sqft], [data-sale-psf]")).sort(sortSaleInputs),
+    ]);
+    return;
+  }
+
+  if (state.activeTab === "commercial") {
+    bindTabSequence([
+      activeTabButton,
+      elements.commercial.subjectSqft,
+      elements.commercial.current.startCap,
+      elements.commercial.current.additionalIncome,
+      elements.commercial.current.vacancy,
+      ...Array.from(elements.commercial.current.rows.querySelectorAll("[data-commercial-current-rent], [data-commercial-current-type]")).sort(sortCurrentCommercialInputs),
+      elements.commercial.rent.vacancy,
+      elements.commercial.rent.startCap,
+      ...Array.from(elements.commercial.rent.rows.querySelectorAll("[data-commercial-rent-rent], [data-commercial-rent-type]")).sort(sortCommercialRentInputs),
+      ...(elements.commercial.sale.listingDiscountField?.hidden ? [] : [elements.commercial.sale.listingDiscount]),
+      ...Array.from(elements.commercial.sale.rows.querySelectorAll("[data-commercial-sale-price], [data-commercial-sale-sqft], [data-commercial-sale-psf]")).sort(sortCommercialSaleInputs),
+    ]);
+    return;
+  }
+
+  if (state.activeTab === "apartment") {
+    bindTabSequence([
+      activeTabButton,
+      elements.apartment.current.modePerUnit,
+      elements.apartment.current.modeGrouped,
+      elements.apartment.current.startCap,
+      elements.apartment.current.vacancy,
+      elements.apartment.current.expense,
+      ...Array.from(elements.apartment.current.rows.querySelectorAll("[data-apartment-current-type], [data-apartment-current-rent], [data-apartment-current-vacant], [data-apartment-current-fill-method], [data-apartment-grouped-type], [data-apartment-grouped-total-units], [data-apartment-grouped-occupied-rent], [data-apartment-grouped-vacant-units], [data-apartment-grouped-fill-method]")).sort(sortApartmentCurrentInputs),
+      elements.apartment.market.vacancy,
+      elements.apartment.market.expense,
+      elements.apartment.market.startCap,
+      ...Array.from(elements.apartment.market.rows.querySelectorAll("[data-apartment-market-sample]")).filter((input) => input.closest("tr")?.offsetParent !== null),
+      elements.apartment.sale.enableSf,
+      ...(state.apartment.sale.enablePerSf ? [elements.apartment.sale.subjectSqft] : []),
+      ...Array.from(elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-price], [data-apartment-sale-units], [data-apartment-sale-sqft]"))
+        .filter((input) => state.apartment.sale.enablePerSf || !input.hasAttribute("data-apartment-sale-sqft"))
+        .sort(sortApartmentSaleInputs),
+    ]);
+    return;
+  }
 
   bindTabSequence([
-    ...elements.tabs,
-    elements.commercial.subjectSqft,
-    elements.commercial.current.startCap,
-    elements.commercial.current.additionalIncome,
-    elements.commercial.current.vacancy,
-    ...Array.from(elements.commercial.current.rows.querySelectorAll("[data-commercial-current-rent], [data-commercial-current-type]")).sort(sortCurrentCommercialInputs),
-    elements.commercial.rent.vacancy,
-    elements.commercial.rent.startCap,
-    ...Array.from(elements.commercial.rent.rows.querySelectorAll("[data-commercial-rent-rent], [data-commercial-rent-type]")).sort(sortCommercialRentInputs),
-    ...(elements.commercial.sale.listingDiscountField?.hidden ? [] : [elements.commercial.sale.listingDiscount]),
-    ...Array.from(elements.commercial.sale.rows.querySelectorAll("[data-commercial-sale-price], [data-commercial-sale-sqft], [data-commercial-sale-psf]")).sort(sortCommercialSaleInputs),
-  ]);
-
-  bindTabSequence([
-    ...elements.tabs,
-    elements.apartment.current.modePerUnit,
-    elements.apartment.current.modeGrouped,
-    elements.apartment.current.startCap,
-    elements.apartment.current.vacancy,
-    elements.apartment.current.expense,
-    ...Array.from(elements.apartment.current.rows.querySelectorAll("[data-apartment-current-type], [data-apartment-current-rent], [data-apartment-current-vacant], [data-apartment-current-fill-method], [data-apartment-grouped-type], [data-apartment-grouped-total-units], [data-apartment-grouped-occupied-rent], [data-apartment-grouped-vacant-units], [data-apartment-grouped-fill-method]")).sort(sortApartmentCurrentInputs),
-    elements.apartment.market.vacancy,
-    elements.apartment.market.expense,
-    elements.apartment.market.startCap,
-    ...Array.from(elements.apartment.market.rows.querySelectorAll("[data-apartment-market-sample]")).filter((input) => input.closest("tr")?.offsetParent !== null),
-    elements.apartment.sale.enableSf,
-    ...(state.apartment.sale.enablePerSf ? [elements.apartment.sale.subjectSqft] : []),
-    ...Array.from(elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-price], [data-apartment-sale-units], [data-apartment-sale-sqft]"))
-      .filter((input) => state.apartment.sale.enablePerSf || !input.hasAttribute("data-apartment-sale-sqft"))
-      .sort(sortApartmentSaleInputs),
+    activeTabButton,
+    elements.loi.first.loanAmount,
+    elements.loi.first.interestRate,
+    elements.loi.first.originationPoints,
+    elements.loi.first.originationFeeAmount,
+    elements.loi.first.brokerPoints,
+    elements.loi.first.brokerFeeAmount,
+    elements.loi.second.loanAmount,
+    elements.loi.second.interestRate,
+    elements.loi.second.originationPoints,
+    elements.loi.second.originationFeeAmount,
+    elements.loi.second.brokerPoints,
+    elements.loi.second.brokerFeeAmount,
+    ...Array.from(document.querySelectorAll("[data-loi-blended-output]")).sort(sortLoiOutputs),
   ]);
 }
 
@@ -916,11 +1018,18 @@ function apartmentCurrentFieldOrder(element) {
   return 5;
 }
 
+function sortLoiOutputs(left, right) {
+  const leftOutput = Number(left.getAttribute("data-loi-blended-output"));
+  const rightOutput = Number(right.getAttribute("data-loi-blended-output"));
+  return leftOutput - rightOutput;
+}
+
 function renderAll() {
   renderTabs();
   renderOneToFour();
   renderCommercial();
   renderApartment();
+  renderLoi();
 }
 
 function renderTabs() {
@@ -1347,6 +1456,38 @@ function renderApartmentSale(unitMix) {
   elements.apartment.sale.indicatedSf.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedPerSf) && calculations.indicatedPerSf > 0)));
   derived.apartmentSaleCopy = calculations.indicatedPerUnit;
   setCopyButtonState(elements.apartment.sale.copyBtn, calculations.indicatedPerUnit);
+}
+
+function renderLoi() {
+  renderLoiLoan("first");
+  renderLoiLoan("second");
+  renderLoiBlended();
+  bindTabFlows();
+  persistState();
+}
+
+function renderLoiLoan(loanKey) {
+  const loanState = state.loi[loanKey];
+  const loanElements = elements.loi[loanKey];
+  syncLoiFeeFields(loanState, "origination");
+  syncLoiFeeFields(loanState, "broker");
+  setControlValue(loanElements.loanAmount, loanState.loanAmount);
+  setControlValue(loanElements.interestRate, loanState.interestRate);
+  setControlValue(loanElements.originationPoints, loanState.originationPoints);
+  setControlValue(loanElements.originationFeeAmount, loanState.originationFeeAmount);
+  setControlValue(loanElements.brokerPoints, loanState.brokerPoints);
+  setControlValue(loanElements.brokerFeeAmount, loanState.brokerFeeAmount);
+  const calculations = calculateLoiLoan(loanState);
+  loanElements.monthlyPayment.textContent = calculations.monthlyPaymentLabel;
+}
+
+function renderLoiBlended() {
+  const calculations = calculateBlendedLoi();
+  elements.loi.blended.loanAmount.textContent = calculations.combinedLoanAmount === null ? "-" : formatCurrency(calculations.combinedLoanAmount, 0);
+  elements.loi.blended.interestRate.textContent = calculations.blendedRate === null ? "-" : formatPercentDisplay(calculations.blendedRate, 2);
+  elements.loi.blended.originationFee.textContent = calculations.totalOriginationFee === null ? "-" : formatCurrency(calculations.totalOriginationFee, 0);
+  elements.loi.blended.originationPoints.textContent = calculations.blendedOriginationPoints === null ? "-" : formatPercentDisplay(calculations.blendedOriginationPoints, 4);
+  elements.loi.blended.monthlyPayment.textContent = calculations.totalMonthlyPayment === null ? "-" : formatCurrency(calculations.totalMonthlyPayment, 0);
 }
 
 function renderSaleRows({
@@ -1871,6 +2012,45 @@ function calculateApartmentSale(unitMix) {
   return { rows, averagePerUnit, averagePerSf, indicatedPerUnit, indicatedPerSf };
 }
 
+function calculateLoiLoan(loanState) {
+  const loanAmount = parseLooseNumber(loanState.loanAmount);
+  const interestRate = parseLooseNumber(loanState.interestRate);
+  const originationFeeAmount = parseLooseNumber(loanState.originationFeeAmount);
+  const brokerFeeAmount = parseLooseNumber(loanState.brokerFeeAmount);
+  const monthlyPayment = loanAmount === null || interestRate === null ? null : loanAmount * (interestRate / 100);
+
+  return {
+    loanAmount,
+    interestRate,
+    originationFeeAmount,
+    brokerFeeAmount,
+    monthlyPayment,
+    monthlyPaymentLabel: monthlyPayment === null ? "-" : formatCurrency(monthlyPayment, 0),
+  };
+}
+
+function calculateBlendedLoi() {
+  const first = calculateLoiLoan(state.loi.first);
+  const second = calculateLoiLoan(state.loi.second);
+  const combinedLoanAmount = sumNullable([first.loanAmount, second.loanAmount]);
+  const totalOriginationFee = sumNullable([first.originationFeeAmount, second.originationFeeAmount]);
+  const totalMonthlyPayment = sumNullable([first.monthlyPayment, second.monthlyPayment]);
+  const blendedOriginationPoints = combinedLoanAmount === null || combinedLoanAmount <= 0 || totalOriginationFee === null
+    ? null
+    : (totalOriginationFee / combinedLoanAmount) * 100;
+  const blendedRate = combinedLoanAmount === null || combinedLoanAmount <= 0 || totalMonthlyPayment === null
+    ? null
+    : (totalMonthlyPayment / combinedLoanAmount) * 100;
+
+  return {
+    combinedLoanAmount,
+    totalOriginationFee,
+    totalMonthlyPayment,
+    blendedRate,
+    blendedOriginationPoints,
+  };
+}
+
 function bindOneToFourSaleEvents() {
   bindSaleEvents({
     tbody: elements.oneToFour.rows,
@@ -2183,11 +2363,15 @@ function bindApartmentCurrentEvents() {
       const row = state.apartment.current.rows[Number(input.dataset.apartmentCurrentRent)];
       if (!row) return;
       row.rent = input.value;
+      const parsedRent = parseLooseNumber(row.rent);
+      if (parsedRent === 0) row.isVacant = true;
       renderApartment();
     });
     input.addEventListener("blur", () => {
       const row = state.apartment.current.rows[Number(input.dataset.apartmentCurrentRent)];
       if (!row) return;
+      const parsedRent = parseLooseNumber(row.rent);
+      if (parsedRent === 0) row.isVacant = true;
       row.rent = formatMoneyInput(row.rent, 0);
       renderApartment();
     });
@@ -2289,6 +2473,93 @@ function bindApartmentSaleEvents() {
       row.sqft = formatWholeInput(row.sqft);
       renderApartment();
     });
+  });
+}
+
+function bindLoiLoanFieldEvents(loanKey) {
+  const loanElements = elements.loi[loanKey];
+  const getLoanState = () => state.loi[loanKey];
+
+  bindInput(loanElements.loanAmount, (value) => {
+    const loanState = getLoanState();
+    loanState.loanAmount = value;
+    syncLoiFeeFields(loanState, "origination");
+    syncLoiFeeFields(loanState, "broker");
+    renderLoi();
+  });
+  bindInput(loanElements.interestRate, (value) => {
+    const loanState = getLoanState();
+    loanState.interestRate = value;
+    renderLoi();
+  });
+  bindInput(loanElements.originationPoints, (value) => {
+    const loanState = getLoanState();
+    loanState.originationPoints = value;
+    loanState.originationFeeSource = "points";
+    syncLoiFeeFields(loanState, "origination");
+    renderLoi();
+  });
+  bindInput(loanElements.originationFeeAmount, (value) => {
+    const loanState = getLoanState();
+    loanState.originationFeeAmount = value;
+    loanState.originationFeeSource = "amount";
+    syncLoiFeeFields(loanState, "origination");
+    renderLoi();
+  });
+  bindInput(loanElements.brokerPoints, (value) => {
+    const loanState = getLoanState();
+    loanState.brokerPoints = value;
+    loanState.brokerFeeSource = "points";
+    syncLoiFeeFields(loanState, "broker");
+    renderLoi();
+  });
+  bindInput(loanElements.brokerFeeAmount, (value) => {
+    const loanState = getLoanState();
+    loanState.brokerFeeAmount = value;
+    loanState.brokerFeeSource = "amount";
+    syncLoiFeeFields(loanState, "broker");
+    renderLoi();
+  });
+
+  bindBlurFormatWhole(loanElements.loanAmount, () => {
+    const loanState = getLoanState();
+    loanState.loanAmount = formatMoneyInput(loanState.loanAmount, 0);
+    syncLoiFeeFields(loanState, "origination");
+    syncLoiFeeFields(loanState, "broker");
+    renderLoi();
+  });
+  loanElements.interestRate?.addEventListener("blur", () => {
+    const loanState = getLoanState();
+    loanState.interestRate = formatDecimalInput(loanState.interestRate, 2);
+    renderLoi();
+  });
+  loanElements.originationPoints?.addEventListener("blur", () => {
+    const loanState = getLoanState();
+    loanState.originationPoints = formatDecimalInput(loanState.originationPoints, 4);
+    loanState.originationFeeSource = "points";
+    syncLoiFeeFields(loanState, "origination");
+    renderLoi();
+  });
+  loanElements.originationFeeAmount?.addEventListener("blur", () => {
+    const loanState = getLoanState();
+    loanState.originationFeeAmount = formatMoneyInput(loanState.originationFeeAmount, 0);
+    loanState.originationFeeSource = "amount";
+    syncLoiFeeFields(loanState, "origination");
+    renderLoi();
+  });
+  loanElements.brokerPoints?.addEventListener("blur", () => {
+    const loanState = getLoanState();
+    loanState.brokerPoints = formatDecimalInput(loanState.brokerPoints, 4);
+    loanState.brokerFeeSource = "points";
+    syncLoiFeeFields(loanState, "broker");
+    renderLoi();
+  });
+  loanElements.brokerFeeAmount?.addEventListener("blur", () => {
+    const loanState = getLoanState();
+    loanState.brokerFeeAmount = formatMoneyInput(loanState.brokerFeeAmount, 0);
+    loanState.brokerFeeSource = "amount";
+    syncLoiFeeFields(loanState, "broker");
+    renderLoi();
   });
 }
 
@@ -2433,6 +2704,26 @@ function getGroupedOccupiedUnits(row) {
   return Math.max(totalUnits - Math.min(totalUnits, roundedVacantUnits), 0);
 }
 
+function syncLoiFeeFields(loanState, feeType) {
+  const isOrigination = feeType === "origination";
+  const pointsKey = isOrigination ? "originationPoints" : "brokerPoints";
+  const amountKey = isOrigination ? "originationFeeAmount" : "brokerFeeAmount";
+  const sourceKey = isOrigination ? "originationFeeSource" : "brokerFeeSource";
+  const loanAmount = parseLooseNumber(loanState.loanAmount);
+  if (loanState[sourceKey] === "amount") {
+    const feeAmount = parseLooseNumber(loanState[amountKey]);
+    loanState[pointsKey] = feeAmount === null || loanAmount === null || loanAmount <= 0
+      ? ""
+      : formatDecimalInput((feeAmount / loanAmount) * 100, 4);
+    return;
+  }
+
+  const points = parseLooseNumber(loanState[pointsKey]);
+  loanState[amountKey] = points === null || loanAmount === null || loanAmount <= 0
+    ? ""
+    : formatMoneyInput(loanAmount * (points / 100), 0);
+}
+
 function clearPageSection(sectionKey, button) {
   const defaults = createDefaultState();
   if (sectionKey === "oneToFourSale") state.oneToFour.sale = defaults.oneToFour.sale;
@@ -2442,6 +2733,7 @@ function clearPageSection(sectionKey, button) {
   if (sectionKey === "apartmentCurrent") state.apartment.current = defaults.apartment.current;
   if (sectionKey === "apartmentMarket") state.apartment.market = defaults.apartment.market;
   if (sectionKey === "apartmentSale") state.apartment.sale = defaults.apartment.sale;
+  if (sectionKey === "loi") state.loi = defaults.loi;
   renderAll();
   flashButton(button, "Cleared");
 }
@@ -2627,6 +2919,12 @@ function formatPercentInput(raw, max) {
   return clamped.toFixed(1).replace(/\.0$/, "");
 }
 
+function formatDecimalInput(raw, maxDecimals = 3) {
+  const parsed = Number.isFinite(raw) ? raw : parseLooseNumber(raw);
+  if (parsed === null || !Number.isFinite(parsed)) return "";
+  return parsed.toFixed(maxDecimals).replace(/\.?0+$/, "");
+}
+
 function formatCapInput(raw) {
   const parsed = parseLooseNumber(raw);
   if (parsed === null || parsed <= 0) return "";
@@ -2636,6 +2934,11 @@ function formatCapInput(raw) {
 function formatCapRateDisplay(value) {
   const decimals = Number.isInteger(value * 10) ? 1 : 2;
   return `${value.toFixed(decimals)}%`;
+}
+
+function formatPercentDisplay(value, maxDecimals = 3) {
+  if (!Number.isFinite(value)) return "-";
+  return `${value.toFixed(maxDecimals)}%`;
 }
 
 function clampPercent(raw) {
@@ -2650,6 +2953,19 @@ function persistState() {
   } catch (error) {
     // Ignore local storage failures so the tool still works in restricted environments.
   }
+}
+
+function sumNullable(values) {
+  const parsedValues = values.filter((value) => Number.isFinite(value));
+  return parsedValues.length ? parsedValues.reduce((sum, value) => sum + value, 0) : null;
+}
+
+function getBlendedMonthsLabel(firstMonths, secondMonths) {
+  if (firstMonths === null && secondMonths === null) return "-";
+  if (firstMonths === null) return `${secondMonths}`;
+  if (secondMonths === null) return `${firstMonths}`;
+  if (firstMonths === secondMonths) return `${firstMonths}`;
+  return `${firstMonths} / ${secondMonths}`;
 }
 
 function escapeHtml(value) {
