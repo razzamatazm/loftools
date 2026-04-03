@@ -8,6 +8,39 @@ const aptRentTypeOptions = [
   { value: "threebed", label: "3 Bed" },
   { value: "fourbed", label: "4 Bed" },
 ];
+const aptRentTypeAliases = {
+  studio: "studio",
+  s: "studio",
+  st: "studio",
+  std: "studio",
+  "0": "studio",
+  "0bed": "studio",
+  "0 bed": "studio",
+  one: "onebed",
+  onebed: "onebed",
+  "one bed": "onebed",
+  "1": "onebed",
+  "1bed": "onebed",
+  "1 bed": "onebed",
+  two: "twobed",
+  twobed: "twobed",
+  "two bed": "twobed",
+  "2": "twobed",
+  "2bed": "twobed",
+  "2 bed": "twobed",
+  three: "threebed",
+  threebed: "threebed",
+  "three bed": "threebed",
+  "3": "threebed",
+  "3bed": "threebed",
+  "3 bed": "threebed",
+  four: "fourbed",
+  fourbed: "fourbed",
+  "four bed": "fourbed",
+  "4": "fourbed",
+  "4bed": "fourbed",
+  "4 bed": "fourbed",
+};
 const leaseExpenseRates = {
   nnn: 0.1,
   modified: 0.2,
@@ -159,6 +192,7 @@ const elements = {
     },
     sale: {
       enableSf: document.getElementById("apartment-sale-enable-sf"),
+      listingDiscount: document.getElementById("apartment-sale-listing-discount"),
       subjectUnits: document.getElementById("apartment-sale-subject-units"),
       subjectSqft: document.getElementById("apartment-sale-subject-sqft"),
       subjectSqftField: document.getElementById("apartment-sale-subject-sqft-field"),
@@ -209,6 +243,17 @@ const elements = {
       originationPoints: document.getElementById("loi-blended-origination-points"),
       monthlyPayment: document.getElementById("loi-blended-monthly-payment"),
     },
+  },
+  loanDocs: {
+    search: document.getElementById("loan-docs-search"),
+    scenarios: document.getElementById("loan-docs-scenarios"),
+    title: document.getElementById("loan-docs-title"),
+    summary: document.getElementById("loan-docs-summary"),
+    guidance: document.getElementById("loan-docs-guidance"),
+    fields: document.getElementById("loan-docs-fields"),
+    inputGrid: document.getElementById("loan-docs-input-grid"),
+    targets: document.getElementById("loan-docs-targets"),
+    clearBtn: document.getElementById("loan-docs-clear-btn"),
   },
 };
 
@@ -281,17 +326,19 @@ function createDefaultState() {
         selectedCapRate: null,
         rows: aptRentTypeOptions.map((type) => createAptRentRow(type.value)),
       },
-      sale: {
-        enablePerSf: false,
-        subjectSqft: "",
-        rows: [createAptSaleRow()],
-      },
+    sale: {
+      enablePerSf: false,
+      listingDiscount: "0",
+      subjectSqft: "",
+      rows: [createAptSaleRow()],
+    },
     },
     consumerDebt: createConsumerDebtDefaults(),
     loi: {
       first: createLoiLoanDefaults(),
       second: createLoiLoanDefaults(),
     },
+    loanDocs: createLoanDocsDefaults(),
   };
 }
 
@@ -333,6 +380,7 @@ function normalizeNewShape(input, fallback) {
       first: normalizeLoiLoan(input?.loi?.first, fallback.loi.first),
       second: normalizeLoiLoan(input?.loi?.second, fallback.loi.second),
     },
+    loanDocs: normalizeLoanDocs(input?.loanDocs, fallback.loanDocs),
   };
 }
 
@@ -385,11 +433,12 @@ function normalizeLegacyShape(input, fallback) {
       first: fallback.loi.first,
       second: fallback.loi.second,
     },
+    loanDocs: fallback.loanDocs,
   };
 }
 
 function normalizeActiveTab(activeTab, fallback) {
-  if (["oneToFour", "commercial", "apartment", "consumerDebt", "loi"].includes(activeTab)) return activeTab;
+  if (["oneToFour", "commercial", "apartment", "consumerDebt", "loi", "loanDocs"].includes(activeTab)) return activeTab;
   return fallback;
 }
 
@@ -580,15 +629,17 @@ function normalizeApartmentMarket(input, fallback) {
 function normalizeApartmentSale(input, fallback) {
   return {
     enablePerSf: input?.enablePerSf === true || input?.method === "perSf",
+    listingDiscount: String(input?.listingDiscount || fallback.listingDiscount),
     subjectSqft: String(input?.subjectSqft || ""),
     rows: Array.isArray(input?.rows) && input.rows.length
       ? input.rows.map((row) => ({
-          price: String(row?.price || ""),
-          units: String(row?.units || ""),
-          sqft: String(row?.sqft || ""),
-          include: row?.include !== false,
-          userTouched: row?.userTouched === true,
-        }))
+        price: String(row?.price || ""),
+        units: String(row?.units || ""),
+        sqft: String(row?.sqft || ""),
+        listing: row?.listing === true,
+        include: row?.include !== false,
+        userTouched: row?.userTouched === true,
+      }))
       : fallback.rows,
   };
 }
@@ -602,7 +653,7 @@ function createSaleRow() {
 }
 
 function createAptSaleRow() {
-  return { price: "", units: "", sqft: "", include: true, userTouched: false };
+  return { price: "", units: "", sqft: "", listing: false, include: true, userTouched: false };
 }
 
 function createAptRentRow(type) {
@@ -631,6 +682,51 @@ function createLoiLoanDefaults() {
     brokerFeeAmount: "",
     originationFeeSource: "points",
     brokerFeeSource: "points",
+  };
+}
+
+function createLoanDocsDefaults() {
+  const firstScenario = LOAN_DOC_SCENARIOS[0]?.id || "";
+  return {
+    searchQuery: "",
+    selectedScenarioId: firstScenario,
+    selectedTargetId: null,
+    expandedTargets: {},
+    inputs: Object.fromEntries(LOAN_DOC_SCENARIOS.map((scenario) => [
+      scenario.id,
+      Object.fromEntries((scenario.fields || []).map((field) => [field.id, field.defaultValue ?? (field.type === "checkbox" ? false : "")])),
+    ])),
+  };
+}
+
+function normalizeLoanDocs(input, fallback) {
+  const inputs = { ...fallback.inputs };
+  if (input?.inputs && typeof input.inputs === "object") {
+    Object.keys(inputs).forEach((scenarioId) => {
+      const scenario = getLoanDocScenarioById(scenarioId);
+      const rawScenarioInputs = input.inputs?.[scenarioId];
+      if (!scenario || !rawScenarioInputs || typeof rawScenarioInputs !== "object") return;
+      scenario.fields.forEach((field) => {
+        const rawValue = rawScenarioInputs[field.id];
+        inputs[scenarioId][field.id] = field.type === "checkbox" ? rawValue === true : String(rawValue ?? inputs[scenarioId][field.id] ?? "");
+      });
+    });
+  }
+
+  const expandedTargets = {};
+  if (input?.expandedTargets && typeof input.expandedTargets === "object") {
+    Object.entries(input.expandedTargets).forEach(([key, value]) => {
+      expandedTargets[key] = value === true;
+    });
+  }
+
+  const selectedScenarioId = getLoanDocScenarioById(input?.selectedScenarioId) ? input.selectedScenarioId : fallback.selectedScenarioId;
+  return {
+    searchQuery: String(input?.searchQuery || ""),
+    selectedScenarioId,
+    selectedTargetId: typeof input?.selectedTargetId === "string" ? input.selectedTargetId : null,
+    expandedTargets,
+    inputs,
   };
 }
 
@@ -822,6 +918,14 @@ function bindStaticEvents() {
     state.apartment.sale.enablePerSf = elements.apartment.sale.enableSf.checked;
     renderApartment();
   });
+  bindInput(elements.apartment.sale.listingDiscount, (value) => {
+    state.apartment.sale.listingDiscount = value;
+    renderApartment();
+  });
+  elements.apartment.sale.listingDiscount?.addEventListener("blur", () => {
+    state.apartment.sale.listingDiscount = formatPercentInput(state.apartment.sale.listingDiscount, 100);
+    renderApartment();
+  });
   bindInput(elements.apartment.sale.subjectSqft, (value) => {
     state.apartment.sale.subjectSqft = value;
     renderApartment();
@@ -843,6 +947,12 @@ function bindStaticEvents() {
   bindLoiLoanFieldEvents("first");
   bindLoiLoanFieldEvents("second");
   elements.loi.clearBtn?.addEventListener("click", () => clearPageSection("loi", elements.loi.clearBtn));
+
+  bindInput(elements.loanDocs.search, (value) => {
+    state.loanDocs.searchQuery = value;
+    renderLoanDocs();
+  });
+  elements.loanDocs.clearBtn?.addEventListener("click", () => clearPageSection("loanDocs", elements.loanDocs.clearBtn));
 
   bindCopyValueTrigger(elements.oneToFour.indicatedValue, () => derived.oneToFourSaleCopy, elements.oneToFour.copyBtn);
   bindCopyValueTrigger(elements.commercial.sale.indicatedValue, () => derived.commercialSaleCopy, elements.commercial.sale.copyBtn);
@@ -972,10 +1082,10 @@ function bindTabFlows() {
   const activeTabButton = elements.tabs.find((tab) => tab.dataset.tab === state.activeTab);
 
   if (state.activeTab === "oneToFour") {
-    bindTabSequence([
+  bindTabSequence([
       activeTabButton,
       elements.oneToFour.subjectSqft,
-      ...(elements.oneToFour.listingDiscountField?.hidden ? [] : [elements.oneToFour.listingDiscount]),
+      elements.oneToFour.listingDiscount,
       ...Array.from(elements.oneToFour.rows.querySelectorAll("[data-sale-price], [data-sale-sqft], [data-sale-psf]")).sort(sortSaleInputs),
     ]);
     return;
@@ -992,7 +1102,7 @@ function bindTabFlows() {
       elements.commercial.rent.vacancy,
       elements.commercial.rent.startCap,
       ...Array.from(elements.commercial.rent.rows.querySelectorAll("[data-commercial-rent-rent], [data-commercial-rent-type]")).sort(sortCommercialRentInputs),
-      ...(elements.commercial.sale.listingDiscountField?.hidden ? [] : [elements.commercial.sale.listingDiscount]),
+      elements.commercial.sale.listingDiscount,
       ...Array.from(elements.commercial.sale.rows.querySelectorAll("[data-commercial-sale-price], [data-commercial-sale-sqft], [data-commercial-sale-psf]")).sort(sortCommercialSaleInputs),
     ]);
     return;
@@ -1012,6 +1122,7 @@ function bindTabFlows() {
       elements.apartment.market.startCap,
       ...Array.from(elements.apartment.market.rows.querySelectorAll("[data-apartment-market-sample]")).filter((input) => input.closest("tr")?.offsetParent !== null),
       elements.apartment.sale.enableSf,
+      elements.apartment.sale.listingDiscount,
       ...(state.apartment.sale.enablePerSf ? [elements.apartment.sale.subjectSqft] : []),
       ...Array.from(elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-price], [data-apartment-sale-units], [data-apartment-sale-sqft]"))
         .filter((input) => state.apartment.sale.enablePerSf || !input.hasAttribute("data-apartment-sale-sqft"))
@@ -1026,6 +1137,17 @@ function bindTabFlows() {
       ...(elements.consumerDebt.backBtn?.hidden ? [] : [elements.consumerDebt.backBtn]),
       ...(elements.consumerDebt.clearBtn ? [elements.consumerDebt.clearBtn] : []),
       ...Array.from(elements.consumerDebt.content.querySelectorAll("[data-consumer-debt-answer]")),
+    ]);
+    return;
+  }
+
+  if (state.activeTab === "loanDocs") {
+    bindTabSequence([
+      activeTabButton,
+      elements.loanDocs.search,
+      ...Array.from(elements.loanDocs.scenarios.querySelectorAll("[data-loan-doc-scenario]")),
+      ...Array.from(elements.loanDocs.inputGrid.querySelectorAll("[data-loan-doc-field]")),
+      ...Array.from(elements.loanDocs.targets.querySelectorAll("[data-loan-doc-toggle], [data-loan-doc-copy]")),
     ]);
     return;
   }
@@ -1158,6 +1280,7 @@ function renderAll() {
   renderApartment();
   renderConsumerDebt();
   renderLoi();
+  renderLoanDocs();
 }
 
 function renderTabs() {
@@ -1173,6 +1296,150 @@ function renderTabs() {
   });
 }
 
+function renderLoanDocs() {
+  const scenario = getSelectedLoanDocScenario();
+  const visibleScenarios = getVisibleLoanDocScenarios();
+  const inputFocusState = captureActiveInputState(elements.loanDocs.inputGrid);
+
+  setControlValue(elements.loanDocs.search, state.loanDocs.searchQuery);
+  elements.loanDocs.scenarios.innerHTML = visibleScenarios.length
+    ? visibleScenarios.map((entry) => {
+        const isActive = entry.id === state.loanDocs.selectedScenarioId;
+        return `
+          <button class="loan-docs-scenario-chip ${isActive ? "active" : ""}" type="button" data-loan-doc-scenario="${escapeHtml(entry.id)}" aria-pressed="${isActive ? "true" : "false"}">
+            <strong>${escapeHtml(entry.label)}</strong>
+            <span>${escapeHtml(entry.summary)}</span>
+          </button>
+        `;
+      }).join("")
+    : `<div class="empty-cell loan-docs-empty-state">No scenarios match the current search.</div>`;
+
+  if (!scenario) {
+    elements.loanDocs.title.textContent = "No Scenario Selected";
+    elements.loanDocs.summary.textContent = "Select a scenario to generate mapped loan-doc language.";
+    elements.loanDocs.guidance.hidden = true;
+    elements.loanDocs.fields.hidden = true;
+    elements.loanDocs.targets.innerHTML = "";
+    bindLoanDocsEvents();
+    bindTabFlows();
+    persistState();
+    return;
+  }
+
+  const scenarioInputs = getLoanDocInputs(scenario.id);
+  const activeTargets = getLoanDocTargetsForScenario(scenario, scenarioInputs);
+  const groupedTargets = groupLoanDocTargetsByDocument(activeTargets);
+
+  elements.loanDocs.title.textContent = scenario.label;
+  elements.loanDocs.summary.textContent = scenario.summary;
+  elements.loanDocs.guidance.hidden = !scenario.guidance;
+  elements.loanDocs.guidance.textContent = scenario.guidance || "";
+  const visibleFields = getVisibleLoanDocFields(scenario, scenarioInputs);
+  elements.loanDocs.fields.hidden = !visibleFields.length;
+  elements.loanDocs.inputGrid.innerHTML = visibleFields.map((field) => renderLoanDocField(field, scenarioInputs[field.id])).join("");
+  if (!consumePendingFocus()) restoreActiveInputState(elements.loanDocs.inputGrid, inputFocusState);
+  renderLoanDocsTargetsSection(scenario, scenarioInputs, activeTargets, groupedTargets);
+  bindLoanDocsEvents();
+  bindTabFlows();
+  persistState();
+}
+
+function renderLoanDocsTargetsSection(scenario, scenarioInputs, activeTargets = null, groupedTargets = null) {
+  const resolvedTargets = activeTargets || getLoanDocTargetsForScenario(scenario, scenarioInputs);
+  const resolvedGroupedTargets = groupedTargets || groupLoanDocTargetsByDocument(resolvedTargets);
+  elements.loanDocs.targets.innerHTML = resolvedTargets.length
+    ? Object.entries(resolvedGroupedTargets).map(([documentKey, targets]) => renderLoanDocDocumentGroup(documentKey, targets)).join("")
+    : `<div class="empty-cell loan-docs-empty-state">This scenario has no visible targets with the current inputs.</div>`;
+  bindLoanDocsTargetEvents();
+}
+
+function renderLoanDocField(field, value) {
+  const fieldId = `loan-doc-field-${field.id}`;
+  if (field.type === "select") {
+    return `
+      <label class="field">
+        <span>${escapeHtml(field.label)}</span>
+        <select id="${fieldId}" data-loan-doc-field="${escapeHtml(field.id)}">
+          ${(field.options || []).map((option) => `<option value="${escapeHtml(option.value)}" ${String(value) === String(option.value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+        </select>
+      </label>
+    `;
+  }
+  if (field.type === "textarea") {
+    return `
+      <label class="field field-full-width">
+        <span>${escapeHtml(field.label)}</span>
+        <textarea id="${fieldId}" data-loan-doc-field="${escapeHtml(field.id)}" rows="5" placeholder="${escapeHtml(field.placeholder || "")}">${escapeHtml(value || "")}</textarea>
+      </label>
+    `;
+  }
+  if (field.type === "checkbox") {
+    return `
+      <label class="field loan-doc-checkbox-field">
+        <span>${escapeHtml(field.label)}</span>
+        <label class="check-row">
+          <input id="${fieldId}" type="checkbox" data-loan-doc-field="${escapeHtml(field.id)}" ${value === true ? "checked" : ""} />
+          <span>Enabled</span>
+        </label>
+      </label>
+    `;
+  }
+  return `
+    <label class="field ${field.type === "text" ? "" : ""}">
+      <span>${escapeHtml(field.label)}</span>
+      <input
+        id="${fieldId}"
+        type="text"
+        inputmode="${getLoanDocFieldInputMode(field)}"
+        data-loan-doc-field="${escapeHtml(field.id)}"
+        value="${escapeHtml(value || "")}"
+        placeholder="${escapeHtml(getLoanDocFieldPlaceholder(field))}"
+      />
+    </label>
+  `;
+}
+
+function renderLoanDocDocumentGroup(documentKey, targets) {
+  return `
+    <section class="loan-doc-group">
+      <div class="loan-doc-group-head">
+        <h3>${escapeHtml(getLoanDocDocumentLabel(documentKey))}</h3>
+      </div>
+      <div class="loan-doc-target-list">
+        ${targets.map((target) => renderLoanDocTarget(target)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderLoanDocTarget(target) {
+  const isActive = state.loanDocs.selectedTargetId === target.id;
+  const copyPreview = getLoanDocCopyText(target);
+  const showsCustomCopyPreview = copyPreview && copyPreview !== stripLeadingSectionMarker(target.renderedText || "");
+  return `
+    <article class="loan-doc-target-card ${isActive ? "is-active" : ""}">
+      <div class="loan-doc-target-head">
+        <div>
+          <strong>${escapeHtml(target.section)}</strong>
+          <span>${escapeHtml(target.mode)}</span>
+        </div>
+      </div>
+      <div class="loan-doc-target-body">
+        <div class="loan-doc-target-text loan-doc-rich-text">${formatLoanDocRichTextHtml(target.renderedRichText || target.renderedText || "")}</div>
+        ${showsCustomCopyPreview ? `
+          <div class="loan-doc-copy-preview">
+            <span>Copied text</span>
+            <div class="loan-doc-copy-preview-text loan-doc-rich-text">${formatLoanDocRichTextHtml(target.renderedCopyRichText || copyPreview)}</div>
+          </div>
+        ` : ""}
+        <div class="loan-doc-target-actions">
+          <button class="secondary-btn" type="button" data-loan-doc-copy="${escapeHtml(target.id)}">Copy Block</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
 function renderOneToFour() {
   setControlValue(elements.oneToFour.subjectSqft, state.oneToFour.sale.subjectSqft);
   setControlValue(elements.oneToFour.listingDiscount, state.oneToFour.sale.listingDiscount);
@@ -1182,7 +1449,6 @@ function renderOneToFour() {
     tbody: elements.oneToFour.rows,
     rows: state.oneToFour.sale.rows,
     calculations,
-    listingField: elements.oneToFour.listingDiscountField,
     priceAttr: "data-sale-price",
     sqftAttr: "data-sale-sqft",
     psfAttr: "data-sale-psf",
@@ -1331,7 +1597,6 @@ function renderCommercialSale() {
     tbody: elements.commercial.sale.rows,
     rows: state.commercial.sale.rows,
     calculations,
-    listingField: elements.commercial.sale.listingDiscountField,
     priceAttr: "data-commercial-sale-price",
     sqftAttr: "data-commercial-sale-sqft",
     psfAttr: "data-commercial-sale-psf",
@@ -1404,10 +1669,15 @@ function renderApartmentCurrent(unitMix) {
         return `
           <tr>
             <td>
-              <select class="table-select" data-focus-key="apartment-grouped-type-${index}" data-apartment-grouped-type="${index}">
-                <option value="" ${row.type === "" ? "selected" : ""}>Select type...</option>
-                ${aptRentTypeOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${row.type === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
-              </select>
+              <input
+                class="table-input"
+                type="text"
+                list="apartment-unit-type-options"
+                data-focus-key="apartment-grouped-type-${index}"
+                data-apartment-grouped-type="${index}"
+                value="${escapeHtml(getAptRentTypeInputValue(row.type))}"
+                placeholder="Type s, 1, 2, 3, 4..."
+              />
             </td>
             <td><input class="table-input" type="text" data-focus-key="apartment-grouped-total-units-${index}" data-apartment-grouped-total-units="${index}" value="${escapeHtml(row.totalUnits)}" placeholder="Total units..." /></td>
             <td><input class="table-input" type="text" data-focus-key="apartment-grouped-vacant-units-${index}" data-apartment-grouped-vacant-units="${index}" value="${escapeHtml(row.vacantUnits)}" placeholder="Vacant units..." /></td>
@@ -1429,10 +1699,15 @@ function renderApartmentCurrent(unitMix) {
         return `
           <tr class="${rowCalc?.isVacant ? "is-outlier" : ""}">
             <td>
-              <select class="table-select" data-focus-key="apartment-current-type-${index}" data-apartment-current-type="${index}">
-                <option value="" ${row.type === "" ? "selected" : ""}>Select type...</option>
-                ${aptRentTypeOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${row.type === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
-              </select>
+              <input
+                class="table-input"
+                type="text"
+                list="apartment-unit-type-options"
+                data-focus-key="apartment-current-type-${index}"
+                data-apartment-current-type="${index}"
+                value="${escapeHtml(getAptRentTypeInputValue(row.type))}"
+                placeholder="Type s, 1, 2, 3, 4..."
+              />
             </td>
             <td><input class="table-input" type="text" data-focus-key="apartment-current-rent-${index}" data-apartment-current-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Rent amount..." /></td>
             <td><input type="checkbox" data-focus-key="apartment-current-vacant-${index}" data-apartment-current-vacant="${index}" tabindex="-1" ${row.isVacant ? "checked" : ""} /></td>
@@ -1545,6 +1820,7 @@ function renderApartmentMarket(unitMix) {
 function renderApartmentSale(unitMix) {
   const subjectUnits = Object.values(unitMix).reduce((sum, value) => sum + value, 0);
   if (elements.apartment.sale.enableSf) elements.apartment.sale.enableSf.checked = state.apartment.sale.enablePerSf;
+  setControlValue(elements.apartment.sale.listingDiscount, state.apartment.sale.listingDiscount);
   elements.apartment.sale.subjectUnits.textContent = String(subjectUnits);
   setControlValue(elements.apartment.sale.subjectSqft, state.apartment.sale.subjectSqft);
   elements.apartment.sale.subjectSqftField.hidden = !state.apartment.sale.enablePerSf;
@@ -1557,15 +1833,22 @@ function renderApartmentSale(unitMix) {
 
   elements.apartment.sale.rows.innerHTML = state.apartment.sale.rows.map((row, index) => {
     const rowCalc = calculations.rows[index];
+    const listingChip = row.listing && (rowCalc?.perUnit !== null || rowCalc?.perSf !== null) ? '<span class="chip listing">Listing Adj</span>' : "";
     const outlierChip = rowCalc?.isOutlier ? '<span class="chip outlier">High Outlier</span>' : "";
     return `
       <tr class="${rowCalc?.isOutlier ? "is-outlier" : ""}">
         <td><input type="checkbox" data-apartment-sale-include="${index}" tabindex="-1" ${row.include ? "checked" : ""} /></td>
+        <td>
+          <div class="sale-toggle">
+            <button type="button" class="${row.listing ? "" : "active"}" data-apartment-sale-type="${index}" data-sale-type-value="sale" tabindex="-1">Sale</button>
+            <button type="button" class="${row.listing ? "active" : ""}" data-apartment-sale-type="${index}" data-sale-type-value="listing" tabindex="-1">Listing</button>
+          </div>
+        </td>
         <td><input class="table-input" type="text" data-focus-key="apartment-sale-price-${index}" data-apartment-sale-price="${index}" value="${escapeHtml(row.price)}" placeholder="Purchase Price..." /></td>
         <td><input class="table-input" type="text" data-focus-key="apartment-sale-units-${index}" data-apartment-sale-units="${index}" value="${escapeHtml(row.units)}" placeholder="Units..." /></td>
         <td ${state.apartment.sale.enablePerSf ? "" : 'hidden'}><input class="table-input" type="text" data-focus-key="apartment-sale-sqft-${index}" data-apartment-sale-sqft="${index}" value="${escapeHtml(row.sqft)}" placeholder="SF..." ${state.apartment.sale.enablePerSf ? "" : 'tabindex="-1"'} /></td>
-        <td><div class="metric-stack"><span>${rowCalc?.perUnitLabel || "-"}</span>${outlierChip}</div></td>
-        <td ${state.apartment.sale.enablePerSf ? "" : 'hidden'}>${rowCalc?.perSfLabel || "-"}</td>
+        <td><div class="metric-stack"><span>${rowCalc?.perUnitLabel || "-"}</span>${listingChip}${outlierChip}</div></td>
+        <td ${state.apartment.sale.enablePerSf ? "" : 'hidden'}><div class="metric-stack"><span>${rowCalc?.perSfLabel || "-"}</span></div></td>
         <td>${state.apartment.sale.rows.length > 1 ? `<button class="row-remove" type="button" data-apartment-sale-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
       </tr>
     `;
@@ -1889,11 +2172,76 @@ function renderLoiBlended() {
   elements.loi.blended.monthlyPayment.textContent = calculations.totalMonthlyPayment === null ? "-" : formatCurrency(calculations.totalMonthlyPayment, 0);
 }
 
+function bindLoanDocsEvents() {
+  elements.loanDocs.scenarios.querySelectorAll("[data-loan-doc-scenario]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.loanDocs.selectedScenarioId = button.getAttribute("data-loan-doc-scenario");
+      state.loanDocs.selectedTargetId = null;
+      renderLoanDocs();
+    });
+  });
+
+  elements.loanDocs.inputGrid.querySelectorAll("[data-loan-doc-field]").forEach((input) => {
+    const scenario = getSelectedLoanDocScenario();
+    if (!scenario) return;
+    const fieldId = input.getAttribute("data-loan-doc-field");
+    if (!fieldId) return;
+    const field = getLoanDocFieldById(scenario, fieldId);
+    input.addEventListener("input", () => {
+      state.loanDocs.inputs[scenario.id][fieldId] = input instanceof HTMLInputElement && input.type === "checkbox" ? input.checked : input.value;
+      if (input instanceof HTMLSelectElement || (input instanceof HTMLInputElement && input.type === "checkbox")) {
+        renderLoanDocs();
+        return;
+      }
+      renderLoanDocsTargetsSection(scenario, getLoanDocInputs(scenario.id));
+      persistState();
+    });
+    if (input instanceof HTMLSelectElement || (input instanceof HTMLInputElement && input.type === "checkbox")) {
+      input.addEventListener("change", () => {
+        const nextValue = input instanceof HTMLInputElement && input.type === "checkbox"
+          ? input.checked
+          : normalizeLoanDocFieldValue(field, input.value);
+        state.loanDocs.inputs[scenario.id][fieldId] = nextValue;
+        renderLoanDocs();
+      });
+    }
+    if (input instanceof HTMLInputElement && field?.type === "text") {
+      input.addEventListener("blur", () => {
+        const formattedValue = normalizeLoanDocFieldValue(field, input.value);
+        state.loanDocs.inputs[scenario.id][fieldId] = formattedValue;
+        input.value = formattedValue;
+        renderLoanDocsTargetsSection(scenario, getLoanDocInputs(scenario.id));
+        persistState();
+      });
+    }
+  });
+
+  bindLoanDocsTargetEvents();
+}
+
+function bindLoanDocsTargetEvents() {
+  elements.loanDocs.targets.querySelectorAll("[data-loan-doc-copy]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetId = button.getAttribute("data-loan-doc-copy");
+      const scenario = getSelectedLoanDocScenario();
+      if (!scenario || !targetId) return;
+      const target = getLoanDocTargetsForScenario(scenario, getLoanDocInputs(scenario.id)).find((entry) => entry.id === targetId);
+      if (!target) return;
+      state.loanDocs.selectedTargetId = targetId;
+      copyLoanDocText(
+        getLoanDocCopyText(target),
+        button,
+        button.closest(".loan-doc-target-card"),
+        getLoanDocCopyHtml(target),
+      );
+    });
+  });
+}
+
 function renderSaleRows({
   tbody,
   rows,
   calculations,
-  listingField,
   priceAttr,
   sqftAttr,
   psfAttr,
@@ -1904,11 +2252,6 @@ function renderSaleRows({
   onRender,
 }) {
   const focusState = captureActiveInputState(tbody);
-  const hasListingRows = rows.some((row) => row.listing);
-  if (listingField) {
-    listingField.hidden = !hasListingRows;
-    listingField.classList.toggle("attention-glow", hasListingRows);
-  }
   tbody.innerHTML = rows.map((row, index) => {
     const rowCalc = calculations.rows[index];
     const listingChip = row.listing && rowCalc?.usedPsf !== null ? '<span class="chip listing">Listing Adj</span>' : "";
@@ -2363,12 +2706,15 @@ function renderApartmentCurrentCapResults(calculations) {
 }
 
 function calculateApartmentSale(unitMix) {
+  const listingDiscountRate = clampPercent(state.apartment.sale.listingDiscount);
   const rows = state.apartment.sale.rows.map((row) => {
     const price = parseLooseNumber(row.price);
     const units = parsePositiveWholeNumber(row.units);
     const sqft = parsePositiveWholeNumber(row.sqft);
-    const perUnit = price === null || units === null || units <= 0 ? null : price / units;
-    const perSf = price === null || sqft === null || sqft <= 0 ? null : price / sqft;
+    const basePerUnit = price === null || units === null || units <= 0 ? null : price / units;
+    const basePerSf = price === null || sqft === null || sqft <= 0 ? null : price / sqft;
+    const perUnit = basePerUnit === null ? null : (row.listing ? basePerUnit * (1 - listingDiscountRate) : basePerUnit);
+    const perSf = basePerSf === null ? null : (row.listing ? basePerSf * (1 - listingDiscountRate) : basePerSf);
     return {
       perUnit,
       perSf,
@@ -2380,10 +2726,12 @@ function calculateApartmentSale(unitMix) {
 
   let outlierIndex = -1;
   let highestMetric = -Infinity;
+  const outlierMetricKey = state.apartment.sale.enablePerSf ? "perSf" : "perUnit";
   rows.forEach((row, index) => {
-    if (row.perUnit === null) return;
-    if (row.perUnit > highestMetric) {
-      highestMetric = row.perUnit;
+    const metric = row[outlierMetricKey];
+    if (metric === null) return;
+    if (metric > highestMetric) {
+      highestMetric = metric;
       outlierIndex = index;
     }
   });
@@ -2646,12 +2994,19 @@ function bindApartmentCurrentEvents() {
       },
     });
 
-    elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-type]").forEach((select) => {
-      select.addEventListener("change", () => {
-        const row = state.apartment.current.groupedRows[Number(select.dataset.apartmentGroupedType)];
+    elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-type]").forEach((input) => {
+      const commitType = () => {
+        const row = state.apartment.current.groupedRows[Number(input.dataset.apartmentGroupedType)];
         if (!row) return;
-        row.type = select.value;
+        row.type = normalizeAptRentTypeInput(input.value);
         renderApartment();
+      };
+      input.addEventListener("change", commitType);
+      input.addEventListener("blur", commitType);
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        commitType();
       });
     });
     elements.apartment.current.rows.querySelectorAll("[data-apartment-grouped-fill-method]").forEach((select) => {
@@ -2733,12 +3088,19 @@ function bindApartmentCurrentEvents() {
     },
   });
 
-  elements.apartment.current.rows.querySelectorAll("[data-apartment-current-type]").forEach((select) => {
-    select.addEventListener("change", () => {
-      const row = state.apartment.current.rows[Number(select.dataset.apartmentCurrentType)];
+  elements.apartment.current.rows.querySelectorAll("[data-apartment-current-type]").forEach((input) => {
+    const commitType = () => {
+      const row = state.apartment.current.rows[Number(input.dataset.apartmentCurrentType)];
       if (!row) return;
-      row.type = select.value;
+      row.type = normalizeAptRentTypeInput(input.value);
       renderApartment();
+    };
+    input.addEventListener("change", commitType);
+    input.addEventListener("blur", commitType);
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      commitType();
     });
   });
   elements.apartment.current.rows.querySelectorAll("[data-apartment-current-vacant]").forEach((input) => {
@@ -2829,6 +3191,22 @@ function bindApartmentSaleEvents() {
       row.include = input.checked;
       row.userTouched = true;
       renderApartment();
+    });
+  });
+  elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-type]").forEach((button) => {
+    const applyType = () => {
+      const row = state.apartment.sale.rows[Number(button.dataset.apartmentSaleType)];
+      if (!row) return;
+      row.listing = button.dataset.saleTypeValue === "listing";
+      renderApartment();
+    };
+    button.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      applyType();
+    });
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      applyType();
     });
   });
   elements.apartment.sale.rows.querySelectorAll("[data-apartment-sale-price]").forEach((input) => {
@@ -3554,6 +3932,230 @@ function getConsumerDebtResultHeadline(status) {
   return "Pass";
 }
 
+function getLoanDocScenarioById(id) {
+  return LOAN_DOC_SCENARIOS.find((scenario) => scenario.id === id) || null;
+}
+
+function getSelectedLoanDocScenario() {
+  return getLoanDocScenarioById(state.loanDocs.selectedScenarioId) || LOAN_DOC_SCENARIOS[0] || null;
+}
+
+function getLoanDocInputs(scenarioId) {
+  const fallbackInputs = createLoanDocsDefaults().inputs[scenarioId] || {};
+  return state.loanDocs.inputs[scenarioId] || fallbackInputs;
+}
+
+function getLoanDocFieldById(scenario, fieldId) {
+  return (scenario?.fields || []).find((field) => field.id === fieldId) || null;
+}
+
+function getVisibleLoanDocFields(scenario, inputs) {
+  return (scenario?.fields || []).filter((field) => loanDocTargetMatchesConditions(field, inputs));
+}
+
+function getVisibleLoanDocScenarios() {
+  const query = state.loanDocs.searchQuery.trim().toLowerCase();
+  if (!query) return LOAN_DOC_SCENARIOS;
+  return LOAN_DOC_SCENARIOS.filter((scenario) => {
+    const haystack = [
+      scenario.label,
+      scenario.summary,
+      scenario.guidance,
+      ...(scenario.targets || []).flatMap((target) => [target.document, target.section, target.mode, target.template]),
+    ].join(" ").toLowerCase();
+    return haystack.includes(query);
+  });
+}
+
+function getLoanDocTargetsForScenario(scenario, inputs) {
+  return (scenario.targets || [])
+    .filter((target) => loanDocTargetMatchesConditions(target, inputs))
+    .map((target) => ({
+      ...target,
+      renderedText: renderLoanDocTemplate(target.template || "", scenario, inputs),
+      renderedCopyText: renderLoanDocTemplate(target.copyTemplate || target.template || "", scenario, inputs),
+      renderedRichText: renderLoanDocRichTemplate(target.richTemplate || target.template || "", scenario, inputs),
+      renderedCopyRichText: renderLoanDocRichTemplate(
+        stripLeadingSectionMarker(target.richCopyTemplate || target.richTemplate || target.copyTemplate || target.template || ""),
+        scenario,
+        inputs,
+      ),
+    }));
+}
+
+function loanDocTargetMatchesConditions(target, inputs) {
+  if (!Array.isArray(target.conditions) || !target.conditions.length) return true;
+  return target.conditions.every((condition) => {
+    const currentValue = inputs?.[condition.field];
+    if (Object.prototype.hasOwnProperty.call(condition, "equals")) return currentValue === condition.equals;
+    if (Object.prototype.hasOwnProperty.call(condition, "notEquals")) return currentValue !== condition.notEquals;
+    return true;
+  });
+}
+
+function renderLoanDocTemplate(template, scenario, inputs) {
+  return String(template).replace(/\{\{([^}]+)\}\}/g, (_, token) => {
+    const key = String(token).trim();
+    const value = resolveLoanDocTemplateValue(key, scenario, inputs);
+    if (value === true) return "Yes";
+    if (value === false || value == null || value === "") return `[${key.replace(/_/g, " ")}]`;
+    const field = getLoanDocFieldById(scenario, key);
+    return normalizeLoanDocFieldValue(field, value);
+  });
+}
+
+function renderLoanDocRichTemplate(template, scenario, inputs) {
+  const parts = String(template).split(/(\{\{[^}]+\}\}|\*\*)/g);
+  let html = "";
+  let isBold = false;
+
+  parts.forEach((part) => {
+    if (!part) return;
+    if (part === "**") {
+      html += isBold ? "</strong>" : "<strong>";
+      isBold = !isBold;
+      return;
+    }
+    const tokenMatch = part.match(/^\{\{([^}]+)\}\}$/);
+    if (tokenMatch) {
+      html += escapeHtml(getLoanDocResolvedTemplateValue(tokenMatch[1], scenario, inputs));
+      return;
+    }
+    html += escapeHtml(part);
+  });
+
+  if (isBold) html += "</strong>";
+  return html.replace(/\r\n?/g, "\n").trim();
+}
+
+function getLoanDocResolvedTemplateValue(token, scenario, inputs) {
+  const key = String(token).trim();
+  const value = resolveLoanDocTemplateValue(key, scenario, inputs);
+  if (value === true) return "Yes";
+  if (value === false || value == null || value === "") return `[${key.replace(/_/g, " ")}]`;
+  const field = getLoanDocFieldById(scenario, key);
+  return normalizeLoanDocFieldValue(field, value);
+}
+
+function formatLoanDocRichTextHtml(content) {
+  const normalized = String(content || "").replace(/\r\n?/g, "\n").trim();
+  if (!normalized) return "";
+  return normalized
+    .split("\n")
+    .map((line) => formatLoanDocRichTextLine(line))
+    .join("");
+}
+
+function formatLoanDocRichTextLine(line) {
+  const trimmed = String(line || "").trim();
+  if (!trimmed) return '<div class="loan-doc-line-spacer" aria-hidden="true"></div>';
+  const lineClass = getLoanDocRichTextLineClass(trimmed);
+  return `<p class="loan-doc-line ${lineClass}">${trimmed}</p>`;
+}
+
+function getLoanDocRichTextLineClass(line) {
+  const plain = String(line || "").replace(/<[^>]+>/g, "").trim();
+  if (!plain) return "";
+  if (/^\d+\.\s/.test(plain)) return "loan-doc-line-section";
+  if (/^\([a-z]\)\s/i.test(plain)) return "loan-doc-line-alpha";
+  if (/^\(([ivxlcdm]+)\)\s/i.test(plain)) return "loan-doc-line-roman";
+  if (/^[•*-]\s/.test(plain)) return "loan-doc-line-bullet";
+  if (/^[A-Z][A-Z\s]+:$/.test(plain)) return "loan-doc-line-label";
+  if (/^By[_\s]/.test(plain)) return "loan-doc-line-signature";
+  return "loan-doc-line-body";
+}
+
+function formatLoanDocClipboardFragment(content) {
+  const normalized = String(content || "").replace(/\r\n?/g, "\n").trim();
+  if (!normalized) return "";
+  return normalized
+    .split("\n")
+    .filter((line) => line.trim())
+    .join("<br>");
+}
+
+function resolveLoanDocTemplateValue(key, scenario, inputs) {
+  if (Object.prototype.hasOwnProperty.call(inputs || {}, key)) return inputs[key];
+  if (key.endsWith("_words")) {
+    const baseKey = key.slice(0, -6);
+    const field = getLoanDocFieldById(scenario, baseKey);
+    const baseValue = inputs?.[baseKey];
+    if (isLoanDocPercentField(field)) return formatLoanDocPercentWords(baseValue);
+  }
+  return inputs?.[key];
+}
+
+function isLoanDocMoneyField(field) {
+  if (!field || field.type !== "text") return false;
+  return String(field.placeholder || "").includes("$");
+}
+
+function isLoanDocPercentField(field) {
+  return field?.type === "text" && field?.format === "percent";
+}
+
+function isLoanDocDateField(field) {
+  return field?.type === "text" && field?.format === "date";
+}
+
+function getLoanDocFieldInputMode(field) {
+  return isLoanDocMoneyField(field) || isLoanDocPercentField(field) ? "decimal" : "text";
+}
+
+function getLoanDocFieldPlaceholder(field) {
+  if (!field) return "";
+  if (isLoanDocMoneyField(field)) return "$0.00";
+  if (isLoanDocPercentField(field)) return "0.00%";
+  if (isLoanDocDateField(field)) return "January 1, 2027";
+  return field.placeholder || "";
+}
+
+function normalizeLoanDocFieldValue(field, rawValue) {
+  if (!field) return String(rawValue ?? "");
+  if (isLoanDocMoneyField(field)) return formatMoneyInput(rawValue, 2);
+  if (isLoanDocPercentField(field)) return formatLoanDocPercentInput(rawValue);
+  if (isLoanDocDateField(field)) return formatLoanDocDateInput(rawValue);
+  return String(rawValue ?? "");
+}
+
+function groupLoanDocTargetsByDocument(targets) {
+  return targets.reduce((groups, target) => {
+    const documentKey = target.document || "agreement";
+    if (!groups[documentKey]) groups[documentKey] = [];
+    groups[documentKey].push(target);
+    return groups;
+  }, {});
+}
+
+function getLoanDocDocumentLabel(documentKey) {
+  const labels = {
+    agreement: "Agreement",
+    instructions: "Escrow Instructions",
+    note: "Note",
+    td: "Deed of Trust",
+    eft: "EFT",
+  };
+  return labels[documentKey] || documentKey;
+}
+
+function getLoanDocCopyText(target) {
+  return stripLeadingSectionMarker(target?.renderedCopyText || target?.renderedText || "");
+}
+
+function getLoanDocCopyHtml(target) {
+  if (target?.richCopy === false) return "";
+  return formatLoanDocClipboardFragment(target?.renderedCopyRichText || getLoanDocCopyText(target));
+}
+
+function stripLeadingSectionMarker(text) {
+  return String(text)
+    .split("\n")
+    .map((line) => line
+      .replace(/^\s*\d+(?:\.\d+)*\.?\s+/, "")
+      .replace(/^\s*\(([A-Za-z0-9ivxIVX]+)\)\s+/, ""))
+    .join("\n");
+}
+
 function clearPageSection(sectionKey, button) {
   const defaults = createDefaultState();
   if (sectionKey === "oneToFourSale") state.oneToFour.sale = defaults.oneToFour.sale;
@@ -3565,6 +4167,7 @@ function clearPageSection(sectionKey, button) {
   if (sectionKey === "apartmentSale") state.apartment.sale = defaults.apartment.sale;
   if (sectionKey === "consumerDebt") state.consumerDebt = defaults.consumerDebt;
   if (sectionKey === "loi") state.loi = defaults.loi;
+  if (sectionKey === "loanDocs") state.loanDocs = defaults.loanDocs;
   renderAll();
   flashButton(button, "Cleared");
 }
@@ -3651,6 +4254,58 @@ async function copyAmount(amount, button, target) {
   }
 }
 
+async function copyLoanDocText(text, button, target, html) {
+  if (!String(text || "").trim()) {
+    flashButton(button, "No Text");
+    flashCopyTarget(target, "no-value");
+    return;
+  }
+  try {
+    if (html && canCopyRichTextToClipboard()) {
+      await copyRichTextToClipboard(text, html);
+    } else {
+      await copyTextToClipboard(text);
+    }
+    flashButton(button, "Copied");
+    flashCopyTarget(target, "copied");
+  } catch (error) {
+    flashButton(button, "Copy Failed");
+    flashCopyTarget(target, "copy-failed");
+  }
+}
+
+function canCopyRichTextToClipboard() {
+  return Boolean(
+    navigator.clipboard
+      && typeof navigator.clipboard.write === "function"
+      && typeof ClipboardItem !== "undefined",
+  );
+}
+
+async function copyRichTextToClipboard(text, html) {
+  const item = new ClipboardItem({
+    "text/plain": new Blob([text], { type: "text/plain" }),
+    "text/html": new Blob([buildLoanDocClipboardHtml(html)], { type: "text/html" }),
+  });
+  await navigator.clipboard.write([item]);
+}
+
+function buildLoanDocClipboardHtml(content) {
+  return [
+    "<!DOCTYPE html>",
+    "<html>",
+    "<head>",
+    '<meta charset="utf-8">',
+    "</head>",
+    '<body style="font-family:\'Times New Roman\', Times, serif; font-size:12pt; line-height:1.35;">',
+    "<!--StartFragment-->",
+    content,
+    "<!--EndFragment-->",
+    "</body>",
+    "</html>",
+  ].join("");
+}
+
 async function copyTextToClipboard(text) {
   if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
     await navigator.clipboard.writeText(text);
@@ -3697,6 +4352,17 @@ function bindRepeatingRows(container, { removeAttr, onRemove }) {
 function getAptRentTypeLabel(typeValue) {
   const match = aptRentTypeOptions.find((type) => type.value === typeValue);
   return match ? match.label : "Unit";
+}
+
+function getAptRentTypeInputValue(typeValue) {
+  const match = aptRentTypeOptions.find((type) => type.value === typeValue);
+  return match ? match.label : "";
+}
+
+function normalizeAptRentTypeInput(rawValue) {
+  const normalized = String(rawValue || "").trim().toLowerCase().replace(/[-_]+/g, " ");
+  if (!normalized) return "";
+  return aptRentTypeAliases[normalized] || "";
 }
 
 function getLeaseExpenseRate(leaseType) {
@@ -3748,6 +4414,115 @@ function formatPercentInput(raw, max) {
   if (parsed === null) return "0";
   const clamped = Math.max(0, Math.min(max, parsed));
   return clamped.toFixed(1).replace(/\.0$/, "");
+}
+
+function formatLoanDocPercentInput(raw) {
+  const parsed = parseLooseNumber(raw);
+  if (parsed === null) return "";
+  return `${parsed.toFixed(2)}%`;
+}
+
+function formatLoanDocPercentWords(raw) {
+  const parsed = parseLooseNumber(raw);
+  if (parsed === null) return "";
+  const normalized = Math.abs(parsed);
+  const whole = Math.trunc(normalized);
+  const hundredths = Math.round((normalized - whole) * 100);
+  const prefix = parsed < 0 ? "NEGATIVE " : "";
+  if (hundredths === 0) return `${prefix}${numberToWordsUpper(whole)}`;
+
+  const fractionalWords = getLoanDocFractionWords(hundredths);
+  if (whole === 0) return `${prefix}${fractionalWords}`;
+  return `${prefix}${numberToWordsUpper(whole)} and ${fractionalWords}`;
+}
+
+function getLoanDocFractionWords(hundredths) {
+  if (hundredths === 50) return "ONE HALF";
+  if (hundredths === 25) return "ONE QUARTER";
+  if (hundredths === 75) return "THREE QUARTERS";
+  if (hundredths % 10 === 0) {
+    const tenths = hundredths / 10;
+    return `${numberToWordsUpper(tenths)} TENTHS`;
+  }
+  return `${numberToWordsUpper(hundredths)} HUNDREDTHS`;
+}
+
+function numberToWordsUpper(value) {
+  return numberToWords(value).toUpperCase();
+}
+
+function numberToWords(value) {
+  const ones = [
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+    "seventeen", "eighteen", "nineteen",
+  ];
+  const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+  const scales = [
+    { value: 1000000000, label: "billion" },
+    { value: 1000000, label: "million" },
+    { value: 1000, label: "thousand" },
+    { value: 100, label: "hundred" },
+  ];
+
+  const integer = Math.trunc(Math.abs(Number(value) || 0));
+  if (integer < 20) return ones[integer];
+  if (integer < 100) {
+    const tenValue = Math.trunc(integer / 10);
+    const rest = integer % 10;
+    return rest ? `${tens[tenValue]}-${ones[rest]}` : tens[tenValue];
+  }
+
+  for (const scale of scales) {
+    if (integer < scale.value) continue;
+    const lead = Math.trunc(integer / scale.value);
+    const rest = integer % scale.value;
+    const leadWords = `${numberToWords(lead)} ${scale.label}`;
+    return rest ? `${leadWords} ${numberToWords(rest)}` : leadWords;
+  }
+
+  return String(integer);
+}
+
+function formatLoanDocDateInput(raw) {
+  const parsedDate = parseLoanDocDate(raw);
+  if (!parsedDate) return String(raw || "").trim();
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parsedDate);
+}
+
+function parseLoanDocDate(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+
+  const isoMatch = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (isoMatch) return buildUtcDate(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
+
+  const slashMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (slashMatch) {
+    const year = Number(slashMatch[3].length === 2 ? `20${slashMatch[3]}` : slashMatch[3]);
+    return buildUtcDate(year, Number(slashMatch[1]), Number(slashMatch[2]));
+  }
+
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return null;
+  const candidate = new Date(parsed);
+  return buildUtcDate(candidate.getUTCFullYear(), candidate.getUTCMonth() + 1, candidate.getUTCDate());
+}
+
+function buildUtcDate(year, month, day) {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    candidate.getUTCFullYear() !== year
+    || candidate.getUTCMonth() !== month - 1
+    || candidate.getUTCDate() !== day
+  ) return null;
+  return candidate;
 }
 
 function formatDecimalInput(raw, maxDecimals = 3) {

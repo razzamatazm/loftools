@@ -19,6 +19,14 @@
       </header>
 
       <main class="tool-shell">
+        <datalist id="apartment-unit-type-options">
+          <option value="Studio"></option>
+          <option value="1 Bed"></option>
+          <option value="2 Bed"></option>
+          <option value="3 Bed"></option>
+          <option value="4 Bed"></option>
+        </datalist>
+
         <section class="tool-card">
           <div class="tablist" role="tablist" aria-label="Valuation pages">
             <button class="tab active" type="button" data-tab="oneToFour" aria-selected="true">1-4 Unit Valuations</button>
@@ -26,13 +34,13 @@
             <button class="tab" type="button" data-tab="apartment" aria-selected="false">Apartment Valuations</button>
             <button class="tab" type="button" data-tab="consumerDebt" aria-selected="false">Consumer Debt Checker</button>
             <button class="tab" type="button" data-tab="loi" aria-selected="false">Blended LOI Checker</button>
+            <button class="tab" type="button" data-tab="loanDocs" aria-selected="false">Loan Doc Manual</button>
           </div>
 
           <section class="panel active" data-panel="oneToFour">
             <div class="panel-head">
               <div>
-                <p class="panel-kicker">Sales Approach</p>
-                <h2>1-4 Unit Valuations</h2>
+                <h2>Value Based on Sale Comps</h2>
               </div>
               <div class="panel-actions">
                 <button class="secondary-btn" type="button" id="one-four-clear-btn">Clear Values</button>
@@ -40,20 +48,18 @@
               </div>
             </div>
 
-            <div class="subject-setup-inline">
-              <p class="setup-label">Subject Property SF</p>
-              <div class="config-grid subject-setup-grid">
-                <label class="field field-width-md subject-setup-input-only">
-                  <input id="one-four-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
-                </label>
-                <label class="field field-width-xs listing-discount-field" id="one-four-listing-discount-field" hidden>
-                  <span>Listing Discount Percent</span>
-                  <div class="input-suffix">
-                    <input id="one-four-listing-discount" type="text" inputmode="decimal" placeholder="0" />
-                    <span>%</span>
-                  </div>
-                </label>
-              </div>
+            <div class="config-grid subject-setup-grid input-row">
+              <label class="field field-width-md" id="one-four-subject-sqft-field">
+                <span>Subject Property SF</span>
+                <input id="one-four-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
+              </label>
+              <label class="field field-width-md listing-discount-field" id="one-four-listing-discount-field">
+                <span>Listing Discount Percent</span>
+                <div class="input-suffix">
+                  <input id="one-four-listing-discount" type="text" inputmode="decimal" placeholder="0" />
+                  <span>%</span>
+                </div>
+              </label>
             </div>
 
             <div class="table-wrap">
@@ -84,7 +90,7 @@
                 <strong id="one-four-average-psf">-</strong>
               </article>
               <article class="summary-card">
-                <span>Indicated Value</span>
+                <span>Value</span>
                 <strong id="one-four-indicated-value" class="copy-value" tabindex="0" role="button">-</strong>
               </article>
             </div>
@@ -93,54 +99,41 @@
           <section class="panel" data-panel="commercial" hidden>
             <div class="panel-head">
               <div>
-                <p class="panel-kicker">Unified Workflow</p>
-                <h2>Commercial Valuations</h2>
+                <h2>Value Based on Current Rent</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="commercial-current-clear-btn">Clear Values</button>
+                <button class="copy-btn" type="button" id="commercial-current-copy-btn" disabled>Copy Value</button>
               </div>
             </div>
 
-            <div class="subject-setup-inline">
-              <p class="setup-label">Subject Property SF</p>
-              <div class="config-grid subject-setup-grid">
-                <label class="field field-width-md subject-setup-input-only">
-                  <input id="commercial-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
-                </label>
-              </div>
+            <div class="config-grid subject-setup-grid input-row">
+              <label class="field field-width-md" id="commercial-subject-sqft-field">
+                <span>Subject Property SF</span>
+                <input id="commercial-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
+              </label>
             </div>
 
             <section class="valuation-stack-section">
-              <div class="panel-head panel-head-subsection">
-                <div>
-                  <p class="panel-kicker">Current Income</p>
-                  <h2>Current Rent</h2>
-                </div>
-                <div class="panel-actions">
-                  <button class="secondary-btn" type="button" id="commercial-current-clear-btn">Clear Values</button>
-                  <button class="copy-btn" type="button" id="commercial-current-copy-btn" disabled>Copy Value</button>
-                </div>
-              </div>
-
-              <div class="setup-panel">
-                <p class="setup-label">Valuation Inputs</p>
-                <div class="config-grid current-rent-grid">
-                  <label class="field">
-                    <span>Starting Cap Rate</span>
-                    <div class="input-suffix">
-                      <input id="commercial-current-start-cap" type="text" inputmode="decimal" placeholder="5" />
-                      <span>%</span>
-                    </div>
-                  </label>
-                  <label class="field">
-                    <span>Additional Income to Fill Vacant Space</span>
-                    <input id="commercial-current-additional-income" type="text" inputmode="decimal" placeholder="0" />
-                  </label>
-                  <label class="field">
-                    <span>Vacancy Factor</span>
-                    <div class="input-suffix">
-                      <input id="commercial-current-vacancy" type="text" inputmode="decimal" placeholder="Optional" />
-                      <span>%</span>
-                    </div>
-                  </label>
-                </div>
+              <div class="config-grid current-rent-grid input-row">
+                <label class="field">
+                  <span>Starting Cap Rate</span>
+                  <div class="input-suffix">
+                    <input id="commercial-current-start-cap" type="text" inputmode="decimal" placeholder="5" />
+                    <span>%</span>
+                  </div>
+                </label>
+                <label class="field">
+                  <span>Additional Income to Fill Vacant Space</span>
+                  <input id="commercial-current-additional-income" type="text" inputmode="decimal" placeholder="0" />
+                </label>
+                <label class="field">
+                  <span>Vacancy Factor</span>
+                  <div class="input-suffix">
+                    <input id="commercial-current-vacancy" type="text" inputmode="decimal" placeholder="Optional" />
+                    <span>%</span>
+                  </div>
+                </label>
               </div>
 
               <div class="table-wrap">
@@ -206,8 +199,7 @@
             <section class="valuation-stack-section">
               <div class="panel-head panel-head-subsection">
                 <div>
-                  <p class="panel-kicker">Income Approach</p>
-                  <h2>Market Rent Comps</h2>
+                  <h2>Value Based on Market Rents</h2>
                 </div>
                 <div class="panel-actions">
                   <button class="secondary-btn" type="button" id="commercial-rent-clear-btn">Clear Values</button>
@@ -217,21 +209,18 @@
 
               <p class="hint hint-pretable">Highest rent-after-expenses row is auto-excluded as the high outlier. You can reselect it.</p>
 
-              <div class="setup-panel">
-                <p class="setup-label">Valuation Inputs</p>
-                <div class="config-grid compact-field-row compact-field-row-rent">
-                  <label class="field field-width-xs">
-                    <span>Vacancy Factor</span>
-                    <div class="input-suffix">
-                      <input id="commercial-rent-vacancy" type="text" inputmode="decimal" placeholder="5" />
-                      <span>%</span>
-                    </div>
-                  </label>
-                  <label class="field field-width-xs">
-                    <span>Starting Cap Rate</span>
-                    <input id="commercial-rent-start-cap" type="text" inputmode="decimal" placeholder="5" />
-                  </label>
-                </div>
+              <div class="config-grid compact-field-row compact-field-row-rent input-row">
+                <label class="field field-width-xs">
+                  <span>Vacancy Factor</span>
+                  <div class="input-suffix">
+                    <input id="commercial-rent-vacancy" type="text" inputmode="decimal" placeholder="5" />
+                    <span>%</span>
+                  </div>
+                </label>
+                <label class="field field-width-xs">
+                  <span>Starting Cap Rate</span>
+                  <input id="commercial-rent-start-cap" type="text" inputmode="decimal" placeholder="5" />
+                </label>
               </div>
 
               <div class="table-wrap">
@@ -286,8 +275,7 @@
             <section class="valuation-stack-section">
               <div class="panel-head panel-head-subsection">
                 <div>
-                  <p class="panel-kicker">Sales Approach</p>
-                  <h2>Sale Comps</h2>
+                  <h2>Value Based on Sale Comps</h2>
                 </div>
                 <div class="panel-actions">
                   <button class="secondary-btn" type="button" id="commercial-sale-clear-btn">Clear Values</button>
@@ -295,17 +283,14 @@
                 </div>
               </div>
 
-              <div class="setup-panel">
-                <p class="setup-label">Comp Inputs</p>
-                <div class="config-grid sale-grid compact-field-row">
-                  <label class="field field-width-xs listing-discount-field" id="commercial-sale-listing-discount-field" hidden>
-                    <span>Listing Discount Percent</span>
-                    <div class="input-suffix">
-                      <input id="commercial-sale-listing-discount" type="text" inputmode="decimal" placeholder="0" />
-                      <span>%</span>
-                    </div>
-                  </label>
-                </div>
+              <div class="config-grid subject-setup-grid input-row">
+                <label class="field field-width-md listing-discount-field" id="commercial-sale-listing-discount-field">
+                  <span>Listing Discount Percent</span>
+                  <div class="input-suffix">
+                    <input id="commercial-sale-listing-discount" type="text" inputmode="decimal" placeholder="0" />
+                    <span>%</span>
+                  </div>
+                </label>
               </div>
 
               <div class="table-wrap">
@@ -336,7 +321,7 @@
                   <strong id="commercial-sale-average-psf">-</strong>
                 </article>
                 <article class="summary-card">
-                  <span>Indicated Value</span>
+                  <span>Value</span>
                   <strong id="commercial-sale-indicated-value" class="copy-value" tabindex="0" role="button">-</strong>
                 </article>
               </div>
@@ -346,47 +331,37 @@
           <section class="panel" data-panel="apartment" hidden>
             <div class="panel-head">
               <div>
-                <p class="panel-kicker">Unified Workflow</p>
-                <h2>Apartment Valuations</h2>
+                <h2>Value Based on Current Rent</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="apartment-current-clear-btn">Clear Values</button>
+                <button class="copy-btn" type="button" id="apartment-current-copy-btn" disabled>Copy Value</button>
               </div>
             </div>
 
             <section class="valuation-stack-section">
-              <div class="panel-head panel-head-subsection">
-                <div>
-                  <h2>Rent Roll</h2>
-                </div>
-                <div class="panel-actions">
-                  <button class="secondary-btn" type="button" id="apartment-current-clear-btn">Clear Values</button>
-                  <button class="copy-btn" type="button" id="apartment-current-copy-btn" disabled>Copy Value</button>
-                </div>
-              </div>
-
-              <div class="setup-panel">
-                <p class="setup-label">Valuation Inputs</p>
-                <div class="config-grid current-rent-grid">
-                  <label class="field">
-                    <span>Starting Cap Rate</span>
-                    <div class="input-suffix">
-                      <input id="apartment-current-start-cap" type="text" inputmode="decimal" placeholder="5" value="5" />
-                      <span>%</span>
-                    </div>
-                  </label>
-                  <label class="field">
-                    <span>Vacancy Factor</span>
-                    <div class="input-suffix">
-                      <input id="apartment-current-vacancy" type="text" inputmode="decimal" placeholder="Optional" />
-                      <span>%</span>
-                    </div>
-                  </label>
-                  <label class="field">
-                    <span>Expenses</span>
-                    <div class="input-suffix">
-                      <input id="apartment-current-expense" type="text" inputmode="decimal" placeholder="30" />
-                      <span>%</span>
-                    </div>
-                  </label>
-                </div>
+              <div class="config-grid current-rent-grid input-row">
+                <label class="field">
+                  <span>Starting Cap Rate</span>
+                  <div class="input-suffix">
+                    <input id="apartment-current-start-cap" type="text" inputmode="decimal" placeholder="5" value="5" />
+                    <span>%</span>
+                  </div>
+                </label>
+                <label class="field">
+                  <span>Vacancy Factor</span>
+                  <div class="input-suffix">
+                    <input id="apartment-current-vacancy" type="text" inputmode="decimal" placeholder="Optional" />
+                    <span>%</span>
+                  </div>
+                </label>
+                <label class="field">
+                  <span>Expenses</span>
+                  <div class="input-suffix">
+                    <input id="apartment-current-expense" type="text" inputmode="decimal" placeholder="30" />
+                    <span>%</span>
+                  </div>
+                </label>
               </div>
 
               <div class="section-inline-controls">
@@ -479,8 +454,7 @@
             <section class="valuation-stack-section">
               <div class="panel-head panel-head-subsection">
                 <div>
-                  <p class="panel-kicker">Income Approach</p>
-                  <h2>Market Rent Comps</h2>
+                  <h2>Value Based on Market Rents</h2>
                 </div>
                 <div class="panel-actions">
                   <button class="secondary-btn" type="button" id="apartment-market-clear-btn">Clear Values</button>
@@ -488,7 +462,7 @@
                 </div>
               </div>
 
-              <div class="setup-panel">
+              <div class="input-stack">
                 <p class="setup-label">Subject Mix From Rent Roll</p>
                 <div class="summary-grid summary-grid-five summary-grid-inline">
                   <article class="summary-card" data-unit-type="studio">
@@ -512,7 +486,7 @@
                     <strong id="apartment-mix-fourbed">0</strong>
                   </article>
                 </div>
-                <div class="config-grid compact-field-row compact-field-row-rent">
+                <div class="config-grid compact-field-row compact-field-row-rent input-row">
                   <label class="field field-width-xs">
                     <span>Vacancy Factor</span>
                     <div class="input-suffix">
@@ -611,8 +585,7 @@
             <section class="valuation-stack-section">
               <div class="panel-head panel-head-subsection">
                 <div>
-                  <p class="panel-kicker">Sales Approach</p>
-                  <h2>Sale Comps</h2>
+                  <h2>Value Based on Sale Comps</h2>
                 </div>
                 <div class="panel-actions">
                   <button class="secondary-btn" type="button" id="apartment-sale-clear-btn">Clear Values</button>
@@ -620,25 +593,29 @@
                 </div>
               </div>
 
-              <div class="setup-panel subject-setup-panel">
-                <p class="setup-label">Subject Setup</p>
-                <div class="config-grid subject-setup-grid subject-setup-grid-apt-sale">
-                  <label class="field field-width-md">
-                    <span>Subject Units</span>
-                    <div class="readonly-display" id="apartment-sale-subject-units">0</div>
-                  </label>
-                  <label class="field toggle-field" for="apartment-sale-enable-sf">
-                    <span>Use $ / SF Valuation</span>
-                    <span class="toggle-switch">
-                      <input id="apartment-sale-enable-sf" type="checkbox" />
-                      <span class="toggle-slider" aria-hidden="true"></span>
-                    </span>
-                  </label>
-                  <label class="field field-width-md" id="apartment-sale-subject-sqft-field" hidden>
-                    <span>Subject Property SF</span>
-                    <input id="apartment-sale-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
-                  </label>
-                </div>
+              <div class="config-grid subject-setup-grid subject-setup-grid-apt-sale input-row">
+                <label class="field field-width-md">
+                  <span>Subject Units</span>
+                  <div class="readonly-display" id="apartment-sale-subject-units">0</div>
+                </label>
+                <label class="field field-width-md listing-discount-field" id="apartment-sale-listing-discount-field">
+                  <span>Listing Discount Percent</span>
+                  <div class="input-suffix">
+                    <input id="apartment-sale-listing-discount" type="text" inputmode="decimal" placeholder="0" />
+                    <span>%</span>
+                  </div>
+                </label>
+                <label class="field toggle-field" for="apartment-sale-enable-sf">
+                  <span>Use $ / SF Valuation</span>
+                  <span class="toggle-switch">
+                    <input id="apartment-sale-enable-sf" type="checkbox" />
+                    <span class="toggle-slider" aria-hidden="true"></span>
+                  </span>
+                </label>
+                <label class="field field-width-md" id="apartment-sale-subject-sqft-field" hidden>
+                  <span>Subject Property SF</span>
+                  <input id="apartment-sale-subject-sqft" type="text" inputmode="numeric" placeholder="Subject property SF..." />
+                </label>
               </div>
 
               <div class="table-wrap">
@@ -646,6 +623,7 @@
                   <thead>
                     <tr>
                       <th class="checkbox-col">Use</th>
+                      <th>Type</th>
                       <th>Purchase Price</th>
                       <th>Units</th>
                       <th id="apartment-sale-sf-heading">SF</th>
@@ -661,7 +639,7 @@
               <div class="actions-row">
                 <button class="secondary-btn" id="apartment-sale-add-row" type="button">Add Comp</button>
               </div>
-              <p class="hint">Highest $ / unit comp is auto-excluded as the high outlier. You can reselect it. Enable $ / SF valuation when you want to compare both methods.</p>
+              <p class="hint">Highest comp under the active valuation method is auto-excluded as the high outlier. Listing rows apply the discount before averaging. Enable $ / SF valuation when you want to compare both methods.</p>
 
               <div class="summary-grid summary-grid-two" id="apartment-sale-summary-grid">
                 <article class="summary-card">
@@ -669,7 +647,7 @@
                   <strong id="apartment-sale-average-unit">-</strong>
                 </article>
                 <article class="summary-card">
-                  <span>Indicated Value ($ / Unit)</span>
+                  <span>Value ($ / Unit)</span>
                   <strong id="apartment-sale-indicated-unit" class="copy-value" tabindex="0" role="button">-</strong>
                 </article>
                 <article class="summary-card" id="apartment-sale-average-sf-card" hidden>
@@ -677,7 +655,7 @@
                   <strong id="apartment-sale-average-sf">-</strong>
                 </article>
                 <article class="summary-card" id="apartment-sale-indicated-sf-card" hidden>
-                  <span>Indicated Value ($ / SF)</span>
+                  <span>Value ($ / SF)</span>
                   <strong id="apartment-sale-indicated-sf" class="copy-value" tabindex="0" role="button">-</strong>
                 </article>
               </div>
@@ -868,10 +846,51 @@
               </section>
             </div>
           </section>
+
+          <section class="panel" data-panel="loanDocs" hidden>
+            <div class="panel-head">
+              <div>
+                <h2>Loan Doc Manual</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="secondary-btn" type="button" id="loan-docs-clear-btn">Clear Values</button>
+              </div>
+            </div>
+
+            <div class="loan-docs-layout">
+              <aside class="loan-docs-sidebar">
+                <label class="field loan-docs-search-field">
+                  <span>Search Scenarios</span>
+                  <input id="loan-docs-search" type="search" placeholder="Search scenarios, docs, or sections..." />
+                </label>
+                <div class="loan-docs-scenario-list" id="loan-docs-scenarios"></div>
+              </aside>
+
+              <section class="loan-docs-main">
+                <div class="loan-docs-overview-card">
+                  <div class="loan-docs-overview-copy">
+                    <h3 id="loan-docs-title">-</h3>
+                    <p id="loan-docs-summary">Select a scenario to generate loan-doc language.</p>
+                    <p class="hint" id="loan-docs-guidance" hidden></p>
+                  </div>
+                </div>
+
+                <div class="loan-docs-fields card-block" id="loan-docs-fields" hidden>
+                  <div class="loan-docs-fields-head">
+                    <p class="setup-label">Scenario Inputs</p>
+                  </div>
+                  <div class="config-grid loan-docs-input-grid" id="loan-docs-input-grid"></div>
+                </div>
+
+                <div class="loan-docs-targets" id="loan-docs-targets"></div>
+              </section>
+            </div>
+          </section>
         </section>
       </main>
     </div>
 
+    <script src="./loan-docs-data.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
