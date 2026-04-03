@@ -48,6 +48,10 @@ body {
   min-height: 100%;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: "DM Sans", "Segoe UI", sans-serif;
   color: var(--ink);
