@@ -7,6 +7,7 @@ const aptRentTypeOptions = [
   { value: "twobed", label: "2 Bed" },
   { value: "threebed", label: "3 Bed" },
   { value: "fourbed", label: "4 Bed" },
+  { value: "fivebed", label: "5 Bed" },
 ];
 const aptRentTypeAliases = {
   studio: "studio",
@@ -40,6 +41,12 @@ const aptRentTypeAliases = {
   "4": "fourbed",
   "4bed": "fourbed",
   "4 bed": "fourbed",
+  five: "fivebed",
+  fivebed: "fivebed",
+  "five bed": "fivebed",
+  "5": "fivebed",
+  "5bed": "fivebed",
+  "5 bed": "fivebed",
 };
 const leaseExpenseRates = {
   nnn: 0.1,
@@ -174,6 +181,7 @@ const elements = {
         twobed: document.getElementById("apartment-mix-twobed"),
         threebed: document.getElementById("apartment-mix-threebed"),
         fourbed: document.getElementById("apartment-mix-fourbed"),
+        fivebed: document.getElementById("apartment-mix-fivebed"),
       },
       averages: {
         studio: document.getElementById("apartment-market-avg-studio"),
@@ -181,6 +189,7 @@ const elements = {
         twobed: document.getElementById("apartment-market-avg-twobed"),
         threebed: document.getElementById("apartment-market-avg-threebed"),
         fourbed: document.getElementById("apartment-market-avg-fourbed"),
+        fivebed: document.getElementById("apartment-market-avg-fivebed"),
       },
       annualGross: document.getElementById("apartment-market-annual-gross"),
       effectiveGross: document.getElementById("apartment-market-effective-gross"),
@@ -326,12 +335,12 @@ function createDefaultState() {
         selectedCapRate: null,
         rows: aptRentTypeOptions.map((type) => createAptRentRow(type.value)),
       },
-    sale: {
-      enablePerSf: false,
-      listingDiscount: "0",
-      subjectSqft: "",
-      rows: [createAptSaleRow()],
-    },
+      sale: {
+        enablePerSf: false,
+        listingDiscount: "0",
+        subjectSqft: "",
+        rows: [createAptSaleRow()],
+      },
     },
     consumerDebt: createConsumerDebtDefaults(),
     loi: {
@@ -618,8 +627,8 @@ function normalizeApartmentMarket(input, fallback) {
             userTouched: match?.userTouched === true,
             includeOutlier: match?.includeOutlier === true,
             rents: Array.isArray(match?.rents)
-              ? [0, 1, 2, 3].map((index) => String(match.rents[index] || ""))
-              : ["", "", "", ""],
+              ? [0, 1, 2, 3, 4].map((index) => String(match.rents[index] || ""))
+              : ["", "", "", "", ""],
           };
         })
       : fallback.rows,
@@ -657,7 +666,7 @@ function createAptSaleRow() {
 }
 
 function createAptRentRow(type) {
-  return { type, include: true, userTouched: false, includeOutlier: false, rents: ["", "", "", ""] };
+  return { type, include: true, userTouched: false, includeOutlier: false, rents: ["", "", "", "", ""] };
 }
 
 function createCurrentRentCommercialRow() {
@@ -1034,7 +1043,7 @@ function focusElementByToken(token) {
   if (token.startsWith("id:")) next = document.getElementById(token.slice(3));
   if (!(next instanceof HTMLElement) || next.offsetParent === null) return false;
   next.focus();
-  shouldSelectFocusedField = false;
+  shouldSelectFocusedField = true;
   selectFocusedFieldContents(next);
   return true;
 }
@@ -1676,7 +1685,7 @@ function renderApartmentCurrent(unitMix) {
                 data-focus-key="apartment-grouped-type-${index}"
                 data-apartment-grouped-type="${index}"
                 value="${escapeHtml(getAptRentTypeInputValue(row.type))}"
-                placeholder="Type s, 1, 2, 3, 4..."
+                placeholder="Type s, 1, 2, 3, 4, 5..."
               />
             </td>
             <td><input class="table-input" type="text" data-focus-key="apartment-grouped-total-units-${index}" data-apartment-grouped-total-units="${index}" value="${escapeHtml(row.totalUnits)}" placeholder="Total units..." /></td>
@@ -1706,7 +1715,7 @@ function renderApartmentCurrent(unitMix) {
                 data-focus-key="apartment-current-type-${index}"
                 data-apartment-current-type="${index}"
                 value="${escapeHtml(getAptRentTypeInputValue(row.type))}"
-                placeholder="Type s, 1, 2, 3, 4..."
+                placeholder="Type s, 1, 2, 3, 4, 5..."
               />
             </td>
             <td><input class="table-input" type="text" data-focus-key="apartment-current-rent-${index}" data-apartment-current-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Rent amount..." /></td>

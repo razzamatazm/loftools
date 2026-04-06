@@ -26,6 +26,8 @@
   --unit-threebed-soft: rgba(122, 78, 150, 0.07);
   --unit-fourbed: #b45b6f;
   --unit-fourbed-soft: rgba(180, 91, 111, 0.07);
+  --unit-fivebed: #8a5b2b;
+  --unit-fivebed-soft: rgba(138, 91, 43, 0.07);
   --shadow-sm: 0 1px 2px rgba(20, 18, 12, 0.05);
   --shadow: 0 2px 6px rgba(20, 18, 12, 0.06), 0 10px 28px rgba(20, 18, 12, 0.07);
   --radius-xl: 16px;
@@ -729,6 +731,10 @@ tbody tr.cap-row:hover {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.summary-grid-six {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .summary-grid-inline {
   margin: 0 0 18px;
 }
@@ -1039,7 +1045,7 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
 
 .rent-sample-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(90px, 1fr));
+  grid-template-columns: repeat(5, minmax(90px, 1fr));
   gap: 6px;
 }
 
@@ -1319,6 +1325,10 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .summary-grid-six {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .subject-setup-grid,
   .subject-setup-grid-apt-sale {
     grid-template-columns: repeat(2, minmax(0, max-content));
@@ -1377,6 +1387,10 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
   }
 
   .summary-grid-five {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid-six {
     grid-template-columns: 1fr;
   }
 
@@ -1470,12 +1484,14 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
 .mix-grid-cards .field[data-unit-type="twobed"]   { border-left: 3px solid var(--unit-twobed);   background: var(--unit-twobed-soft); }
 .mix-grid-cards .field[data-unit-type="threebed"] { border-left: 3px solid var(--unit-threebed); background: var(--unit-threebed-soft); }
 .mix-grid-cards .field[data-unit-type="fourbed"]  { border-left: 3px solid var(--unit-fourbed);  background: var(--unit-fourbed-soft); }
+.mix-grid-cards .field[data-unit-type="fivebed"]  { border-left: 3px solid var(--unit-fivebed);  background: var(--unit-fivebed-soft); }
 
 .mix-grid-cards .field[data-unit-type="studio"]   > span { color: var(--unit-studio); }
 .mix-grid-cards .field[data-unit-type="onebed"]   > span { color: var(--unit-onebed); }
 .mix-grid-cards .field[data-unit-type="twobed"]   > span { color: var(--unit-twobed); }
 .mix-grid-cards .field[data-unit-type="threebed"] > span { color: var(--unit-threebed); }
 .mix-grid-cards .field[data-unit-type="fourbed"]  > span { color: var(--unit-fourbed); }
+.mix-grid-cards .field[data-unit-type="fivebed"]  > span { color: var(--unit-fivebed); }
 
 /* Table rows — unit type cell */
 tr[data-unit-type="studio"]   td:nth-child(2) { color: var(--unit-studio);   font-weight: 600; }
@@ -1483,6 +1499,7 @@ tr[data-unit-type="onebed"]   td:nth-child(2) { color: var(--unit-onebed);   fon
 tr[data-unit-type="twobed"]   td:nth-child(2) { color: var(--unit-twobed);   font-weight: 600; }
 tr[data-unit-type="threebed"] td:nth-child(2) { color: var(--unit-threebed); font-weight: 600; }
 tr[data-unit-type="fourbed"]  td:nth-child(2) { color: var(--unit-fourbed);  font-weight: 600; }
+tr[data-unit-type="fivebed"]  td:nth-child(2) { color: var(--unit-fivebed);  font-weight: 600; }
 
 /* Per-type summary cards — accent bar + label */
 .summary-card[data-unit-type="studio"]::before   { background: var(--unit-studio); }
@@ -1490,12 +1507,14 @@ tr[data-unit-type="fourbed"]  td:nth-child(2) { color: var(--unit-fourbed);  fon
 .summary-card[data-unit-type="twobed"]::before   { background: var(--unit-twobed); }
 .summary-card[data-unit-type="threebed"]::before { background: var(--unit-threebed); }
 .summary-card[data-unit-type="fourbed"]::before  { background: var(--unit-fourbed); }
+.summary-card[data-unit-type="fivebed"]::before  { background: var(--unit-fivebed); }
 
 .summary-card[data-unit-type="studio"]   > span { color: var(--unit-studio); }
 .summary-card[data-unit-type="onebed"]   > span { color: var(--unit-onebed); }
 .summary-card[data-unit-type="twobed"]   > span { color: var(--unit-twobed); }
 .summary-card[data-unit-type="threebed"] > span { color: var(--unit-threebed); }
 .summary-card[data-unit-type="fourbed"]  > span { color: var(--unit-fourbed); }
+.summary-card[data-unit-type="fivebed"]  > span { color: var(--unit-fivebed); }
 
 /* Cap rate table copy affordance */
 tbody tr.cap-row td:last-child::after {
