@@ -13,6 +13,17 @@ async function typeValue(page, selector, value) {
   await page.locator(selector).pressSequentially(value);
 }
 
+async function expectSelectionToMatchValue(page, selector) {
+  await expect.poll(async () => page.locator(selector).evaluate((element) => ({
+    value: element.value,
+    selectionStart: element.selectionStart,
+    selectionEnd: element.selectionEnd,
+  }))).toEqual(expect.objectContaining({
+    selectionStart: 0,
+    selectionEnd: await page.locator(selector).evaluate((element) => element.value.length),
+  }));
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => window.localStorage.clear());
@@ -20,16 +31,22 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("1-4 unit flow tabs from subject sf into the first comp row", async ({ page }) => {
-  await page.locator("#one-four-subject-sqft").fill("8500");
-  await pressTab(page);
-  await expectFocused(page, '[data-sale-price="0"]');
-
   await page.locator('[data-sale-price="0"]').fill("1250000");
   await pressTab(page);
   await expectFocused(page, '[data-sale-sqft="0"]');
 
   await page.locator('[data-sale-type="0"][data-sale-type-value="listing"]').click();
   await expect(page.locator("#one-four-listing-discount-field")).toHaveJSProperty("hidden", false);
+});
+
+test("1-4 unit comp entry tabs into the next auto-added row", async ({ page }) => {
+  await page.locator('[data-sale-price="0"]').fill("1250000");
+  await pressTab(page);
+  await expectFocused(page, '[data-sale-sqft="0"]');
+
+  await page.locator('[data-sale-sqft="0"]').fill("8500");
+  await pressTab(page);
+  await expectFocused(page, '[data-sale-price="1"]');
 });
 
 test("commercial flow tabs through shared subject setup and current-rent rows", async ({ page }) => {
@@ -42,10 +59,6 @@ test("commercial flow tabs through shared subject setup and current-rent rows", 
 
   await page.locator("#commercial-current-start-cap").fill("5.5");
   await pressTab(page);
-  await expectFocused(page, "#commercial-current-additional-income");
-
-  await page.locator("#commercial-current-additional-income").fill("1000");
-  await pressTab(page);
   await expectFocused(page, "#commercial-current-vacancy");
 
   await page.locator("#commercial-current-vacancy").fill("5");
@@ -53,7 +66,56 @@ test("commercial flow tabs through shared subject setup and current-rent rows", 
   await expectFocused(page, '[data-commercial-current-rent="0"]');
 
   await pressTab(page);
+  await expectFocused(page, '[data-commercial-current-sqft="0"]');
+
+  await pressTab(page);
+  await expectFocused(page, '[data-commercial-current-vacant="0"]');
+
+  await pressTab(page);
   await expectFocused(page, '[data-commercial-current-type="0"]');
+});
+
+test("commercial current rent fills vacant rows from market comps or leaves them vacant", async ({ page }) => {
+  await page.getByRole("button", { name: "Commercial Valuations", exact: true }).click();
+
+  await typeValue(page, '[data-commercial-rent-rent="0"]', "2");
+  await typeValue(page, '[data-commercial-rent-rent="1"]', "2");
+  await typeValue(page, '[data-commercial-rent-rent="2"]', "2");
+  await expect(page.locator("#commercial-rent-average")).toContainText("$1.80");
+
+  await page.locator('[data-commercial-current-rent="0"]').fill("5000");
+  await page.locator('[data-commercial-current-type="0"]').selectOption("nnn");
+  await page.locator('[data-commercial-current-rent="1"]').fill("3000");
+  await page.locator('[data-commercial-current-vacant="1"]').check();
+  await page.locator('[data-commercial-current-sqft="1"]').fill("1000");
+
+  await expect(page.locator("#commercial-current-summary-1")).toHaveText("$4,500");
+  await expect(page.locator("#commercial-current-summary-2")).toHaveText("$1,800");
+  await expect(page.locator("#commercial-current-summary-3")).toHaveText("$75,600");
+  await expect(page.locator("#commercial-current-summary-4")).toHaveText("$75,600");
+
+  await page.locator("#commercial-current-vacancy").fill("10");
+  await page.locator("#commercial-current-vacancy").blur();
+  await expect(page.locator("#commercial-current-summary-4")).toHaveText("$68,040");
+  await expect(page.locator("#commercial-current-summary-6")).toHaveText("10%");
+
+  await page.locator('[data-commercial-current-fill-method="1"]').selectOption("vacant");
+  await expect(page.locator("#commercial-current-summary-2")).toHaveText("-");
+  await expect(page.locator("#commercial-current-summary-3")).toHaveText("$54,000");
+
+  await page.locator('[data-commercial-current-fill-method="1"]').selectOption("market");
+  await page.locator('[data-commercial-current-sqft="1"]').fill("");
+  await expect(page.locator("#commercial-current-summary-2")).toHaveText("-");
+  await expect(page.locator("#commercial-current-rows")).toContainText("Needs SF");
+});
+
+test("commercial sale comp entry tabs into the next auto-added row", async ({ page }) => {
+  await page.getByRole("button", { name: "Commercial Valuations", exact: true }).click();
+
+  await typeValue(page, '[data-commercial-sale-price="0"]', "2500000");
+  await typeValue(page, '[data-commercial-sale-sqft="0"]', "10000");
+  await page.locator('[data-commercial-sale-sqft="0"]').press("Tab");
+  await expectFocused(page, '[data-commercial-sale-price="1"]');
 });
 
 test("apartment flow tabs through rent roll, market rent, and sale sections", async ({ page }) => {
@@ -81,7 +143,7 @@ test("apartment flow tabs through rent roll, market rent, and sale sections", as
   await pressTab(page);
   await expectFocused(page, '[data-apartment-current-type="0"]');
 
-  await page.locator('[data-apartment-current-type="0"]').selectOption("onebed");
+  await page.locator('[data-apartment-current-type="0"]').fill("1");
   await pressTab(page);
   await expectFocused(page, '[data-apartment-current-rent="0"]');
 
@@ -90,15 +152,28 @@ test("apartment flow tabs through rent roll, market rent, and sale sections", as
   await expect(page.locator("#apartment-sale-enable-sf")).toBeVisible();
 });
 
+test("apartment sale comp entry tabs into the next auto-added row", async ({ page }) => {
+  await page.getByRole("button", { name: "Apartment Valuations", exact: true }).click();
+
+  await page.locator('[data-apartment-sale-price="0"]').fill("2400000");
+  await pressTab(page);
+  await expectFocused(page, '[data-apartment-sale-units="0"]');
+
+  await page.locator('[data-apartment-sale-units="0"]').fill("12");
+  await pressTab(page);
+  await expectFocused(page, '[data-apartment-sale-price="1"]');
+});
+
 test("apartment rent roll drives unit counts, vacancy fill, subject units, and exposes 4 bed", async ({ page }) => {
   await page.getByRole("button", { name: "Apartment Valuations", exact: true }).click();
 
-  await page.locator('[data-apartment-current-type="0"]').selectOption("onebed");
+  await page.locator('[data-apartment-current-type="0"]').fill("1");
+  await page.locator('[data-apartment-current-type="0"]').blur();
   await page.locator('[data-apartment-current-rent="0"]').fill("0");
 
   await expect(page.locator("#apartment-mix-onebed")).toHaveText("1");
   await expect(page.locator("#apartment-sale-subject-units")).toHaveText("1");
-  await expect(page.locator('[data-apartment-current-type="0"] option[value="fourbed"]')).toHaveText("4 Bed");
+  await expect(page.locator('#apartment-unit-type-options option[value="4 Bed"]')).toHaveCount(1);
 
   await page.locator('[data-apartment-market-sample="1"][data-rent-index="0"]').fill("2100");
   await page.locator('[data-apartment-market-sample="1"][data-rent-index="1"]').fill("2200");
@@ -149,7 +224,8 @@ test("apartment grouped mode derives average occupied rent, fill plan, hidden ma
   await page.getByRole("button", { name: "Apartment Valuations", exact: true }).click();
 
   await page.locator("#apartment-current-mode-grouped").click();
-  await page.locator('[data-apartment-grouped-type="0"]').selectOption("studio");
+  await page.locator('[data-apartment-grouped-type="0"]').fill("studio");
+  await page.locator('[data-apartment-grouped-type="0"]').blur();
   await typeValue(page, '[data-apartment-grouped-total-units="0"]', "20");
   await typeValue(page, '[data-apartment-grouped-occupied-rent="0"]', "20000");
   await typeValue(page, '[data-apartment-grouped-vacant-units="0"]', "3");
@@ -173,24 +249,26 @@ test("apartment grouped mode derives average occupied rent, fill plan, hidden ma
 test("apartment mode switching preserves both per-unit and grouped inputs while active mode drives results", async ({ page }) => {
   await page.getByRole("button", { name: "Apartment Valuations", exact: true }).click();
 
-  await page.locator('[data-apartment-current-type="0"]').selectOption("onebed");
+  await page.locator('[data-apartment-current-type="0"]').fill("1");
+  await page.locator('[data-apartment-current-type="0"]').blur();
   await page.locator('[data-apartment-current-rent="0"]').fill("1800");
   await expect(page.locator("#apartment-sale-subject-units")).toHaveText("1");
 
   await page.locator("#apartment-current-mode-grouped").click();
-  await page.locator('[data-apartment-grouped-type="0"]').selectOption("studio");
+  await page.locator('[data-apartment-grouped-type="0"]').fill("studio");
+  await page.locator('[data-apartment-grouped-type="0"]').blur();
   await page.locator('[data-apartment-grouped-total-units="0"]').fill("20");
   await page.locator('[data-apartment-grouped-occupied-rent="0"]').fill("20000");
   await page.locator('[data-apartment-grouped-vacant-units="0"]').fill("3");
   await expect(page.locator("#apartment-sale-subject-units")).toHaveText("20");
 
   await page.locator("#apartment-current-mode-per-unit").click();
-  await expect(page.locator('[data-apartment-current-type="0"]')).toHaveValue("onebed");
+  await expect(page.locator('[data-apartment-current-type="0"]')).toHaveValue("1 Bed");
   await expect(page.locator('[data-apartment-current-rent="0"]')).toHaveValue("$1,800");
   await expect(page.locator("#apartment-sale-subject-units")).toHaveText("1");
 
   await page.locator("#apartment-current-mode-grouped").click();
-  await expect(page.locator('[data-apartment-grouped-type="0"]')).toHaveValue("studio");
+  await expect(page.locator('[data-apartment-grouped-type="0"]')).toHaveValue("Studio");
   await expect(page.locator('[data-apartment-grouped-total-units="0"]')).toHaveValue("20");
   await expect(page.locator('[data-apartment-grouped-vacant-units="0"]')).toHaveValue("3");
   await expect(page.locator("#apartment-sale-subject-units")).toHaveText("20");
@@ -363,4 +441,30 @@ test("consumer debt inherited and flip branches produce expected results", async
   await page.getByRole("button", { name: "Flip", exact: true }).click();
   await page.getByRole("button", { name: "No", exact: true }).click();
   await expect(page.locator("#consumer-debt-content")).toContainText("first flip ever");
+});
+
+test("loan docs populated text inputs and textareas auto-select on keyboard focus and click", async ({ page }) => {
+  await page.getByRole("button", { name: "Loan Doc Manual", exact: true }).click();
+  await page.getByRole("button", { name: /Reverse 1031/i }).click();
+
+  await page.locator("#loan-doc-field-actual_borrower").fill("Acme Borrower LLC");
+  await page.locator("#loan-doc-field-non_recourse_text").fill("Sample non-recourse verbiage.");
+
+  await page.locator("#loan-doc-field-actual_borrower").click();
+  await expectSelectionToMatchValue(page, "#loan-doc-field-actual_borrower");
+
+  await page.locator("#loan-docs-search").fill("Reverse 1031");
+  await page.locator("#loan-docs-search").focus();
+  await page.locator("#loan-docs-search").press("Tab");
+  await expectFocused(page, '[data-loan-doc-scenario="reverse-1031"]');
+
+  await pressTab(page);
+  await expectFocused(page, "#loan-doc-field-actual_borrower");
+  await expectSelectionToMatchValue(page, "#loan-doc-field-actual_borrower");
+
+  await page.locator("#loan-doc-field-actual_borrower").press("Tab");
+  await page.locator("#loan-doc-field-actual_borrower_address").press("Tab");
+  await page.locator("#loan-doc-field-include_transfer_clause").press("Tab");
+  await expectFocused(page, "#loan-doc-field-non_recourse_text");
+  await expectSelectionToMatchValue(page, "#loan-doc-field-non_recourse_text");
 });

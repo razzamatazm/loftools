@@ -125,10 +125,6 @@
                   </div>
                 </label>
                 <label class="field">
-                  <span>Additional Income to Fill Vacant Space</span>
-                  <input id="commercial-current-additional-income" type="text" inputmode="decimal" placeholder="0" />
-                </label>
-                <label class="field">
                   <span>Vacancy Factor</span>
                   <div class="input-suffix">
                     <input id="commercial-current-vacancy" type="text" inputmode="decimal" placeholder="Optional" />
@@ -142,16 +138,19 @@
                   <thead>
                     <tr>
                       <th>Current Monthly Rent</th>
+                      <th>Space SF</th>
+                      <th class="checkbox-col">Vacant</th>
+                      <th>Fill Method</th>
                       <th>Lease Type</th>
                       <th>Expense %</th>
-                      <th>Adjusted Monthly Rent</th>
+                      <th>Status</th>
                       <th class="action-col"></th>
                     </tr>
                   </thead>
                   <tbody id="commercial-current-rows"></tbody>
                 </table>
               </div>
-              <p class="hint">Commercial mode applies lease-type expense adjustments to each in-place rent row before vacancy and cap rate.</p>
+              <p class="hint">Enter one space per row. Mark a space vacant, then choose whether to fill it from Commercial Market Rents using row SF or leave it vacant in the valuation.</p>
 
               <div class="summary-grid summary-grid-four">
                 <article class="summary-card">

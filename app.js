@@ -133,7 +133,6 @@ const elements = {
     },
     current: {
       startCap: document.getElementById("commercial-current-start-cap"),
-      additionalIncome: document.getElementById("commercial-current-additional-income"),
       vacancy: document.getElementById("commercial-current-vacancy"),
       rows: document.getElementById("commercial-current-rows"),
       summary1: document.getElementById("commercial-current-summary-1"),
@@ -312,7 +311,6 @@ function createDefaultState() {
       sale: createSaleSectionDefaults(),
       current: {
         startCap: "5",
-        additionalIncome: "",
         vacancy: "",
         selectedCapRate: null,
         rows: [createCurrentRentCommercialRow()],
@@ -573,12 +571,14 @@ function normalizeCommercialRent(input, fallback) {
 function normalizeCommercialCurrent(input, fallback) {
   return {
     startCap: String(input?.startCap ?? fallback.startCap),
-    additionalIncome: String(input?.additionalIncome || ""),
     vacancy: String(input?.vacancy || ""),
     selectedCapRate: Number.isFinite(input?.selectedCapRate) ? input.selectedCapRate : null,
     rows: Array.isArray(input?.rows) && input.rows.length
       ? input.rows.map((row) => ({
           rent: String(row?.rent || ""),
+          sqft: String(row?.sqft || ""),
+          isVacant: row?.isVacant === true,
+          fillMethod: row?.fillMethod === "vacant" ? "vacant" : "market",
           leaseType: ["nnn", "modified", "gross"].includes(row?.leaseType) ? row.leaseType : "nnn",
         }))
       : fallback.rows,
@@ -670,7 +670,7 @@ function createAptRentRow(type) {
 }
 
 function createCurrentRentCommercialRow() {
-  return { rent: "", leaseType: "nnn" };
+  return { rent: "", sqft: "", isVacant: false, fillMethod: "market", leaseType: "nnn" };
 }
 
 function createApartmentRentRollRow() {
@@ -838,20 +838,12 @@ function bindStaticEvents() {
     state.commercial.current.startCap = value;
     renderCommercial();
   });
-  bindInput(elements.commercial.current.additionalIncome, (value) => {
-    state.commercial.current.additionalIncome = value;
-    renderCommercial();
-  });
   bindInput(elements.commercial.current.vacancy, (value) => {
     state.commercial.current.vacancy = value;
     renderCommercial();
   });
   bindBlurCap(elements.commercial.current.startCap, () => {
     state.commercial.current.startCap = formatCapInput(state.commercial.current.startCap);
-    renderCommercial();
-  });
-  elements.commercial.current.additionalIncome?.addEventListener("blur", () => {
-    state.commercial.current.additionalIncome = formatMoneyInput(state.commercial.current.additionalIncome, 0);
     renderCommercial();
   });
   elements.commercial.current.vacancy?.addEventListener("blur", () => {
@@ -988,13 +980,14 @@ function bindBlurCap(element, handler) {
 function selectFocusedFieldContents(target) {
   if (!isSelectableField(target)) return;
   window.requestAnimationFrame(() => {
-    if (document.activeElement !== target || typeof target.select !== "function") return;
-    target.select();
+    if (document.activeElement !== target) return;
+    if (target instanceof HTMLTextAreaElement || typeof target.select === "function") target.select();
   });
 }
 
 function isSelectableField(target) {
-  if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return false;
+  if (target instanceof HTMLTextAreaElement) return !(target.readOnly || target.disabled);
+  if (!(target instanceof HTMLInputElement)) return false;
   if (target.readOnly || target.disabled) return false;
   return ["text", "search", "tel", "url", "email", "password"].includes(target.type);
 }
@@ -1066,19 +1059,28 @@ function consumePendingFocus() {
   return focusElementByToken(target);
 }
 
-function bindTabSequence(sequence) {
-  const items = sequence.filter((element) => {
+function getTabSequenceItems(sequenceOrResolver) {
+  const sequence = typeof sequenceOrResolver === "function" ? sequenceOrResolver() : sequenceOrResolver;
+  return sequence.filter((element) => {
     if (!(element instanceof HTMLElement) || element.offsetParent === null) return false;
     if ("disabled" in element && element.disabled) return false;
     if ("readOnly" in element && element.readOnly) return false;
     return true;
   });
-  items.forEach((element, index) => {
+}
+
+function bindTabSequence(sequenceOrResolver) {
+  const items = getTabSequenceItems(sequenceOrResolver);
+  items.forEach((element) => {
     element.onkeydown = (event) => {
       if (event.key !== "Tab") return;
-      const nextIndex = event.shiftKey ? index - 1 : index + 1;
-      if (nextIndex < 0 || nextIndex >= items.length) return;
-      const token = getElementFocusToken(items[nextIndex]);
+      const latestItems = getTabSequenceItems(sequenceOrResolver);
+      const currentToken = getElementFocusToken(event.currentTarget);
+      const currentIndex = latestItems.findIndex((item) => item === event.currentTarget || (currentToken && getElementFocusToken(item) === currentToken));
+      if (currentIndex < 0) return;
+      const nextIndex = event.shiftKey ? currentIndex - 1 : currentIndex + 1;
+      if (nextIndex < 0 || nextIndex >= latestItems.length) return;
+      const token = getElementFocusToken(latestItems[nextIndex]);
       if (!token) return;
       event.preventDefault();
       queuePendingFocus(token);
@@ -1105,9 +1107,8 @@ function bindTabFlows() {
       activeTabButton,
       elements.commercial.subjectSqft,
       elements.commercial.current.startCap,
-      elements.commercial.current.additionalIncome,
       elements.commercial.current.vacancy,
-      ...Array.from(elements.commercial.current.rows.querySelectorAll("[data-commercial-current-rent], [data-commercial-current-type]")).sort(sortCurrentCommercialInputs),
+      ...Array.from(elements.commercial.current.rows.querySelectorAll("[data-commercial-current-rent], [data-commercial-current-sqft], [data-commercial-current-vacant], [data-commercial-current-fill-method], [data-commercial-current-type]")).sort(sortCurrentCommercialInputs),
       elements.commercial.rent.vacancy,
       elements.commercial.rent.startCap,
       ...Array.from(elements.commercial.rent.rows.querySelectorAll("[data-commercial-rent-rent], [data-commercial-rent-type]")).sort(sortCommercialRentInputs),
@@ -1194,10 +1195,29 @@ function sortCommercialSaleInputs(left, right) {
 }
 
 function sortCurrentCommercialInputs(left, right) {
-  const leftRow = Number(left.getAttribute("data-commercial-current-rent") ?? left.getAttribute("data-commercial-current-type"));
-  const rightRow = Number(right.getAttribute("data-commercial-current-rent") ?? right.getAttribute("data-commercial-current-type"));
+  const leftRow = Number(
+    left.getAttribute("data-commercial-current-rent")
+    ?? left.getAttribute("data-commercial-current-sqft")
+    ?? left.getAttribute("data-commercial-current-vacant")
+    ?? left.getAttribute("data-commercial-current-fill-method")
+    ?? left.getAttribute("data-commercial-current-type"),
+  );
+  const rightRow = Number(
+    right.getAttribute("data-commercial-current-rent")
+    ?? right.getAttribute("data-commercial-current-sqft")
+    ?? right.getAttribute("data-commercial-current-vacant")
+    ?? right.getAttribute("data-commercial-current-fill-method")
+    ?? right.getAttribute("data-commercial-current-type"),
+  );
   if (leftRow !== rightRow) return leftRow - rightRow;
-  return left.hasAttribute("data-commercial-current-rent") ? -1 : 1;
+  const fieldOrder = (element) => {
+    if (element.hasAttribute("data-commercial-current-rent")) return 0;
+    if (element.hasAttribute("data-commercial-current-sqft")) return 1;
+    if (element.hasAttribute("data-commercial-current-vacant")) return 2;
+    if (element.hasAttribute("data-commercial-current-fill-method")) return 3;
+    return 4;
+  };
+  return fieldOrder(left) - fieldOrder(right);
 }
 
 function sortCommercialRentInputs(left, right) {
@@ -1315,7 +1335,7 @@ function renderLoanDocs() {
     ? visibleScenarios.map((entry) => {
         const isActive = entry.id === state.loanDocs.selectedScenarioId;
         return `
-          <button class="loan-docs-scenario-chip ${isActive ? "active" : ""}" type="button" data-loan-doc-scenario="${escapeHtml(entry.id)}" aria-pressed="${isActive ? "true" : "false"}">
+          <button class="loan-docs-scenario-chip ${isActive ? "active" : ""}" type="button" data-focus-key="loan-doc-scenario-${escapeHtml(entry.id)}" data-loan-doc-scenario="${escapeHtml(entry.id)}" aria-pressed="${isActive ? "true" : "false"}">
             <strong>${escapeHtml(entry.label)}</strong>
             <span>${escapeHtml(entry.summary)}</span>
           </button>
@@ -1442,7 +1462,7 @@ function renderLoanDocTarget(target) {
           </div>
         ` : ""}
         <div class="loan-doc-target-actions">
-          <button class="secondary-btn" type="button" data-loan-doc-copy="${escapeHtml(target.id)}">Copy Block</button>
+          <button class="secondary-btn" type="button" data-focus-key="loan-doc-copy-${escapeHtml(target.id)}" data-loan-doc-copy="${escapeHtml(target.id)}">Copy Block</button>
         </div>
       </div>
     </article>
@@ -1487,17 +1507,25 @@ function renderCommercial() {
 
 function renderCommercialCurrent() {
   setControlValue(elements.commercial.current.startCap, state.commercial.current.startCap);
-  setControlValue(elements.commercial.current.additionalIncome, state.commercial.current.additionalIncome);
   setControlValue(elements.commercial.current.vacancy, state.commercial.current.vacancy);
   ensureCurrentRentCommercialTrailingEmptyRow();
-  const calculations = calculateCommercialCurrent();
+  const marketRentCalculations = calculateCommercialRent();
+  const calculations = calculateCommercialCurrent(marketRentCalculations.averageAdjustedRent);
   const focusState = captureActiveInputState(elements.commercial.current.rows);
 
   elements.commercial.current.rows.innerHTML = state.commercial.current.rows.map((row, index) => {
     const rowCalc = calculations.rows[index];
     return `
-      <tr>
+      <tr class="${row.isVacant ? "is-outlier" : ""}">
         <td><input class="table-input" type="text" data-focus-key="commercial-current-rent-${index}" data-commercial-current-rent="${index}" value="${escapeHtml(row.rent)}" placeholder="Current monthly rent..." /></td>
+        <td><input class="table-input" type="text" data-focus-key="commercial-current-sqft-${index}" data-commercial-current-sqft="${index}" value="${escapeHtml(row.sqft)}" placeholder="Optional SF..." /></td>
+        <td><input type="checkbox" data-focus-key="commercial-current-vacant-${index}" data-commercial-current-vacant="${index}" tabindex="-1" ${row.isVacant ? "checked" : ""} /></td>
+        <td>
+          <select class="table-select" data-focus-key="commercial-current-fill-method-${index}" data-commercial-current-fill-method="${index}" ${row.isVacant ? "" : 'tabindex="-1" disabled'}>
+            <option value="market" ${row.fillMethod !== "vacant" ? "selected" : ""}>Market Rent</option>
+            <option value="vacant" ${row.fillMethod === "vacant" ? "selected" : ""}>Leave Vacant</option>
+          </select>
+        </td>
         <td>
           <select class="table-select" data-focus-key="commercial-current-type-${index}" data-commercial-current-type="${index}" tabindex="-1">
             <option value="nnn" ${row.leaseType === "nnn" ? "selected" : ""}>NNN</option>
@@ -1506,7 +1534,7 @@ function renderCommercialCurrent() {
           </select>
         </td>
         <td>${rowCalc?.expenseLabel || "10%"}</td>
-        <td>${rowCalc?.adjustedRentLabel || "-"}</td>
+        <td><div class="metric-stack"><span>${rowCalc?.statusLabel || "-"}</span>${rowCalc?.statusChip || ""}</div></td>
         <td>${state.commercial.current.rows.length > 1 ? `<button class="row-remove" type="button" data-commercial-current-remove="${index}" tabindex="-1">Remove</button>` : ""}</td>
       </tr>
     `;
@@ -1516,7 +1544,7 @@ function renderCommercialCurrent() {
   if (!consumePendingFocus()) restoreActiveInputState(elements.commercial.current.rows, focusState);
 
   elements.commercial.current.summary1.textContent = calculations.baseMonthlyIncome === null ? "-" : formatCurrency(calculations.baseMonthlyIncome, 0);
-  elements.commercial.current.summary2.textContent = formatCurrency(calculations.additionalIncome, 0);
+  elements.commercial.current.summary2.textContent = calculations.monthlyFillIncome === null ? "-" : formatCurrency(calculations.monthlyFillIncome, 0);
   elements.commercial.current.summary3.textContent = calculations.annualGrossIncome === null ? "-" : formatCurrency(calculations.annualGrossIncome, 0);
   elements.commercial.current.summary4.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
   elements.commercial.current.summary5.textContent = calculations.startCapValue === null ? "-" : formatCurrency(calculations.startCapValue, 0);
@@ -1540,6 +1568,8 @@ function renderCommercialCurrent() {
       setCopyButtonState(elements.commercial.current.copyBtn, value);
     },
   });
+  bindTabFlows();
+  persistState();
 }
 
 function renderCommercialRent() {
@@ -1596,6 +1626,8 @@ function renderCommercialRent() {
       setCopyButtonState(elements.commercial.rent.copyBtn, value);
     },
   });
+  bindTabFlows();
+  persistState();
 }
 
 function renderCommercialSale() {
@@ -1620,6 +1652,8 @@ function renderCommercialSale() {
   elements.commercial.sale.indicatedValue.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedValue) && calculations.indicatedValue > 0)));
   derived.commercialSaleCopy = calculations.indicatedValue;
   setCopyButtonState(elements.commercial.sale.copyBtn, calculations.indicatedValue);
+  bindTabFlows();
+  persistState();
 }
 
 function renderApartment() {
@@ -1758,6 +1792,8 @@ function renderApartmentCurrent(unitMix) {
   derived.apartmentCurrentCopy = calculations.selectedCapValue;
   setCopyButtonState(elements.apartment.current.copyBtn, calculations.selectedCapValue);
   renderApartmentCurrentCapResults(calculations);
+  bindTabFlows();
+  persistState();
 }
 
 function renderApartmentMarket(unitMix) {
@@ -1824,6 +1860,8 @@ function renderApartmentMarket(unitMix) {
       setCopyButtonState(elements.apartment.market.copyBtn, value);
     },
   });
+  bindTabFlows();
+  persistState();
 }
 
 function renderApartmentSale(unitMix) {
@@ -1876,6 +1914,8 @@ function renderApartmentSale(unitMix) {
   elements.apartment.sale.indicatedSf.setAttribute("aria-disabled", String(!(Number.isFinite(calculations.indicatedPerSf) && calculations.indicatedPerSf > 0)));
   derived.apartmentSaleCopy = calculations.indicatedPerUnit;
   setCopyButtonState(elements.apartment.sale.copyBtn, calculations.indicatedPerUnit);
+  bindTabFlows();
+  persistState();
 }
 
 function renderConsumerDebt() {
@@ -2386,23 +2426,44 @@ function calculateCommercialRent() {
   return { rows, averageAdjustedRent, potentialMonthlyNoi, potentialAnnualNoi, annualNoiAfterVacancy, selectedCapValue };
 }
 
-function calculateCommercialCurrent() {
-  const additionalIncome = parseLooseNumber(state.commercial.current.additionalIncome);
+function calculateCommercialCurrent(marketAdjustedRentPerSf = null) {
   const vacancyRate = clampPercent(state.commercial.current.vacancy);
   const rows = state.commercial.current.rows.map((row) => {
     const rent = parseLooseNumber(row.rent);
+    const sqft = parsePositiveWholeNumber(row.sqft);
     const expenseRate = getLeaseExpenseRate(row.leaseType);
-    const adjustedRent = rent === null ? null : rent * (1 - expenseRate);
+    const adjustedRent = !row.isVacant && rent !== null ? rent * (1 - expenseRate) : null;
+    const marketFillIncome = row.isVacant && row.fillMethod !== "vacant" && sqft !== null && marketAdjustedRentPerSf !== null
+      ? marketAdjustedRentPerSf * sqft
+      : null;
+    const statusLabel = !row.isVacant
+      ? adjustedRent === null ? "-" : formatCurrency(adjustedRent, 0)
+      : row.fillMethod === "vacant"
+        ? "-"
+        : marketFillIncome === null
+          ? "-"
+          : formatCurrency(marketFillIncome, 0);
+    let statusChip = "";
+    if (!row.isVacant) statusChip = '<span class="chip">Occupied</span>';
+    else if (row.fillMethod === "vacant") statusChip = '<span class="chip">Left Vacant</span>';
+    else if (sqft === null) statusChip = '<span class="chip">Needs SF</span>';
+    else if (marketAdjustedRentPerSf === null) statusChip = '<span class="chip">Needs Market Rent</span>';
+    else statusChip = '<span class="chip">Market Filled</span>';
     return {
       adjustedRent,
+      marketFillIncome,
       expenseLabel: `${(expenseRate * 100).toFixed(0)}%`,
-      adjustedRentLabel: adjustedRent === null ? "-" : formatCurrency(adjustedRent, 0),
+      statusLabel,
+      statusChip,
     };
   });
-  const values = rows.map((row) => row.adjustedRent).filter((value) => value !== null);
-  const baseMonthlyIncome = values.length ? values.reduce((sum, value) => sum + value, 0) : null;
-  const totalAdditionalIncome = additionalIncome ?? 0;
-  const monthlyIncomeBeforeVacancy = baseMonthlyIncome === null ? (totalAdditionalIncome > 0 ? totalAdditionalIncome : null) : baseMonthlyIncome + totalAdditionalIncome;
+  const occupiedIncomeValues = rows.map((row) => row.adjustedRent).filter((value) => value !== null);
+  const marketFillValues = rows.map((row) => row.marketFillIncome).filter((value) => value !== null);
+  const baseMonthlyIncome = occupiedIncomeValues.length ? occupiedIncomeValues.reduce((sum, value) => sum + value, 0) : null;
+  const monthlyFillIncome = marketFillValues.length ? marketFillValues.reduce((sum, value) => sum + value, 0) : null;
+  const monthlyIncomeBeforeVacancy = baseMonthlyIncome === null
+    ? monthlyFillIncome
+    : baseMonthlyIncome + (monthlyFillIncome || 0);
   const annualGrossIncome = monthlyIncomeBeforeVacancy === null ? null : monthlyIncomeBeforeVacancy * 12;
   const annualNoi = annualGrossIncome === null ? null : annualGrossIncome * (1 - vacancyRate);
   const startCapRate = parseLooseNumber(state.commercial.current.startCap);
@@ -2413,8 +2474,8 @@ function calculateCommercialCurrent() {
 
   return {
     rows,
-    additionalIncome: totalAdditionalIncome,
     baseMonthlyIncome,
+    monthlyFillIncome,
     annualGrossIncome,
     annualNoi,
     startCapValue,
@@ -2979,6 +3040,36 @@ function bindCommercialCurrentEvents() {
       const row = state.commercial.current.rows[Number(input.dataset.commercialCurrentRent)];
       if (!row) return;
       row.rent = formatMoneyInput(row.rent, 0);
+      renderCommercialCurrent();
+    });
+  });
+  elements.commercial.current.rows.querySelectorAll("[data-commercial-current-sqft]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const row = state.commercial.current.rows[Number(input.dataset.commercialCurrentSqft)];
+      if (!row) return;
+      row.sqft = input.value;
+      renderCommercialCurrent();
+    });
+    input.addEventListener("blur", () => {
+      const row = state.commercial.current.rows[Number(input.dataset.commercialCurrentSqft)];
+      if (!row) return;
+      row.sqft = formatWholeInput(row.sqft);
+      renderCommercialCurrent();
+    });
+  });
+  elements.commercial.current.rows.querySelectorAll("[data-commercial-current-vacant]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const row = state.commercial.current.rows[Number(input.dataset.commercialCurrentVacant)];
+      if (!row) return;
+      row.isVacant = input.checked;
+      renderCommercialCurrent();
+    });
+  });
+  elements.commercial.current.rows.querySelectorAll("[data-commercial-current-fill-method]").forEach((select) => {
+    select.addEventListener("change", () => {
+      const row = state.commercial.current.rows[Number(select.dataset.commercialCurrentFillMethod)];
+      if (!row) return;
+      row.fillMethod = select.value === "vacant" ? "vacant" : "market";
       renderCommercialCurrent();
     });
   });
@@ -3737,7 +3828,10 @@ function aptSaleRowHasData(row) {
 }
 
 function currentRentCommercialRowHasData(row) {
-  return parseLooseNumber(row?.rent || "") !== null;
+  return parseLooseNumber(row?.rent || "") !== null
+    || parseLooseNumber(row?.sqft || "") !== null
+    || row?.isVacant === true
+    || row?.fillMethod === "vacant";
 }
 
 function apartmentRentRollRowHasData(row) {
