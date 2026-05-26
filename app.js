@@ -2214,9 +2214,9 @@ function renderLoiLoan(loanKey) {
 
 function renderLoiBlended() {
   const calculations = calculateBlendedLoi();
-  elements.loi.blended.loanAmount.textContent = calculations.combinedLoanAmount === null ? "-" : formatCurrency(calculations.combinedLoanAmount, 0);
+  elements.loi.blended.loanAmount.textContent = calculations.combinedLoanAmount === null ? "-" : formatCurrency(calculations.combinedLoanAmount, 2);
   elements.loi.blended.interestRate.textContent = calculations.blendedRate === null ? "-" : formatPercentDisplay(calculations.blendedRate, 2);
-  elements.loi.blended.originationFee.textContent = calculations.totalOriginationFee === null ? "-" : formatCurrency(calculations.totalOriginationFee, 0);
+  elements.loi.blended.originationFee.textContent = calculations.totalOriginationFee === null ? "-" : formatCurrency(calculations.totalOriginationFee, 2);
   elements.loi.blended.originationPoints.textContent = calculations.blendedOriginationPoints === null ? "-" : formatPercentDisplay(calculations.blendedOriginationPoints, 4);
   elements.loi.blended.monthlyPayment.textContent = calculations.totalMonthlyPayment === null ? "-" : formatCurrency(calculations.totalMonthlyPayment, 2);
 }
@@ -3883,7 +3883,7 @@ function syncLoiFeeFields(loanState, feeType) {
   const points = parseLooseNumber(loanState[pointsKey]);
   loanState[amountKey] = points === null || loanAmount === null || loanAmount <= 0
     ? ""
-    : formatMoneyInput(loanAmount * (points / 100), 0);
+    : formatMoneyInput(loanAmount * (points / 100), 2);
 }
 
 function getConsumerDebtHistoryItems() {
