@@ -2218,7 +2218,7 @@ function renderLoiBlended() {
   elements.loi.blended.interestRate.textContent = calculations.blendedRate === null ? "-" : formatPercentDisplay(calculations.blendedRate, 2);
   elements.loi.blended.originationFee.textContent = calculations.totalOriginationFee === null ? "-" : formatCurrency(calculations.totalOriginationFee, 0);
   elements.loi.blended.originationPoints.textContent = calculations.blendedOriginationPoints === null ? "-" : formatPercentDisplay(calculations.blendedOriginationPoints, 4);
-  elements.loi.blended.monthlyPayment.textContent = calculations.totalMonthlyPayment === null ? "-" : formatCurrency(calculations.totalMonthlyPayment, 0);
+  elements.loi.blended.monthlyPayment.textContent = calculations.totalMonthlyPayment === null ? "-" : formatCurrency(calculations.totalMonthlyPayment, 2);
 }
 
 function bindLoanDocsEvents() {
@@ -2842,7 +2842,7 @@ function calculateLoiLoan(loanState) {
     originationFeeAmount,
     brokerFeeAmount,
     monthlyPayment,
-    monthlyPaymentLabel: monthlyPayment === null ? "-" : formatCurrency(monthlyPayment, 0),
+    monthlyPaymentLabel: monthlyPayment === null ? "-" : formatCurrency(monthlyPayment, 2),
   };
 }
 
