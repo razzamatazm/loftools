@@ -2834,7 +2834,7 @@ function calculateLoiLoan(loanState) {
   const interestRate = parseLooseNumber(loanState.interestRate);
   const originationFeeAmount = parseLooseNumber(loanState.originationFeeAmount);
   const brokerFeeAmount = parseLooseNumber(loanState.brokerFeeAmount);
-  const monthlyPayment = loanAmount === null || interestRate === null ? null : loanAmount * (interestRate / 100);
+  const monthlyPayment = loanAmount === null || interestRate === null ? null : loanAmount * (interestRate / 100) / 12;
 
   return {
     loanAmount,
@@ -2857,7 +2857,7 @@ function calculateBlendedLoi() {
     : (totalOriginationFee / combinedLoanAmount) * 100;
   const blendedRate = combinedLoanAmount === null || combinedLoanAmount <= 0 || totalMonthlyPayment === null
     ? null
-    : (totalMonthlyPayment / combinedLoanAmount) * 100;
+    : (totalMonthlyPayment * 12 / combinedLoanAmount) * 100;
 
   return {
     combinedLoanAmount,
