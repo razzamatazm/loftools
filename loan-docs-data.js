@@ -227,7 +227,7 @@ const LOAN_DOC_SCENARIOS = [
     summary: "Uses inclusive month-end interest language for February closings.",
     fields: [
       { id: "interest_rate", label: "Interest Rate", type: "text", format: "percent", placeholder: "0.00%" },
-      { id: "per_diem", label: "Per Diem Amount", type: "text", placeholder: "$______" },
+      { id: "per_diem", label: "Per Diem Amount", type: "text", placeholder: "$0.0000", decimals: 4 },
     ],
     targets: [
       {
@@ -253,7 +253,7 @@ const LOAN_DOC_SCENARIOS = [
     fields: [
       { id: "initial_advance", label: "Initial Advance", type: "text", placeholder: "$______" },
       { id: "interest_rate", label: "Interest Rate", type: "text", format: "percent", placeholder: "0.00%" },
-      { id: "per_diem", label: "Per Diem Amount", type: "text", placeholder: "$____" },
+      { id: "per_diem", label: "Per Diem Amount", type: "text", placeholder: "$0.0000", decimals: 4 },
       { id: "interest_end_date", label: "Interest Through", type: "text", format: "date", placeholder: "January 1, 2027" },
       { id: "reserve_amount", label: "Reserve for Future Advances", type: "text", placeholder: "$______" },
     ],
@@ -316,12 +316,14 @@ const LOAN_DOC_SCENARIOS = [
   {
     id: "interest-rate-bump",
     label: "Interest Rate Bump",
-    summary: "Handles an in-term rate change within the Note.",
+    summary: "Handles an in-term rate change within the Note. Second rate effective date is auto-derived (one day after the first rate through date). Toggle the third rate option for a two-bump schedule.",
     fields: [
       { id: "first_end_date", label: "First Rate Through Date", type: "text", format: "date", placeholder: "January 1, 2027" },
       { id: "first_rate_percent", label: "First Rate Percent", type: "text", format: "percent", placeholder: "0.00%" },
-      { id: "second_start_date", label: "Second Rate Effective Date", type: "text", format: "date", placeholder: "January 1, 2027" },
       { id: "second_rate_percent", label: "Second Rate Percent", type: "text", format: "percent", placeholder: "0.00%" },
+      { id: "has_third_rate", label: "Add Third Rate", type: "checkbox", defaultValue: false },
+      { id: "second_end_date", label: "Second Rate Through Date", type: "text", format: "date", placeholder: "January 1, 2028", conditions: [{ field: "has_third_rate", equals: true }] },
+      { id: "third_rate_percent", label: "Third Rate Percent", type: "text", format: "percent", placeholder: "0.00%", conditions: [{ field: "has_third_rate", equals: true }] },
     ],
     targets: [
       {
@@ -329,8 +331,18 @@ const LOAN_DOC_SCENARIOS = [
         document: "note",
         section: "Section 1.2 (Rate of Interest)",
         mode: "replace existing paragraph",
+        conditions: [{ field: "has_third_rate", notEquals: true }],
         template: "1.2 Rate of Interest. The principal balance outstanding from time to time shall bear interest from and after the date advanced up to and including {{first_end_date}} at the rate of {{first_rate_percent_words}} per cent ({{first_rate_percent}}) per annum and at the rate of {{second_rate_percent_words}} per cent ({{second_rate_percent}}) per annum from and after {{second_start_date}} (in each case, the “Note Rate”).",
         richTemplate: "**1.2 Rate of Interest.** The principal balance outstanding from time to time shall bear interest from and after the date advanced up to and including {{first_end_date}} at the rate of {{first_rate_percent_words}} per cent ({{first_rate_percent}}) per annum and at the rate of {{second_rate_percent_words}} per cent ({{second_rate_percent}}) per annum from and after {{second_start_date}} (in each case, the “**Note Rate**”).",
+      },
+      {
+        id: "note-1-2-bump-three",
+        document: "note",
+        section: "Section 1.2 (Rate of Interest)",
+        mode: "replace existing paragraph",
+        conditions: [{ field: "has_third_rate", equals: true }],
+        template: "1.2 Rate of Interest. The principal balance outstanding from time to time shall bear interest from and after the date advanced up to and including {{first_end_date}} at the rate of {{first_rate_percent_words}} per cent ({{first_rate_percent}}) per annum, at the rate of {{second_rate_percent_words}} per cent ({{second_rate_percent}}) per annum from and after {{second_start_date}} up to and including {{second_end_date}}, and at the rate of {{third_rate_percent_words}} per cent ({{third_rate_percent}}) per annum from and after {{third_start_date}} (in each case, the “Note Rate”).",
+        richTemplate: "**1.2 Rate of Interest.** The principal balance outstanding from time to time shall bear interest from and after the date advanced up to and including {{first_end_date}} at the rate of {{first_rate_percent_words}} per cent ({{first_rate_percent}}) per annum, at the rate of {{second_rate_percent_words}} per cent ({{second_rate_percent}}) per annum from and after {{second_start_date}} up to and including {{second_end_date}}, and at the rate of {{third_rate_percent_words}} per cent ({{third_rate_percent}}) per annum from and after {{third_start_date}} (in each case, the “**Note Rate**”).",
       },
     ],
   },
@@ -506,7 +518,7 @@ const LOAN_DOC_SCENARIOS = [
         section: "Section 3(a)(iii)",
         mode: "replace existing paragraph",
         template: "The following exceptions shall be DELETED and not appear on Lender’s policy of title insurance: [deleted exception items handled elsewhere] and any current or future claim or lien arising as a result of a work of improvement on the Property.",
-        copyTemplate: "and any current or future claim or lien arising as a result of a work of improvement on the Property.",
+        copyTemplate: "and any current or future claim or lien arising as a result of a work of improvement on the Property",
       },
       {
         id: "instructions-mechanics",
@@ -514,7 +526,7 @@ const LOAN_DOC_SCENARIOS = [
         section: "Section 8(b)",
         mode: "replace existing paragraph",
         template: "The following exceptions shall be DELETED and not appear on Lender’s policy of title insurance: [deleted exception items handled elsewhere] and any current or future claim or lien arising as a result of a work of improvement on the Property.",
-        copyTemplate: "and any current or future claim or lien arising as a result of a work of improvement on the Property.",
+        copyTemplate: "and any current or future claim or lien arising as a result of a work of improvement on the Property",
       },
     ],
   },

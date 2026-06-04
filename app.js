@@ -4178,6 +4178,8 @@ function formatLoanDocClipboardFragment(content) {
 }
 
 function resolveLoanDocTemplateValue(key, scenario, inputs) {
+  const derived = getLoanDocDerivedValue(key, scenario, inputs);
+  if (derived !== null) return derived;
   if (Object.prototype.hasOwnProperty.call(inputs || {}, key)) return inputs[key];
   if (key.endsWith("_words")) {
     const baseKey = key.slice(0, -6);
@@ -4186,6 +4188,13 @@ function resolveLoanDocTemplateValue(key, scenario, inputs) {
     if (isLoanDocPercentField(field)) return formatLoanDocPercentWords(baseValue);
   }
   return inputs?.[key];
+}
+
+function getLoanDocDerivedValue(key, scenario, inputs) {
+  if (scenario?.id !== "interest-rate-bump") return null;
+  if (key === "second_start_date") return deriveLoanDocNextDay(inputs?.first_end_date);
+  if (key === "third_start_date") return deriveLoanDocNextDay(inputs?.second_end_date);
+  return null;
 }
 
 function isLoanDocMoneyField(field) {
@@ -4207,7 +4216,10 @@ function getLoanDocFieldInputMode(field) {
 
 function getLoanDocFieldPlaceholder(field) {
   if (!field) return "";
-  if (isLoanDocMoneyField(field)) return "$0.00";
+  if (isLoanDocMoneyField(field)) {
+    const decimals = Number.isInteger(field.decimals) ? field.decimals : 2;
+    return decimals > 0 ? `$0.${"0".repeat(decimals)}` : "$0";
+  }
   if (isLoanDocPercentField(field)) return "0.00%";
   if (isLoanDocDateField(field)) return "January 1, 2027";
   return field.placeholder || "";
@@ -4215,7 +4227,7 @@ function getLoanDocFieldPlaceholder(field) {
 
 function normalizeLoanDocFieldValue(field, rawValue) {
   if (!field) return String(rawValue ?? "");
-  if (isLoanDocMoneyField(field)) return formatMoneyInput(rawValue, 2);
+  if (isLoanDocMoneyField(field)) return formatMoneyInput(rawValue, Number.isInteger(field.decimals) ? field.decimals : 2);
   if (isLoanDocPercentField(field)) return formatLoanDocPercentInput(rawValue);
   if (isLoanDocDateField(field)) return formatLoanDocDateInput(rawValue);
   return String(rawValue ?? "");
@@ -4605,16 +4617,41 @@ function parseLoanDocDate(raw) {
   const isoMatch = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (isoMatch) return buildUtcDate(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
 
-  const slashMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (slashMatch) {
-    const year = Number(slashMatch[3].length === 2 ? `20${slashMatch[3]}` : slashMatch[3]);
-    return buildUtcDate(year, Number(slashMatch[1]), Number(slashMatch[2]));
+  const sepMatch = value.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  if (sepMatch) {
+    return buildUtcDate(expandLoanDocYear(sepMatch[3]), Number(sepMatch[1]), Number(sepMatch[2]));
   }
+
+  const digitsOnly = value.replace(/\s+/g, "");
+  const digits8 = digitsOnly.match(/^(\d{2})(\d{2})(\d{4})$/);
+  if (digits8) return buildUtcDate(Number(digits8[3]), Number(digits8[1]), Number(digits8[2]));
+  const digits6 = digitsOnly.match(/^(\d{2})(\d{2})(\d{2})$/);
+  if (digits6) return buildUtcDate(expandLoanDocYear(digits6[3]), Number(digits6[1]), Number(digits6[2]));
 
   const parsed = Date.parse(value);
   if (!Number.isFinite(parsed)) return null;
   const candidate = new Date(parsed);
   return buildUtcDate(candidate.getUTCFullYear(), candidate.getUTCMonth() + 1, candidate.getUTCDate());
+}
+
+function expandLoanDocYear(rawYear) {
+  const text = String(rawYear);
+  const num = Number(text);
+  if (text.length === 2) return num + 2000;
+  return num;
+}
+
+function deriveLoanDocNextDay(raw) {
+  const parsed = parseLoanDocDate(raw);
+  if (!parsed) return "";
+  const next = new Date(parsed.getTime());
+  next.setUTCDate(next.getUTCDate() + 1);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(next);
 }
 
 function buildUtcDate(year, month, day) {
