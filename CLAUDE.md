@@ -1,60 +1,65 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Project
 
-LOF standalone valuation calculator — a small static site for local team use, extracted from the larger LOF Website draft.
+LOF standalone valuation calculator and tooling — small static site for local team use, extracted from larger LOF Website draft.
 
 - Plain static HTML/CSS/JS, no framework
-- Served locally via Docker + Nginx
-- State persists in browser `localStorage`
+- Served locally via Docker + Nginx on port 8080
+- State persists in browser `localStorage` under single key in `app.js`
 - Copy buttons output plain-text whole-dollar USD amounts
 
 ## Stack
 
 | File | Purpose |
 |---|---|
-| `index.html` | App markup and tab panels |
+| `index.html` | Main app markup, top-level tab panels |
+| `consumerdebt.html` | Standalone consumer debt page (linked from main app) |
 | `styles.css` | Full responsive UI styling |
-| `app.js` | State, calculator logic, rendering, clipboard, localStorage |
-| `Dockerfile` | Static Nginx image |
-| `docker-compose.yml` | Local container entrypoint |
-| `nginx.conf` | Nginx config for static serving |
+| `app.js` | State, calculator logic, rendering, clipboard, localStorage (~200KB single file) |
+| `loan-docs-data.js` | Data for Loan Doc Manual tab |
+| `loandoctemplates/` | `.docx` templates: AGREEMENT, EFT, INSTRUCTIONS, NOTE, TD |
+| `Dockerfile`, `nginx.conf`, `docker-compose.yml` | Static Nginx serving |
+| `tests/keyboard-flow.spec.mjs` | Playwright e2e |
+
+## Top-level tabs (index.html)
+
+`1-4 Unit Valuations`, `Commercial Valuations`, `Apartment Valuations`, `Consumer Debt Checker`, `Blended LOI Checker`, `Loan Doc Manual`. Each tab contains its own sub-calculators (lease comps, sale comps, apt sale, apt rent, etc.) with cap-rate rows, outlier auto-exclude, and copy buttons.
 
 ## Rules
 
-- Do not introduce a frontend framework unless explicitly requested.
-- Do not add build tooling, package managers, or compilation steps unless explicitly requested.
-- Do not add shared persistence, auth, or APIs without explicit user direction.
-- State stays browser-local only.
-
-## Calculator tabs
-
-- **Lease** — Rent per SF rows, expense adjustments, outlier auto-exclude, copy from selected cap-rate row.
-- **Sale Comps** — `$/SF` from price/sqft or manual, listing discount, outlier auto-exclude, copy indicated value.
-- **Apt Sale Comps** — `$/Unit` or `$/SF` valuation, outlier auto-exclude per method, copy indicated value.
-- **Apt Rent Comps** — Unit mix + monthly rent by type, outlier per type, copy from selected cap-rate row.
+- No frontend framework, build tooling, package managers, or compilation steps unless explicitly requested.
+- No shared persistence, auth, or APIs without explicit user direction. State stays browser-local.
+- Preserve parity with source of truth `/Users/tylerhereford/repos/LOF Website/loan-detail-draft.html` unless behavior change explicitly requested.
 
 ## Clipboard output
 
-Always: USD formatted, comma-separated, whole dollars only, no labels, no cents. Centralized in `copyAmount()` in `app.js`.
-
-## Verification commands
-
-```sh
-node --check app.js
-docker compose config
-docker compose up --build
-```
-
-## Source of truth
-
-Original calculator behavior: `/Users/tylerhereford/repos/LOF Website/loan-detail-draft.html`
-Preserve parity with that source unless a behavior change is explicitly requested.
+Always USD, comma-separated, whole dollars, no labels, no cents. Centralized in `copyAmount()` in `app.js`.
 
 ## Key patterns
 
-- Calculation helpers separate from DOM update code where practical.
 - `createDefaultState()` for new defaults; `normalizeState()` for backward-compatible migrations.
-- Never assume existing `localStorage` entries match the newest state shape — always add normalization paths.
-- Tab switching uses the existing `activeTab` pattern.
+- Never assume existing `localStorage` matches newest state shape — always add normalization path.
+- Tab switching uses `activeTab` pattern.
+- Calculation helpers kept separate from DOM update code where practical.
 - Outlier handling depends on row ranking — recheck after any formula change.
+
+## Commands
+
+```sh
+# Run locally
+docker compose up --build      # http://localhost:8080
+docker compose down
+
+# Verify
+node --check app.js
+docker compose config
+
+# E2E test
+npm install
+npx playwright install chromium
+npm run test:e2e               # runs all specs
+npx playwright test tests/keyboard-flow.spec.mjs   # single spec
+```
