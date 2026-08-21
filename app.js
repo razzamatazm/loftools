@@ -251,6 +251,22 @@ const elements = {
       originationPoints: document.getElementById("loi-blended-origination-points"),
       monthlyPayment: document.getElementById("loi-blended-monthly-payment"),
     },
+    sample: {
+      date: document.getElementById("loi-sample-date"),
+      totalAmount: document.getElementById("loi-sample-total-amount"),
+      blendedRate: document.getElementById("loi-sample-blended-rate"),
+      blendedFee: document.getElementById("loi-sample-blended-fee"),
+      firstAmount: document.getElementById("loi-sample-first-amount"),
+      firstRate: document.getElementById("loi-sample-first-rate"),
+      firstPayment: document.getElementById("loi-sample-first-payment"),
+      firstOrigination: document.getElementById("loi-sample-first-origination"),
+      firstBroker: document.getElementById("loi-sample-first-broker"),
+      secondAmount: document.getElementById("loi-sample-second-amount"),
+      secondRate: document.getElementById("loi-sample-second-rate"),
+      secondPayment: document.getElementById("loi-sample-second-payment"),
+      secondOrigination: document.getElementById("loi-sample-second-origination"),
+      secondBroker: document.getElementById("loi-sample-second-broker"),
+    },
   },
   loanDocs: {
     search: document.getElementById("loan-docs-search"),
@@ -2193,6 +2209,7 @@ function renderLoi() {
   renderLoiLoan("first");
   renderLoiLoan("second");
   renderLoiBlended();
+  renderLoiSample();
   bindTabFlows();
   persistState();
 }
@@ -2219,6 +2236,39 @@ function renderLoiBlended() {
   elements.loi.blended.originationFee.textContent = calculations.totalOriginationFee === null ? "-" : formatCurrency(calculations.totalOriginationFee, 2);
   elements.loi.blended.originationPoints.textContent = calculations.blendedOriginationPoints === null ? "-" : formatPercentDisplay(calculations.blendedOriginationPoints, 4);
   elements.loi.blended.monthlyPayment.textContent = calculations.totalMonthlyPayment === null ? "-" : formatCurrency(calculations.totalMonthlyPayment, 2);
+}
+
+function formatLoiFeeLine(feeAmount, points) {
+  if (feeAmount === null || points === null) return "-";
+  const pointsLabel = `${points.toFixed(2)} point${Math.abs(points - 1) < 0.005 ? "" : "s"}`;
+  return `${formatCurrency(feeAmount, 2)} – ${pointsLabel}`;
+}
+
+function renderLoiSample() {
+  const sample = elements.loi.sample;
+  const first = calculateLoiLoan(state.loi.first);
+  const second = calculateLoiLoan(state.loi.second);
+  const blended = calculateBlendedLoi();
+
+  sample.date.textContent = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+  sample.totalAmount.textContent = blended.combinedLoanAmount === null ? "-" : formatCurrency(blended.combinedLoanAmount, 0);
+  sample.blendedRate.textContent = blended.blendedRate === null ? "-" : formatPercentDisplay(blended.blendedRate, 2);
+  sample.blendedFee.textContent = blended.blendedOriginationPoints === null
+    ? "-"
+    : `${blended.blendedOriginationPoints.toFixed(2)} point${Math.abs(blended.blendedOriginationPoints - 1) < 0.005 ? "" : "s"}`;
+
+  sample.firstAmount.textContent = first.loanAmount === null ? "-" : formatCurrency(first.loanAmount, 0);
+  sample.firstRate.textContent = first.interestRate === null ? "-" : formatPercentDisplay(first.interestRate, 2);
+  sample.firstPayment.textContent = first.monthlyPayment === null ? "-" : formatCurrency(first.monthlyPayment, 2);
+  sample.firstOrigination.textContent = formatLoiFeeLine(first.originationFeeAmount, parseLooseNumber(state.loi.first.originationPoints));
+  sample.firstBroker.textContent = formatLoiFeeLine(first.brokerFeeAmount, parseLooseNumber(state.loi.first.brokerPoints));
+
+  sample.secondAmount.textContent = second.loanAmount === null ? "-" : formatCurrency(second.loanAmount, 0);
+  sample.secondRate.textContent = second.interestRate === null ? "-" : formatPercentDisplay(second.interestRate, 2);
+  sample.secondPayment.textContent = second.monthlyPayment === null ? "-" : formatCurrency(second.monthlyPayment, 2);
+  sample.secondOrigination.textContent = formatLoiFeeLine(second.originationFeeAmount, parseLooseNumber(state.loi.second.originationPoints));
+  sample.secondBroker.textContent = formatLoiFeeLine(second.brokerFeeAmount, parseLooseNumber(state.loi.second.brokerPoints));
 }
 
 function bindLoanDocsEvents() {
