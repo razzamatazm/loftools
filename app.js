@@ -95,6 +95,7 @@ const state = loadState();
 
 const elements = {
   tabs: Array.from(document.querySelectorAll(".tab")),
+  resetAllBtn: document.getElementById("reset-all-btn"),
   panels: Array.from(document.querySelectorAll(".panel")),
   oneToFour: {
     subjectSqft: document.getElementById("one-four-subject-sqft"),
@@ -776,6 +777,8 @@ function bindStaticEvents() {
     if (document.activeElement !== event.target) return;
     selectFocusedFieldContents(event.target);
   });
+
+  elements.resetAllBtn?.addEventListener("click", () => resetAllPages(elements.resetAllBtn));
 
   elements.tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -4319,6 +4322,20 @@ function stripLeadingSectionMarker(text) {
       .replace(/^\s*\d+(?:\.\d+)*\.?\s+/, "")
       .replace(/^\s*\(([A-Za-z0-9ivxIVX]+)\)\s+/, ""))
     .join("\n");
+}
+
+function resetAllPages(button) {
+  const confirmed = window.confirm("Reset every field on all tabs? This clears all saved values.");
+  if (!confirmed) return;
+  const defaults = createDefaultState();
+  defaults.activeTab = state.activeTab;
+  Object.keys(state).forEach((key) => {
+    delete state[key];
+  });
+  Object.assign(state, defaults);
+  renderAll();
+  persistState();
+  flashButton(button, "Reset");
 }
 
 function clearPageSection(sectionKey, button) {
