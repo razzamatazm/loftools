@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Set up the Humperdink browser add-ons</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lora:wght@600&family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=DM+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f0efec;
+        --panel: #fefefe;
+        --panel-subtle: #f4f3f0;
+        --ink: #1c1b18;
+        --muted: #68645c;
+        --line: #e2e0db;
+        --line-strong: #cac8c2;
+        --brand: #1a7a62;
+        --brand-deep: #0f5245;
+        --brand-light: rgba(26, 122, 98, 0.08);
+        --warn-bg: #fdf3e7;
+        --warn-line: #eccfa9;
+        --shadow: 0 2px 6px rgba(20, 18, 12, 0.06), 0 10px 28px rgba(20, 18, 12, 0.07);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 400 15px/1.55 "DM Sans", "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .page {
+        width: min(820px, calc(100vw - 32px));
+        margin: 32px auto 56px;
+        padding: 28px 32px 36px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+      }
+
+      .back {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      .back:hover {
+        color: var(--brand);
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        font-family: "Lora", Georgia, serif;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      h1 {
+        margin-top: 14px;
+        font-size: clamp(1.4rem, 3vw, 1.85rem);
+        line-height: 1.15;
+      }
+
+      h2 {
+        font-size: 1.25rem;
+        line-height: 1.25;
+      }
+
+      h3 {
+        margin: 20px 0 0;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      p,
+      ol,
+      ul {
+        margin: 10px 0 0;
+      }
+
+      ol,
+      ul {
+        padding-left: 22px;
+      }
+
+      li + li {
+        margin-top: 6px;
+      }
+
+      a {
+        color: var(--brand);
+        text-underline-offset: 3px;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      .lede {
+        color: var(--muted);
+        font-size: 1.05rem;
+        margin-top: 10px;
+      }
+
+      section {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+
+      .step-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+
+      .label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--brand);
+      }
+
+      .card {
+        margin-top: 14px;
+        padding: 16px 18px;
+        background: var(--panel-subtle);
+        border: 1px solid var(--line);
+        border-radius: 11px;
+      }
+
+      .card-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .card-row h3 {
+        margin-top: 0;
+      }
+
+      .card-row p {
+        margin-top: 2px;
+        color: var(--muted);
+      }
+
+      .button {
+        display: inline-block;
+        flex: 0 0 auto;
+        padding: 9px 20px;
+        border: none;
+        border-radius: 8px;
+        background: var(--brand);
+        color: #fff;
+        font: 600 14px/1.2 "DM Sans", sans-serif;
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .button:hover {
+        background: var(--brand-deep);
+      }
+
+      .button-ghost {
+        padding: 5px 10px;
+        font-size: 13px;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--line-strong);
+      }
+
+      .button-ghost:hover {
+        background: var(--panel-subtle);
+        color: var(--ink);
+      }
+
+      kbd,
+      code {
+        font: 500 0.85em "DM Mono", monospace;
+        background: var(--panel-subtle);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
+
+      .ui {
+        font-weight: 600;
+      }
+
+      .address {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .note {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: var(--brand-light);
+      }
+
+      .note-warn {
+        background: var(--warn-bg);
+        border: 1px solid var(--warn-line);
+      }
+
+      .fields {
+        columns: 2;
+        column-gap: 28px;
+      }
+
+      .fields li {
+        break-inside: avoid;
+      }
+
+      .copied {
+        color: var(--brand);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      @media (max-width: 560px) {
+        .page {
+          margin-top: 16px;
+          padding: 22px 18px 28px;
+        }
+
+        .card-row {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .fields {
+          columns: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <a class="back" href="/">&larr; Humperdink Tools</a>
+      <h1>Set up the Humperdink browser add-ons</h1>
+      <p class="lede">
+        Two small add-ons for Chrome. One sends a Humperdink loan to Hot Task, and one fills in a new
+        Humperdink property from a TitlePro report. Setup takes about five minutes, once. After that
+        they update themselves.
+      </p>
+
+      <section>
+        <div class="step-head">
+          <span class="label">Step 1</span>
+          <h2>Install Tampermonkey</h2>
+        </div>
+        <p>Tampermonkey is the Chrome extension that runs the add-ons.</p>
+        <ol>
+          <li>
+            Open
+            <a
+              href="https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo"
+              target="_blank"
+              rel="noopener"
+              >Tampermonkey in the Chrome Web Store</a
+            >
+            and click <span class="ui">Add to Chrome</span>, then <span class="ui">Add extension</span>.
+          </li>
+          <li>
+            Click the puzzle piece icon at the top right of Chrome and click the pin next to
+            <span class="ui">Tampermonkey</span>, so its icon stays in your toolbar.
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <div class="step-head">
+          <span class="label">Step 2</span>
+          <h2>Turn on Allow User Scripts</h2>
+        </div>
+        <p>Chrome blocks the add-ons until you switch this on. Skip it and nothing will show up.</p>
+        <ol>
+          <li>Right-click the Tampermonkey icon in your toolbar and choose <span class="ui">Manage extension</span>.</li>
+          <li>Find <span class="ui">Allow User Scripts</span> and switch it on.</li>
+        </ol>
+        <div class="note">
+          <strong>Don't see that switch?</strong> Your Chrome is an older version. Open the extensions page
+          instead and switch on <span class="ui">Developer mode</span> at the top right. Chrome won't open
+          this address from a link, so copy it and paste it into the address bar:
+          <div class="address">
+            <code id="extensions-address">chrome://extensions</code>
+            <button class="button button-ghost" type="button" data-copy="extensions-address">Copy</button>
+            <span class="copied" aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="step-head">
+          <span class="label">Step 3</span>
+          <h2>Install the add-ons</h2>
+        </div>
+        <p>
+          Click each <span class="ui">Install</span> button below. A Tampermonkey tab opens showing the
+          add-on. Click <span class="ui">Install</span> there too, then close that tab.
+        </p>
+
+        <div class="card">
+          <div class="card-row">
+            <div>
+              <h3>Export to HT</h3>
+              <p>Sends a Humperdink loan to a new LOI Check in Hot Task.</p>
+            </div>
+            <a class="button" href="/userscripts/send-to-hot-task.user.js">Install</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-row">
+            <div>
+              <h3>TitlePro to Humperdink</h3>
+              <p>Fills in Humperdink's New Property window from a TitlePro property report.</p>
+            </div>
+            <a class="button" href="/userscripts/titlepro-to-humperdink.user.js">Install</a>
+          </div>
+        </div>
+
+        <p class="note">
+          Already added one of these by pasting it in? Install it from here anyway. It replaces your old
+          copy, and this copy keeps itself up to date.
+        </p>
+      </section>
+
+      <section>
+        <div class="step-head">
+          <span class="label">Step 4</span>
+          <h2>Check that it worked</h2>
+        </div>
+        <ul>
+          <li>
+            Open any loan in Humperdink, or reload one you already have open. An
+            <span class="ui">Export to HT</span> button appears in the Loan Terms header, right after the
+            LOI button.
+          </li>
+          <li>
+            Open a property report in TitlePro. A <span class="ui">Send to Humperdink</span> link appears at
+            the top, next to the PDF and Email links.
+          </li>
+        </ul>
+        <p>If neither shows up, go back to Step 2. That switch is almost always the reason.</p>
+      </section>
+
+      <section>
+        <h2>Using Export to HT: Humperdink to Hot Task</h2>
+        <ol>
+          <li>
+            On a loan in Humperdink, click <span class="ui">Export to HT</span> in the Loan Terms header. If
+            it looks faded, the loan's contacts and properties are still loading. Give it a second.
+          </li>
+          <li>
+            It copies the loan and opens Hot Task in Teams on a new LOI Check. The first time, Chrome asks
+            whether to open Microsoft Teams. Tick <span class="ui">Always allow</span> and click
+            <span class="ui">Open</span>, and it won't ask again.
+          </li>
+          <li>
+            Folder Name, the Humperdink link and the loan terms fill in on their own. If they don't, the
+            paste box at the bottom of the form is already selected: press <kbd>Ctrl</kbd>+<kbd>V</kbd>
+            (<kbd>⌘</kbd>+<kbd>V</kbd> on a Mac).
+          </li>
+          <li>Check it over, fill in anything else, and click <span class="ui">Create</span>. Nothing is filed until you do.</li>
+        </ol>
+        <p>
+          It copies the loan name, link, loan terms, brokers, borrowers and silent borrowers, and the
+          address and purchase price of any property being bought. If you had a new task half-written in
+          Hot Task, it's saved to the <span class="ui">Drafts</span> tab, not lost.
+        </p>
+        <p>
+          If the button shows a message like <span class="ui">Couldn't read the loan terms</span> instead,
+          Humperdink has probably changed its page. Nothing was copied. Send Tyler a screenshot.
+        </p>
+      </section>
+
+      <section>
+        <h2>Using TitlePro to Humperdink: filling in a new property</h2>
+        <ol>
+          <li>
+            Open the property report in TitlePro and click <span class="ui">Send to Humperdink</span> at the
+            top. (If it can't find its usual spot, a blue <span class="ui">Send to Humperdink</span> button
+            shows up in the bottom right corner instead.) It flashes something like
+            <span class="ui">Copied: $450,000 / 3/14/2022 / YB 1987</span>.
+          </li>
+          <li>
+            In Humperdink, open the loan and click <span class="ui">+ Property</span> to open the New
+            Property window.
+          </li>
+          <li>
+            Click the blue <span class="ui">Paste from TitlePro</span> button next to
+            <span class="ui">Create</span>. It flashes <span class="ui">Filled</span> and the number of fields
+            it filled.
+          </li>
+          <li>Check the fields and click <span class="ui">Create</span>.</li>
+        </ol>
+
+        <h3>What it fills in</h3>
+        <ul class="fields">
+          <li>Address, city, state, zip</li>
+          <li>County</li>
+          <li>APN</li>
+          <li>Property type</li>
+          <li>Building size</li>
+          <li>Lot size, in square feet</li>
+          <li>Purchase price</li>
+          <li>Purchase date</li>
+          <li>Year built</li>
+        </ul>
+        <p>
+          Bedrooms, bathrooms and units aren't filled in, because the New Property window has no place for
+          them. The purchase price and date come from the most recent real sale on the report, so gifts,
+          transfers between family members and foreclosures are skipped.
+        </p>
+
+        <div class="note note-warn">
+          <strong>If the message turns yellow,</strong> double-check the purchase price and date against the
+          report before you click Create. It means something about the sale looked off: it wasn't clearly
+          marked as an arm's-length sale, the deed covered more than one parcel, or the report was missing
+          the year built or a sale date. You can ignore the "check console" part of the message.
+        </div>
+
+        <h3>Good to know</h3>
+        <ul>
+          <li>
+            It holds one report at a time. Sending a second report replaces the first, so send the one you
+            want right before you paste.
+          </li>
+          <li>You don't need to keep the TitlePro tab open. It remembers the last report you sent.</li>
+          <li>
+            <span class="ui">Open + Property first</span> means the New Property window isn't open yet.
+            <span class="ui">No payload, scrape TitlePro first</span> means you haven't sent a report yet.
+            <span class="ui">No data found</span> means the TitlePro page isn't a property report.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Updates</h2>
+        <p>
+          You don't need to do anything. Tampermonkey checks for new versions about once a day and installs
+          them. To check right away, click the Tampermonkey icon and choose
+          <span class="ui">Check for userscript updates</span>.
+        </p>
+      </section>
+    </main>
+
+    <script>
+      document.querySelectorAll("[data-copy]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          var text = document.getElementById(button.getAttribute("data-copy")).textContent;
+          var status = button.parentElement.querySelector(".copied");
+          navigator.clipboard.writeText(text).then(
+            function () {
+              status.textContent = "Copied";
+            },
+            function () {
+              status.textContent = "Select it and copy by hand";
+            }
+          );
+        });
+      });
+    </script>
+  </body>
+</html>

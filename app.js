@@ -166,6 +166,7 @@ const elements = {
       summary5: document.getElementById("apartment-current-summary-5"),
       summary6: document.getElementById("apartment-current-summary-6"),
       summary7: document.getElementById("apartment-current-summary-7"),
+      guidance: document.getElementById("apartment-current-guidance"),
       capResults: document.getElementById("apartment-current-cap-results"),
       copyBtn: document.getElementById("apartment-current-copy-btn"),
       clearBtn: document.getElementById("apartment-current-clear-btn"),
@@ -195,6 +196,7 @@ const elements = {
       effectiveGross: document.getElementById("apartment-market-effective-gross"),
       annualNoi: document.getElementById("apartment-market-annual-noi"),
       startCapValue: document.getElementById("apartment-market-start-cap-value"),
+      guidance: document.getElementById("apartment-market-guidance"),
       capResults: document.getElementById("apartment-market-cap-results"),
       copyBtn: document.getElementById("apartment-market-copy-btn"),
       clearBtn: document.getElementById("apartment-market-clear-btn"),
@@ -1806,6 +1808,14 @@ function renderApartmentCurrent(unitMix) {
   elements.apartment.current.summary3.textContent = calculations.annualGrossIncome === null ? "-" : formatCurrency(calculations.annualGrossIncome, 0);
   elements.apartment.current.summary4.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
   elements.apartment.current.summary5.textContent = calculations.startCapValue === null ? "-" : formatCurrency(calculations.startCapValue, 0);
+  if (elements.apartment.current.guidance) {
+    const totalUnits = Object.values(unitMix).reduce((sum, value) => sum + value, 0);
+    const notes = [buildApartmentExpenseGuidance(totalUnits, state.apartment.current.expensePercent)];
+    if (calculations.monthlyFillIncome > 0 && clampPercent(state.apartment.current.vacancy) === 0) {
+      notes.push("Vacant units are filled at market rent, so a market vacancy factor must be deducted from potential total rent. Refinances should use current rents only.");
+    }
+    elements.apartment.current.guidance.textContent = notes.join(" ");
+  }
   elements.apartment.current.summary6.textContent = calculations.appliedVacancyLabel;
   elements.apartment.current.summary7.textContent = calculations.apartmentVacancyLabel;
   derived.apartmentCurrentCopy = calculations.selectedCapValue;
@@ -1856,6 +1866,15 @@ function renderApartmentMarket(unitMix) {
   Object.entries(elements.apartment.market.averages).forEach(([key, output]) => {
     output.textContent = calculations.averageByType[key] === null ? "-" : formatCurrency(calculations.averageByType[key], 0);
   });
+  if (elements.apartment.market.guidance) {
+    const totalUnits = Object.values(unitMix).reduce((sum, value) => sum + value, 0);
+    const notes = [buildApartmentExpenseGuidance(totalUnits, state.apartment.market.expensePercent)];
+    if (clampPercent(state.apartment.market.vacancy) === 0) {
+      notes.push("Always apply the market vacancy rate when applying rent comps to the entire building.");
+    }
+    notes.push("If the area is subject to rent control, use a cap rate above market to cover expense and re-lease time.");
+    elements.apartment.market.guidance.textContent = notes.join(" ");
+  }
   elements.apartment.market.annualGross.textContent = calculations.annualGrossRent === null ? "-" : formatCurrency(calculations.annualGrossRent, 0);
   elements.apartment.market.effectiveGross.textContent = calculations.effectiveGrossIncome === null ? "-" : formatCurrency(calculations.effectiveGrossIncome, 0);
   elements.apartment.market.annualNoi.textContent = calculations.annualNoi === null ? "-" : formatCurrency(calculations.annualNoi, 0);
@@ -4545,6 +4564,27 @@ function normalizeAptRentTypeInput(rawValue) {
   const normalized = String(rawValue || "").trim().toLowerCase().replace(/[-_]+/g, " ");
   if (!normalized) return "";
   return aptRentTypeAliases[normalized] || "";
+}
+
+// Apartment expense-ratio benchmarks per LOF valuation guidelines (Traynor/Ducot, 4/2022).
+// Benchmarks only - originators adjust for metering, age, amenities, and location, and note
+// any adjustment in the valuation notes.
+function getApartmentExpenseBenchmark(totalUnits) {
+  if (!totalUnits) return null;
+  if (totalUnits < 16) return { rate: 30, label: "30%", basis: "complexes under 16 units" };
+  if (totalUnits > 50) return { rate: 40, label: "40-50%", basis: "complexes above 50 units that are older or have small, high-turnover units" };
+  return { rate: 40, label: "40%", basis: "complexes of 16+ units (use 35% if individually metered or relatively new construction)" };
+}
+
+function buildApartmentExpenseGuidance(totalUnits, enteredExpense) {
+  const benchmark = getApartmentExpenseBenchmark(totalUnits);
+  if (!benchmark) return "Guideline expenses: 30% under 16 units, 40% at 16+ units, 35% if individually metered or newer, 40-50% above 50 units when older or high turnover.";
+  const parts = [`Guideline expenses for ${totalUnits} units: ${benchmark.label} (${benchmark.basis}).`];
+  const entered = parseLooseNumber(enteredExpense);
+  if (entered !== null && Math.abs(entered - benchmark.rate) >= 0.5 && !(totalUnits >= 16 && totalUnits <= 50 && Math.abs(entered - 35) < 0.5) && !(totalUnits > 50 && entered >= 40 && entered <= 50)) {
+    parts.push(`Entered ${entered}% is off benchmark - note the adjustment in the valuation notes.`);
+  }
+  return parts.join(" ");
 }
 
 function getLeaseExpenseRate(leaseType) {

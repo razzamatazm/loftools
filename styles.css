@@ -82,6 +82,10 @@ button {
 /* ── Hero ────────────────────────────────────────────────────── */
 
 .hero {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
   padding: 22px 26px 20px;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -111,6 +115,18 @@ button {
   font-weight: 600;
   line-height: 1.15;
   color: var(--ink);
+}
+
+.hero-link {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hero-link:hover {
+  color: var(--brand);
 }
 
 /* ── Tool shell & card ───────────────────────────────────────── */
@@ -861,6 +877,18 @@ tbody tr.cap-row[data-copy-state="copy-failed"] {
 
 .hint-copy-note {
   margin-top: 14px;
+}
+
+.guideline-note {
+  margin: 10px 2px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--line);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.guideline-note:empty {
+  display: none;
 }
 
 /* ── Actions row ─────────────────────────────────────────────── */
