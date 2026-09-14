@@ -261,7 +261,7 @@
       <a class="back" href="/">&larr; Humperdink Tools</a>
       <h1>Set up the Humperdink browser add-ons</h1>
       <p class="lede">
-        Two small add-ons for Chrome. One sends a Humperdink loan to Hot Task, and one fills in a new
+        Two small add-ons for Chrome and Microsoft Edge. One sends a Humperdink loan to Hot Task, and one fills in a new
         Humperdink property from a TitlePro report. Setup takes about five minutes, once. After that
         they update themselves.
       </p>
@@ -271,7 +271,10 @@
           <span class="label">Step 1</span>
           <h2>Install Tampermonkey</h2>
         </div>
-        <p>Tampermonkey is the Chrome extension that runs the add-ons.</p>
+        <p>
+          Tampermonkey is the browser extension that runs the add-ons. These steps are written for Chrome.
+          Edge works the same way, and the differences are called out below.
+        </p>
         <ol>
           <li>
             Open
@@ -288,6 +291,18 @@
             <span class="ui">Tampermonkey</span>, so its icon stays in your toolbar.
           </li>
         </ol>
+        <div class="note">
+          <strong>Using Edge?</strong> Open
+          <a
+            href="https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd"
+            target="_blank"
+            rel="noopener"
+            >Tampermonkey in Edge Add-ons</a
+          >
+          instead and click <span class="ui">Get</span>, then <span class="ui">Add extension</span>. To keep
+          the icon in your toolbar, click the puzzle piece icon at the top right of Edge and click the eye
+          icon next to <span class="ui">Tampermonkey</span>.
+        </div>
       </section>
 
       <section>
@@ -295,7 +310,7 @@
           <span class="label">Step 2</span>
           <h2>Turn on Allow User Scripts</h2>
         </div>
-        <p>Chrome blocks the add-ons until you switch this on. Skip it and nothing will show up.</p>
+        <p>Chrome and Edge block the add-ons until you switch this on. Skip it and nothing will show up.</p>
         <ol>
           <li>Right-click the Tampermonkey icon in your toolbar and choose <span class="ui">Manage extension</span>.</li>
           <li>Find <span class="ui">Allow User Scripts</span> and switch it on.</li>
@@ -307,6 +322,13 @@
           <div class="address">
             <code id="extensions-address">chrome://extensions</code>
             <button class="button button-ghost" type="button" data-copy="extensions-address">Copy</button>
+            <span class="copied" aria-live="polite"></span>
+          </div>
+          In Edge, the address is below, and <span class="ui">Developer mode</span> is in the left-hand menu
+          of that page rather than the top right:
+          <div class="address">
+            <code id="edge-extensions-address">edge://extensions</code>
+            <button class="button button-ghost" type="button" data-copy="edge-extensions-address">Copy</button>
             <span class="copied" aria-live="polite"></span>
           </div>
         </div>
@@ -375,8 +397,8 @@
             it looks faded, the loan's contacts and properties are still loading. Give it a second.
           </li>
           <li>
-            It copies the loan and opens Hot Task in Teams on a new LOI Check. The first time, Chrome asks
-            whether to open Microsoft Teams. Tick <span class="ui">Always allow</span> and click
+            It copies the loan and opens Hot Task in Teams on a new LOI Check. The first time, your browser
+            asks whether to open Microsoft Teams. Tick <span class="ui">Always allow</span> and click
             <span class="ui">Open</span>, and it won't ask again.
           </li>
           <li>
