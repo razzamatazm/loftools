@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TitlePro247 → Humperdink Property Autofill
 // @namespace    loneoakfund
-// @version      0.3.2
+// @version      0.4.2
 // @description  Scrape property report on TitlePro247 and autofill the New Property modal in Humperdink.
 // @match        https://www.titlepro247.com/Orders/Home/Html/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
@@ -44,18 +44,27 @@
       background: '#0b66c3', color: '#fff', border: 'none', borderRadius: '6px',
       padding: '10px 14px', fontSize: '13px', fontWeight: '600',
       boxShadow: '0 2px 8px rgba(0,0,0,.25)', cursor: 'pointer',
+      maxWidth: '360px', textAlign: 'left', whiteSpace: 'pre-line', lineHeight: '1.4',
     });
     b.addEventListener('click', onclick);
     document.body.appendChild(b);
     return b;
   }
 
-  function flash(btn, msg, ok = true) {
-    const orig = btn.textContent;
-    const origBg = btn.style.background;
+  function flash(btn, msg, ok = true, ms = 2600) {
+    // Remember the resting label once, so a second click mid-flash doesn't
+    // make the flash message the new resting label.
+    if (!btn.dataset.lofLabel) {
+      btn.dataset.lofLabel = btn.textContent;
+      btn.dataset.lofBg = btn.style.background;
+    }
+    clearTimeout(btn._lofTimer);
     btn.textContent = msg;
     btn.style.background = ok === 'warn' ? '#a8690c' : (ok ? '#1f8a3b' : '#b3261e');
-    setTimeout(() => { btn.textContent = orig; btn.style.background = origBg; }, 2600);
+    btn._lofTimer = setTimeout(() => {
+      btn.textContent = btn.dataset.lofLabel;
+      btn.style.background = btn.dataset.lofBg;
+    }, ms);
   }
 
   // ------------------------- TitlePro247 side -------------------------
@@ -240,11 +249,11 @@
       saleArmsLength = best.armsLength;
       saleSource = 'transaction history (ID ' + best.txnId + ')';
       if (!best.armsLength) {
-        warnings.push('sale not flagged arms-length: "' + (best.type || 'blank') + '"');
+        warnings.push('Sale isn\'t marked arms-length (' + (best.type || 'blank') + '), check the purchase date and price');
       }
-      if (best.multiApn) warnings.push('deed covers multiple APNs, price may span parcels');
+      if (best.multiApn) warnings.push('Deed covers more than one parcel, price may include them');
       if (dateKey(best.recordingDate) > dateKey(lfs.recordingDate) && lfs.price) {
-        warnings.push('Latest Full Sale block is older: ' + lfs.price + ' rec. ' + lfs.recordingDate);
+        warnings.push('Used a newer sale than TitlePro\'s Latest Full Sale (' + lfs.price + ' on ' + lfs.recordingDate + ')');
       }
     } else {
       purchasePrice = money(lfs.price);
@@ -253,12 +262,11 @@
       saleType = 'Latest Full Sale block';
       saleArmsLength = null;
       saleSource = 'latest full sale block';
-      if (!transfers.length) warnings.push('no transaction detail rows parsed');
-      else warnings.push('no priced arms-length transfer found, used Latest Full Sale block');
+      if (!transfers.length) warnings.push('No transaction history found, used TitlePro\'s Latest Full Sale');
+      else warnings.push('No priced arms-length sale in the history, used TitlePro\'s Latest Full Sale');
     }
 
-    if (!yearBuilt) warnings.push('no Year Built on report');
-    if (!purchaseDate) warnings.push('no purchase/recording date found');
+    if (!purchaseDate) warnings.push('No purchase date found, enter it by hand');
 
     const payload = {
       _source: 'titlepro247',
@@ -412,83 +420,32 @@
     return '';
   }
 
-  // Icon used by the inline TitlePro button, paper-airplane / send glyph.
-  const SEND_ICON_SVG = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-         fill="none" stroke="currentColor" stroke-width="2.5"
-         stroke-linecap="round" stroke-linejoin="round"
-         style="vertical-align:middle;margin-right:4px;">
-      <line x1="22" y1="2" x2="11" y2="13"></line>
-      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-    </svg>`;
-
-  function flashAnchor(anchor, msg, ok = true) {
-    const label = anchor.querySelector('.lof-label') || anchor;
-    const orig = label.textContent;
-    const origColor = anchor.style.color;
-    label.textContent = msg;
-    anchor.style.color = ok === 'warn' ? '#a8690c' : (ok ? '#1f8a3b' : '#b3261e');
-    setTimeout(() => { label.textContent = orig; anchor.style.color = origColor; }, 2600);
-  }
-
+  // Purchase date first since it's the field most likely to need a second look.
+  // Year built is left out on purpose.
   function sendMessage(payload) {
-    const bits = [];
-    if (payload.purchasePrice) bits.push('$' + Number(payload.purchasePrice).toLocaleString());
-    if (payload.purchaseDate) bits.push(payload.purchaseDate);
-    if (payload.yearBuilt) bits.push('YB ' + payload.yearBuilt);
-    return bits.length ? 'Copied: ' + bits.join(' / ') : 'Copied, paste in Humperdink';
+    const lines = [];
+    const date = payload.purchaseDate ? 'Purchased ' + payload.purchaseDate : '';
+    const price = payload.purchasePrice ? '$' + Number(payload.purchasePrice).toLocaleString() : '';
+    if (date || price) lines.push([date, price].filter(Boolean).join(' for '));
+    for (const w of payload.saleWarnings || []) lines.push('• ' + w);
+    return 'Ready for HD Import:' + (lines.length ? '\n' + lines.join('\n') : '');
   }
 
-  function buildInlineButton() {
-    const wrap = document.createElement('div');
-    wrap.id = 'lofSendToHumperdink';
-    wrap.style.cssText = 'float:right;margin:3px;';
-    const a = document.createElement('a');
-    a.href = '#';
-    a.style.cssText = 'color:#000;font-weight:700;font-size:15px;text-decoration:underline;cursor:pointer;';
-    a.innerHTML = `${SEND_ICON_SVG}<span class="lof-label">Send to Humperdink</span>`;
-    a.addEventListener('click', function (e) {
-      e.preventDefault();
+  // Always a fixed button in the bottom right. Anchoring into TitlePro's
+  // .NonPrintArea was unreliable, the link landed at the top of the report
+  // on some pages and the bottom on others.
+  function initTitlePro() {
+    if (document.getElementById('lofSendToHumperdink')) return;
+    const btn = mkButton('→ Send to Humperdink', function () {
       const payload = scrapeTitlePro();
-      if (!payload.address) { flashAnchor(a, 'No data found', false); return; }
+      if (!payload.address) { flash(btn, 'No data found', false); return; }
       store(payload);
       const warn = payload.saleWarnings && payload.saleWarnings.length;
-      flashAnchor(a, warn ? sendMessage(payload) + ' (check console)' : sendMessage(payload), warn ? 'warn' : true);
+      flash(btn, sendMessage(payload), warn ? 'warn' : true, 10000);
       if (warn) console.warn('[lof] check before saving:', payload.saleWarnings, payload.saleCandidates);
       console.log('[lof] scraped', payload);
     });
-    wrap.appendChild(a);
-    return wrap;
-  }
-
-  function initTitlePro() {
-    const tryInject = () => {
-      if (document.getElementById('lofSendToHumperdink')) return true;
-      const container = document.querySelector('.NonPrintArea');
-      if (!container) return false;
-      // Insert as last DOM child so it floats furthest left of the existing PDF/Email links.
-      container.appendChild(buildInlineButton());
-      return true;
-    };
-
-    if (tryInject()) return;
-
-    // Container not present yet, observe until it appears, or fall back to floating button.
-    const obs = new MutationObserver(() => { if (tryInject()) obs.disconnect(); });
-    obs.observe(document.documentElement, { childList: true, subtree: true });
-    setTimeout(() => {
-      if (document.getElementById('lofSendToHumperdink')) return;
-      obs.disconnect();
-      mkButton('→ Send to Humperdink', function () {
-        const payload = scrapeTitlePro();
-        if (!payload.address) { flash(this, 'No data found', false); return; }
-        store(payload);
-        const warn = payload.saleWarnings && payload.saleWarnings.length;
-        flash(this, sendMessage(payload), warn ? 'warn' : true);
-        if (warn) console.warn('[lof] check before saving:', payload.saleWarnings, payload.saleCandidates);
-        console.log('[lof] scraped', payload);
-      });
-    }, 4000);
+    btn.id = 'lofSendToHumperdink';
   }
 
   // ------------------------- Humperdink side -------------------------
@@ -541,7 +498,7 @@
 
   function fillHumperdink(p, btn) {
     const modal = modalIsOpen();
-    if (!modal) { flash(btn, 'Open + Property first', false); return; }
+    if (!modal) { console.warn('[lof] New Property window not open'); flash(btn, 'Import Failed', false, 10000); return; }
 
     const wrote = [];
     if (setInput('txtAddress1', p.address)) wrote.push('address');
@@ -563,7 +520,9 @@
 
     const warn = p.saleWarnings && p.saleWarnings.length;
     if (warn) console.warn('[lof] verify sale figures:', p.saleWarnings, p.saleCandidates);
-    flash(btn, `Filled: ${wrote.length}` + (warn ? ' (check console)' : ''), warn ? 'warn' : true);
+    // Address is the one field every report has, so it stands in for "the fill worked".
+    const ok = wrote.includes('address');
+    flash(btn, ok ? 'Imported Successfully' : 'Import Failed', ok, 10000);
     console.log('[lof] wrote', wrote, 'payload:', p);
   }
 
@@ -592,7 +551,7 @@
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       const p = load();
-      if (!p) { flash(btn, 'No payload, scrape TitlePro first', false); return; }
+      if (!p) { console.warn('[lof] no payload stored, send from TitlePro first'); flash(btn, 'Import Failed', false, 10000); return; }
       fillHumperdink(p, btn);
     });
     btn.addEventListener('contextmenu', function (e) {
