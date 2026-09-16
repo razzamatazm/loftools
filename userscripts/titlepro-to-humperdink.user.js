@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TitlePro247 → Humperdink Property Autofill
 // @namespace    loneoakfund
-// @version      0.4.3
+// @version      0.4.4
 // @description  Scrape property report on TitlePro247 and autofill the New Property modal in Humperdink.
 // @match        https://www.titlepro247.com/Orders/Home/Html/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
@@ -9,6 +9,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_setClipboard
+// @grant        unsafeWindow
 // @run-at       document-idle
 // @downloadURL  https://loftools.thepopcorn.party/userscripts/titlepro-to-humperdink.user.js
 // @updateURL    https://loftools.thepopcorn.party/userscripts/titlepro-to-humperdink.user.js
@@ -471,11 +472,20 @@
     return true;
   }
 
+  // Humperdink's jqx widgets live on the page's jQuery. With GM_* grants the
+  // script runs sandboxed and window.jQuery is undefined, so go through
+  // unsafeWindow or the date and combo fills silently do nothing.
+  function pageJQuery() {
+    const w = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+    return typeof w.jQuery === 'function' ? w.jQuery : null;
+  }
+
   function setJqxCombo(comboId, value) {
     if (!value) return false;
     try {
-      const $el = window.jQuery && window.jQuery('#' + comboId);
-      if (!$el || !$el.length) return false;
+      const jq = pageJQuery();
+      const $el = jq && jq('#' + comboId);
+      if (!$el || !$el.length) { console.warn('[lof] combo not found', comboId); return false; }
       const items = $el.jqxComboBox('getItems') || [];
       const idx = items.findIndex(i => (i.label || '').toLowerCase() === value.toLowerCase());
       if (idx < 0) return false;
@@ -487,11 +497,14 @@
   function setJqxDate(widgetId, mdY) {
     if (!mdY) return false;
     try {
-      const $el = window.jQuery && window.jQuery('#' + widgetId);
-      if (!$el || !$el.length) return false;
+      const jq = pageJQuery();
+      const $el = jq && jq('#' + widgetId);
+      if (!$el || !$el.length) { console.warn('[lof] date widget not found', widgetId); return false; }
       const parts = mdY.split('/');
       if (parts.length !== 3) return false;
-      const d = new Date(+parts[2], +parts[0] - 1, +parts[1]);
+      // Build the Date in the page's realm so jqx's instanceof Date check passes.
+      const PageDate = (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window).Date;
+      const d = new PageDate(+parts[2], +parts[0] - 1, +parts[1]);
       if (isNaN(d)) return false;
       $el.jqxDateTimeInput('setDate', d);
       return true;
