@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TitlePro247 → Humperdink Property Autofill
 // @namespace    loneoakfund
-// @version      0.4.2
+// @version      0.4.3
 // @description  Scrape property report on TitlePro247 and autofill the New Property modal in Humperdink.
 // @match        https://www.titlepro247.com/Orders/Home/Html/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
@@ -159,12 +159,22 @@
   // Type of Transaction blank.
   const NON_ARMS_DESC = /intra.?family|dissolution|gift|quit.?claim|trustee|foreclos|sheriff|tax\s*deed|nominal|correct|re.?record|affidavit|easement/i;
 
+  // TitlePro only says "Arms-Length Transfer" on residential sales. Commercial
+  // sales come through as "Non Residential Transfer", and a priced grant or
+  // warranty deed is an ordinary sale either way, so neither needs a flag.
+  const SALE_TYPE = /(non.?)?residential\s*transfer/i;
+  const SALE_DEED = /grant\s*deed|warranty\s*deed|bargain\s*and\s*sale/i;
+
   function transferRecords(recs) {
     return recs
       .filter(g => ('Type of Transaction' in g) || /deed|transfer|grant/i.test(g['Document Type'] || ''))
       .map(g => {
         const type = (g['Type of Transaction'] || '').trim();
         const desc = (g['Document Description'] || '').trim();
+        const nonArms = /non\s*.?arms/i.test(type) || NON_ARMS_DESC.test(desc);
+        const armsLength = !nonArms && (
+          (/arms.?length/i.test(type) && !/non/i.test(type)) || SALE_TYPE.test(type) || SALE_DEED.test(desc)
+        );
         return {
           txnId: g['Transaction ID'] || '',
           recordingDate: (g['Recording Date'] || '').trim(),
@@ -177,8 +187,8 @@
           seller: (g['Seller 1'] || '').trim(),
           partialInterest: (g['Partial Interest Transferred'] || '').trim(),
           multiApn: /^y/i.test(g['Multiple APNs on Deed'] || ''),
-          armsLength: /arms.?length/i.test(type) && !/non/i.test(type),
-          nonArms: /non\s*.?arms/i.test(type) || NON_ARMS_DESC.test(desc),
+          armsLength,
+          nonArms,
         };
       });
   }
