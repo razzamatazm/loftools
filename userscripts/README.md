@@ -8,6 +8,7 @@ updates them from the addresses in each script's header.
 |---|---|
 | `send-to-hot-task.user.js` | `operation-hot-task` repo, `tools/humperdink/send-to-hot-task.user.js`. Hot Task's tests run that file against its parser and Teams app id. This is a served copy. |
 | `titlepro-to-humperdink.user.js` | This file. Behaviour notes live in `operation-hot-task` at `tools/titlepro/README.md`. |
+| `humperdink-copy-link.user.js` | This file. |
 
 ## Rules
 
