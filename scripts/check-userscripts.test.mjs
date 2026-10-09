@@ -17,6 +17,8 @@ const ROOT = new URL("..", import.meta.url);
 const read = (relative) => readFileSync(new URL(relative, ROOT), "utf8");
 const INSTALL_PAGE = read("install/index.html");
 const FILES = readdirSync(new URL("userscripts/", ROOT)).filter((name) => name.endsWith(".js"));
+// Served and auto-updated like the rest, but personal, so never on the install guide.
+const PERSONAL = ["humperdink-copy-link.user.js"];
 
 const headerValues = (source, key) => {
   const header = source.match(/\/\/ ==UserScript==([\s\S]*?)\/\/ ==\/UserScript==/);
@@ -39,7 +41,8 @@ for (const name of FILES) {
   });
 }
 
-test("the install guide links every served script and nothing else", () => {
+test("the install guide links every shared script and nothing else", () => {
   const linked = [...INSTALL_PAGE.matchAll(/href="([^"]+\.user\.js)"/g)].map((m) => m[1]).sort();
-  assert.deepEqual(linked, FILES.map((name) => `/userscripts/${name}`).sort());
+  const shared = FILES.filter((name) => !PERSONAL.includes(name));
+  assert.deepEqual(linked, shared.map((name) => `/userscripts/${name}`).sort());
 });

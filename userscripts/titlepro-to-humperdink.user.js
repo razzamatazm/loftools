@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TitlePro247 → Humperdink Property Autofill
 // @namespace    loneoakfund
-// @version      0.4.4
+// @version      0.5.2
 // @description  Scrape property report on TitlePro247 and autofill the New Property modal in Humperdink.
 // @match        https://www.titlepro247.com/Orders/Home/Html/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
@@ -60,9 +60,11 @@
       btn.dataset.lofBg = btn.style.background;
     }
     clearTimeout(btn._lofTimer);
+    btn._lofFlashing = true;
     btn.textContent = msg;
     btn.style.background = ok === 'warn' ? '#a8690c' : (ok ? '#1f8a3b' : '#b3261e');
     btn._lofTimer = setTimeout(() => {
+      btn._lofFlashing = false;
       btn.textContent = btn.dataset.lofLabel;
       btn.style.background = btn.dataset.lofBg;
     }, ms);
@@ -72,9 +74,50 @@
 
   const txt = el => (el && el.textContent || '').replace(/\s+/g, ' ').trim();
 
-  // All td/th on the page, in document order.
+  // Set while scraping one property out of a batch report, so every lookup
+  // below only sees that property's cells.
+  let scopeCells = null;
+
+  // All td/th on the page (or in the current property), in document order.
   function allCells() {
-    return Array.from(document.querySelectorAll('td, th'));
+    return scopeCells || Array.from(document.querySelectorAll('td, th'));
+  }
+
+  // A batch order puts several properties on one page, one after another.
+  // Each property gets a "Property Details Report" and a "Transaction History
+  // Report", and every report opens with a name header followed by that
+  // property's Parcel Number. The reports don't nest cleanly in the DOM, so
+  // split on those headers in document order and group the reports by APN.
+  function splitProperties() {
+    const cells = Array.from(document.querySelectorAll('td, th'));
+    const starts = [];
+    cells.forEach((c, i) => { if (/ReportNameSectionHeaders_Name/.test(c.className || '')) starts.push(i); });
+    if (starts.length < 2) return [];
+
+    const groups = new Map();
+    starts.forEach((s, k) => {
+      const slice = cells.slice(s, starts[k + 1] != null ? starts[k + 1] : cells.length);
+      const field = label => {
+        const c = slice.find(x => /fieldlabel/i.test(x.className || '') && txt(x) === label);
+        return c ? txt(c.nextElementSibling) : '';
+      };
+      const apn = field('Parcel Number');
+      const address = field('Property Address');
+      const key = apn || address || ('report ' + k);
+      if (!groups.has(key)) groups.set(key, { apn, address, city: field('City, State & Zip'), cells: [] });
+      const g = groups.get(key);
+      g.cells.push(...slice);
+      if (!g.address) g.address = address;
+    });
+    return Array.from(groups.values());
+  }
+
+  function propertyLabel(p) {
+    if (p.address) {
+      const city = (p.city.split(',')[0] || '').trim();
+      return normalizeAddress(p.address) + (city ? ', ' + titleCase(city) : '');
+    }
+    return p.apn ? 'APN ' + p.apn : 'Unknown property';
   }
 
   // Label cells only, when the report uses TitlePro's fieldlabel classes.
@@ -210,7 +253,12 @@
       );
   }
 
-  function scrapeTitlePro() {
+  function scrapeTitlePro(cells) {
+    scopeCells = cells || null;
+    try { return scrapeScoped(); } finally { scopeCells = null; }
+  }
+
+  function scrapeScoped() {
     const rawCityStateZip = val('City, State & Zip');     // "VAN NUYS, CA 91406-5318"
     let city = '', state = '', zip = '';
     const m = rawCityStateZip.match(/^(.+?),\s*([A-Z]{2})\s*(\d{5}(?:-\d{4})?)?/);
@@ -442,21 +490,127 @@
     return 'Ready for HD Import:' + (lines.length ? '\n' + lines.join('\n') : '');
   }
 
+  function sendScraped(btn, cells) {
+    const payload = scrapeTitlePro(cells);
+    // Land often has no street address, so an APN alone is enough to send.
+    if (!payload.address && !payload.apn) { flash(btn, 'No data found', false); return false; }
+    store(payload);
+    const warn = payload.saleWarnings && payload.saleWarnings.length;
+    flash(btn, sendMessage(payload), warn ? 'warn' : true, 10000);
+    if (warn) console.warn('[lof] check before saving:', payload.saleWarnings, payload.saleCandidates);
+    console.log('[lof] scraped', payload);
+    return true;
+  }
+
+  const SINGLE_LABEL = '→ Send to Humperdink';
+  const PANEL_ID = 'lofPropertyPicker';
+
+  // Batch orders: one row per property. Clicking a row stores that property,
+  // same as a single export, and ticks it so you can work down the list.
+  function togglePicker(btn, props) {
+    const open = document.getElementById(PANEL_ID);
+    if (open) { open.remove(); return; }
+
+    const panel = document.createElement('div');
+    panel.id = PANEL_ID;
+    Object.assign(panel.style, {
+      position: 'fixed', right: '16px', zIndex: 2147483647,
+      background: '#fff', border: '1px solid #c8d3df', borderRadius: '6px',
+      boxShadow: '0 4px 16px rgba(0,0,0,.25)', padding: '10px', width: '340px',
+      overflowY: 'auto', font: '13px/1.4 sans-serif', color: '#1a1a1a',
+    });
+
+    const head = document.createElement('div');
+    head.textContent = props.length + ' properties, click one to send it';
+    Object.assign(head.style, { fontWeight: '600', marginBottom: '8px' });
+    panel.appendChild(head);
+
+    for (const p of props) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      Object.assign(row.style, {
+        display: 'block', width: '100%', textAlign: 'left', margin: '0 0 6px',
+        padding: '8px 10px', border: '1px solid #c8d3df', borderRadius: '4px',
+        background: p.sent ? '#e6f4ea' : '#f6f9fc', cursor: 'pointer', font: 'inherit', color: 'inherit',
+      });
+      const name = document.createElement('div');
+      name.textContent = (p.sent ? '✓ ' : '') + propertyLabel(p);
+      name.style.fontWeight = '600';
+      row.appendChild(name);
+      if (p.address && p.apn) {
+        const sub = document.createElement('div');
+        sub.textContent = 'APN ' + p.apn;
+        Object.assign(sub.style, { fontSize: '12px', color: '#5a6570' });
+        row.appendChild(sub);
+      }
+      row.addEventListener('click', () => {
+        if (!sendScraped(btn, p.cells)) return;
+        p.sent = true;
+        name.textContent = '✓ ' + propertyLabel(p);
+        row.style.background = '#e6f4ea';
+      });
+      panel.appendChild(row);
+    }
+    document.body.appendChild(panel);
+
+    // Sit just above the button. The button grows upward while it shows a
+    // send message or sale warnings, so follow its height or the panel hides them.
+    const place = () => {
+      const bottom = 16 + btn.offsetHeight + 8;
+      panel.style.bottom = bottom + 'px';
+      panel.style.maxHeight = 'calc(100vh - ' + (bottom + 16) + 'px)';
+    };
+    place();
+    const ro = new ResizeObserver(() => {
+      if (!panel.isConnected) { ro.disconnect(); return; }
+      place();
+    });
+    ro.observe(btn);
+  }
+
+  // The resting label, updated without stomping on a flash in progress.
+  function setRestingLabel(btn, text) {
+    if (btn.dataset.lofLabel === text) return;
+    btn.dataset.lofLabel = text;
+    if (!btn._lofFlashing) btn.textContent = text;
+  }
+
   // Always a fixed button in the bottom right. Anchoring into TitlePro's
   // .NonPrintArea was unreliable, the link landed at the top of the report
   // on some pages and the bottom on others.
   function initTitlePro() {
     if (document.getElementById('lofSendToHumperdink')) return;
-    const btn = mkButton('→ Send to Humperdink', function () {
-      const payload = scrapeTitlePro();
-      if (!payload.address) { flash(btn, 'No data found', false); return; }
-      store(payload);
-      const warn = payload.saleWarnings && payload.saleWarnings.length;
-      flash(btn, sendMessage(payload), warn ? 'warn' : true, 10000);
-      if (warn) console.warn('[lof] check before saving:', payload.saleWarnings, payload.saleCandidates);
-      console.log('[lof] scraped', payload);
+    let props = [];
+    const btn = mkButton(SINGLE_LABEL, function () {
+      if (props.length > 1) { togglePicker(btn, props); return; }
+      sendScraped(btn, null);
     });
     btn.id = 'lofSendToHumperdink';
+    btn.dataset.lofLabel = SINGLE_LABEL;
+    btn.dataset.lofBg = btn.style.background;
+
+    // The report renders after the page loads, and the order view can switch
+    // orders in place, so recount whenever the page settles.
+    let pending = null;
+    const recount = () => {
+      const found = splitProperties();
+      const sameSet = found.length === props.length && found.every((p, i) => p.apn === props[i].apn && p.address === props[i].address);
+      if (sameSet) {
+        found.forEach((p, i) => { p.sent = props[i].sent; });
+      } else {
+        const panel = document.getElementById(PANEL_ID);
+        if (panel) panel.remove();
+      }
+      props = found;
+      setRestingLabel(btn, props.length > 1 ? 'Multiple properties detected (' + props.length + ')\n→ Choose one to send' : SINGLE_LABEL);
+    };
+    new MutationObserver(muts => {
+      // Ignore our own panel and button churn.
+      if (muts.every(m => m.target.closest && m.target.closest('#' + PANEL_ID + ', #lofSendToHumperdink'))) return;
+      clearTimeout(pending);
+      pending = setTimeout(recount, 400);
+    }).observe(document.body, { childList: true, subtree: true });
+    recount();
   }
 
   // ------------------------- Humperdink side -------------------------
@@ -543,8 +697,8 @@
 
     const warn = p.saleWarnings && p.saleWarnings.length;
     if (warn) console.warn('[lof] verify sale figures:', p.saleWarnings, p.saleCandidates);
-    // Address is the one field every report has, so it stands in for "the fill worked".
-    const ok = wrote.includes('address');
+    // Address stands in for "the fill worked", or the APN for land with no address.
+    const ok = wrote.includes('address') || (!p.address && wrote.includes('apn'));
     flash(btn, ok ? 'Imported Successfully' : 'Import Failed', ok, 10000);
     console.log('[lof] wrote', wrote, 'payload:', p);
   }
