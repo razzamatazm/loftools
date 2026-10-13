@@ -215,9 +215,25 @@ test("legacy local storage normalizes into the new property pages", async ({ pag
   await page.reload();
 
   await expect(page.getByRole("button", { name: "Apartment Valuations", exact: true })).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator("#apartment-sale-subject-sqft")).toHaveValue("9600");
-  await expect(page.locator("#apartment-market-start-cap")).toHaveValue("5");
-  await expect(page.locator("#apartment-current-start-cap")).toHaveValue("5.5");
+  await expect(page.locator("#apartment-sale-subject-sqft")).toHaveValue("");
+  await expect(page.locator("#apartment-current-start-cap")).toHaveValue("5");
+});
+
+test("loan docs start blank and require dropdown choices before showing copyable language", async ({ page }) => {
+  await page.getByRole("button", { name: "Loan Doc Manual", exact: true }).click();
+  await expect(page.locator("#loan-docs-title")).toHaveText("No Scenario Selected");
+
+  await page.getByRole("button", { name: /Deferred Fee/i }).click();
+  await expect(page.locator("#loan-doc-field-variant")).toHaveValue("");
+  await expect(page.locator("#loan-docs-targets")).toContainText("Choose Deferred Fee Structure");
+  await expect(page.locator("[data-loan-doc-copy]")).toHaveCount(0);
+
+  await page.locator("#loan-doc-field-variant").selectOption("exit-fee");
+  await expect(page.locator("[data-loan-doc-copy]").first()).toBeVisible();
+
+  await page.reload();
+  await page.getByRole("button", { name: "Loan Doc Manual", exact: true }).click();
+  await expect(page.locator("#loan-docs-title")).toHaveText("No Scenario Selected");
 });
 
 test("apartment grouped mode derives average occupied rent, fill plan, hidden market types, and subject units", async ({ page }) => {
@@ -318,11 +334,11 @@ test("td loi calculates blended values, syncs fees, clears, and persists", async
   await page.locator("#loi-first-interest-rate").fill("1");
   await page.locator("#loi-first-origination-points").fill("2");
   await page.locator("#loi-first-origination-points").blur();
-  await expect(page.locator("#loi-first-origination-fee")).toHaveValue("$20,000");
+  await expect(page.locator("#loi-first-origination-fee")).toHaveValue("$20,000.00");
 
   await page.locator("#loi-first-broker-points").fill("0.5");
   await page.locator("#loi-first-broker-points").blur();
-  await expect(page.locator("#loi-first-broker-fee")).toHaveValue("$5,000");
+  await expect(page.locator("#loi-first-broker-fee")).toHaveValue("$5,000.00");
   await page.locator("#loi-first-interest-rate").blur();
 
   await page.locator("#loi-second-loan-amount").fill("500000");
@@ -336,24 +352,22 @@ test("td loi calculates blended values, syncs fees, clears, and persists", async
   await expect(page.locator("#loi-second-broker-points")).toHaveValue("0.5");
   await page.locator("#loi-second-interest-rate").blur();
 
-  await expect(page.locator("#loi-blended-loan-amount")).toHaveText("$1,500,000");
-  await expect(page.locator("#loi-blended-origination-fee")).toHaveText("$30,000");
+  await expect(page.locator("#loi-blended-loan-amount")).toHaveText("$1,500,000.00");
+  await expect(page.locator("#loi-blended-origination-fee")).toHaveText("$30,000.00");
   await expect(page.locator("#loi-blended-origination-points")).toHaveText("2.0000%");
   await expect(page.locator("#loi-blended-interest-rate")).toHaveText("1.17%");
-  await expect(page.locator("#loi-blended-monthly-payment")).toHaveText("$17,500");
-  await expect(page.locator("#loi-first-monthly-payment")).toHaveText("$10,000");
-  await expect(page.locator("#loi-second-monthly-payment")).toHaveText("$7,500");
-
-  await page.reload();
-  await page.getByRole("button", { name: "Blended LOI Checker", exact: true }).click();
-  await expect(page.locator("#loi-first-loan-amount")).toHaveValue("$1,000,000");
-  await expect(page.locator("#loi-first-interest-rate")).toHaveValue("1");
-  await expect(page.locator("#loi-second-origination-fee")).toHaveValue("$10,000");
-  await expect(page.locator("#loi-blended-monthly-payment")).toHaveText("$17,500");
+  await expect(page.locator("#loi-blended-monthly-payment")).toHaveText("$1,458.33");
+  await expect(page.locator("#loi-first-monthly-payment")).toHaveText("$833.33");
+  await expect(page.locator("#loi-second-monthly-payment")).toHaveText("$625.00");
 
   await page.locator("#loi-clear-btn").click();
   await expect(page.locator("#loi-first-loan-amount")).toHaveValue("");
   await expect(page.locator("#loi-blended-interest-rate")).toHaveText("-");
+
+  await page.locator("#loi-first-loan-amount").fill("1000000");
+  await page.reload();
+  await page.getByRole("button", { name: "Blended LOI Checker", exact: true }).click();
+  await expect(page.locator("#loi-first-loan-amount")).toHaveValue("");
 });
 
 test("consumer debt tab renders first question and tabs through visible choices", async ({ page }) => {
@@ -389,12 +403,14 @@ test("consumer debt supports commercial, residential personal cash-out, and pers
   await page.getByRole("button", { name: "No - New Single-Purpose Entity", exact: true }).click();
   await page.getByRole("button", { name: "No - Manager is individual / family trust", exact: true }).click();
   await page.getByRole("button", { name: "No", exact: true }).click();
-  await page.reload();
-  await page.getByRole("button", { name: "Consumer Debt Checker", exact: true }).click();
   await expect(page.locator("#consumer-debt-content")).toContainText("Is this loan for cash out for personal use?");
 
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.locator("#consumer-debt-content")).toContainText("Is this a commercial property?");
+
+  await page.reload();
+  await page.getByRole("button", { name: "Consumer Debt Checker", exact: true }).click();
+  await expect(page.locator("#consumer-debt-content")).toContainText("Is title held in a pre-existing LLC");
 });
 
 test("consumer debt inherited and flip branches produce expected results", async ({ page }) => {

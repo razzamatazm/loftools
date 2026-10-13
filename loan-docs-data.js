@@ -56,7 +56,6 @@ const LOAN_DOC_SCENARIOS = [
         id: "variant",
         label: "Deferred Fee Structure",
         type: "select",
-        defaultValue: "partial-maturity",
         options: [
           { value: "partial-maturity", label: "Partial at Funding, Balance at Maturity/Payoff" },
           { value: "specific-date", label: "Partial at Funding, Balance Due on Specific Date" },
@@ -387,7 +386,6 @@ const LOAN_DOC_SCENARIOS = [
         id: "variant",
         label: "Junior Financing Type",
         type: "select",
-        defaultValue: "new-second",
         options: [
           { value: "new-second", label: "New 2nd TD Closing Concurrently" },
           { value: "existing-subordinating", label: "Existing Loan Subordinating to LOF" },
@@ -540,7 +538,6 @@ const LOAN_DOC_SCENARIOS = [
         id: "second_extension_rate_type",
         label: "Second Extension Rate Type",
         type: "select",
-        defaultValue: "fixed",
         options: [
           { value: "index", label: "Index-Based" },
           { value: "fixed", label: "Fixed Rate" },
@@ -711,7 +708,6 @@ const LOAN_DOC_SCENARIOS = [
         id: "consideration_mode",
         label: "Reconveyance Consideration",
         type: "select",
-        defaultValue: "fixed",
         options: [
           { value: "fixed", label: "Fixed Release Amounts" },
           { value: "net-proceeds", label: "Net Proceeds of Sale or Refinance" },
@@ -829,7 +825,15 @@ const LOAN_DOC_SCENARIOS = [
     fields: [
       { id: "actual_borrower", label: "Actual Borrower", type: "text", placeholder: "(Actual Borrower)" },
       { id: "actual_borrower_address", label: "Actual Borrower Address", type: "text", placeholder: "(Actual Borrower’s address)" },
-      { id: "include_transfer_clause", label: "Include Post-Close Transfer Clause", type: "checkbox", defaultValue: true },
+      {
+        id: "include_transfer_clause",
+        label: "Include Post-Close Transfer Clause",
+        type: "select",
+        options: [
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+        ],
+      },
       { id: "non_recourse_text", label: "Accommodator Non-Recourse Verbiage", type: "textarea", placeholder: "Paste non-recourse verbiage provided by the Accommodator." },
     ],
     targets: [
@@ -839,7 +843,7 @@ const LOAN_DOC_SCENARIOS = [
         section: "Miscellaneous Provisions",
         mode: "append subsection",
         template: "(j) Notwithstanding anything to the contrary in the Loan Documents, Borrower shall be permitted to transfer its interest in the Property to {{actual_borrower}}, whose address is {{actual_borrower_address}} without further consent to Lender.",
-        conditions: [{ field: "include_transfer_clause", equals: true }],
+        conditions: [{ field: "include_transfer_clause", equals: "yes" }],
       },
       {
         id: "note-1-27-1031",

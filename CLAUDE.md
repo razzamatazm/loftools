@@ -57,6 +57,10 @@ docker compose down
 node --check app.js
 docker compose config
 
+# Deploy to server (pulls origin/main on 10.0.0.7:2202, rebuilds container)
+# Push first; server only sees what's on GitHub. Needs "loftools-server" in ~/.ssh/config.
+scripts/deploy.sh
+
 # E2E test
 npm install
 npx playwright install chromium

@@ -307,7 +307,9 @@ function loadState() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw);
-    return normalizeState(parsed);
+    // Every tab starts blank on page load; only the last active tab carries over.
+    fallback.activeTab = normalizeState(parsed).activeTab;
+    return fallback;
   } catch (error) {
     return fallback;
   }
@@ -714,10 +716,9 @@ function createLoiLoanDefaults() {
 }
 
 function createLoanDocsDefaults() {
-  const firstScenario = LOAN_DOC_SCENARIOS[0]?.id || "";
   return {
     searchQuery: "",
-    selectedScenarioId: firstScenario,
+    selectedScenarioId: "",
     selectedTargetId: null,
     expandedTargets: {},
     inputs: Object.fromEntries(LOAN_DOC_SCENARIOS.map((scenario) => [
@@ -1395,6 +1396,12 @@ function renderLoanDocs() {
 }
 
 function renderLoanDocsTargetsSection(scenario, scenarioInputs, activeTargets = null, groupedTargets = null) {
+  const unansweredFields = getUnansweredLoanDocSelectFields(scenario, scenarioInputs);
+  if (unansweredFields.length) {
+    const labels = unansweredFields.map((field) => field.label).join(", ");
+    elements.loanDocs.targets.innerHTML = `<div class="empty-cell loan-docs-empty-state">Choose ${escapeHtml(labels)} to see the loan doc language.</div>`;
+    return;
+  }
   const resolvedTargets = activeTargets || getLoanDocTargetsForScenario(scenario, scenarioInputs);
   const resolvedGroupedTargets = groupedTargets || groupLoanDocTargetsByDocument(resolvedTargets);
   elements.loanDocs.targets.innerHTML = resolvedTargets.length
@@ -1410,6 +1417,7 @@ function renderLoanDocField(field, value) {
       <label class="field">
         <span>${escapeHtml(field.label)}</span>
         <select id="${fieldId}" data-loan-doc-field="${escapeHtml(field.id)}">
+          <option value="" disabled ${value ? "" : "selected"}>Select an option</option>
           ${(field.options || []).map((option) => `<option value="${escapeHtml(option.value)}" ${String(value) === String(option.value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
         </select>
       </label>
@@ -4112,7 +4120,7 @@ function getLoanDocScenarioById(id) {
 }
 
 function getSelectedLoanDocScenario() {
-  return getLoanDocScenarioById(state.loanDocs.selectedScenarioId) || LOAN_DOC_SCENARIOS[0] || null;
+  return getLoanDocScenarioById(state.loanDocs.selectedScenarioId);
 }
 
 function getLoanDocInputs(scenarioId) {
@@ -4126,6 +4134,10 @@ function getLoanDocFieldById(scenario, fieldId) {
 
 function getVisibleLoanDocFields(scenario, inputs) {
   return (scenario?.fields || []).filter((field) => loanDocTargetMatchesConditions(field, inputs));
+}
+
+function getUnansweredLoanDocSelectFields(scenario, inputs) {
+  return getVisibleLoanDocFields(scenario, inputs).filter((field) => field.type === "select" && !inputs?.[field.id]);
 }
 
 function getVisibleLoanDocScenarios() {
