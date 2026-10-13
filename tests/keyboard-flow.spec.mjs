@@ -228,7 +228,7 @@ test("loan docs start blank and require dropdown choices before showing copyable
   await expect(page.locator("#loan-docs-targets")).toContainText("Choose Deferred Fee Structure");
   await expect(page.locator("[data-loan-doc-copy]")).toHaveCount(0);
 
-  await page.locator("#loan-doc-field-variant").selectOption("exit-fee");
+  await page.locator("#loan-doc-field-variant").selectOption("partial-maturity");
   await expect(page.locator("[data-loan-doc-copy]").first()).toBeVisible();
 
   await page.reload();
@@ -498,4 +498,64 @@ test("loan doc copy blocks stay disabled until their referenced inputs are fille
   await page.locator("#loan-doc-field-reserve_amount").fill("50000");
   await expect(reserveCopy).toBeEnabled();
   await expect(page.locator('[data-loan-doc-copy="agreement-5b-interest"]')).toBeDisabled();
+});
+
+test("deferred exit fee second tier is optional", async ({ page }) => {
+  await page.getByRole("button", { name: "Loan Doc Manual", exact: true }).click();
+  await page.locator('[data-loan-doc-scenario="deferred-fee"]').click();
+  await page.locator("#loan-doc-field-variant").selectOption("exit-fee");
+  await expect(page.locator("#loan-docs-targets")).toContainText("Choose Second Exit Fee Tier");
+
+  await page.locator("#loan-doc-field-has_second_exit_tier").selectOption("no");
+  await expect(page.locator("#loan-doc-field-exit_fee_amount_2")).toHaveCount(0);
+  for (const [id, value] of [["total_fee", "10000"], ["exit_fee_amount_1", "5000"], ["exit_fee_start_1", "1/1/2027"], ["exit_fee_end_1", "6/1/2027"], ["exit_fee_waive_before", "1/1/2027"]]) {
+    await page.locator(`#loan-doc-field-${id}`).fill(value);
+  }
+  const copy = page.locator('[data-loan-doc-copy="agreement-5b-exit"]');
+  await expect(copy).toBeEnabled();
+  await expect(copy.locator("xpath=ancestor::article[1]")).not.toContainText("paid off after");
+
+  await page.locator("#loan-doc-field-has_second_exit_tier").selectOption("yes");
+  await expect(copy).toBeDisabled();
+  await expect(copy.locator("xpath=ancestor::article[1]")).toContainText("paid off after");
+});
+
+test("partial reconveyance supports added parcels and optional APNs", async ({ page }) => {
+  await page.getByRole("button", { name: "Loan Doc Manual", exact: true }).click();
+  await page.locator('[data-loan-doc-scenario="partial-reconveyance"]').click();
+  await page.locator("#loan-doc-field-consideration_mode").selectOption("fixed");
+
+  await page.locator("#loan-doc-parcel-0-amount").fill("100000");
+  await page.locator("#loan-doc-parcel-0-amount").press("Tab");
+  await expectFocused(page, '[data-loan-doc-parcel-remove="0"]');
+  await page.locator('[data-loan-doc-parcel-remove="0"]').press("Tab");
+  await expectFocused(page, "#loan-doc-parcel-1-amount");
+  await page.locator("#loan-doc-parcel-1-amount").fill("200000");
+  await page.getByRole("button", { name: "Add Parcel", exact: true }).click();
+  await expect(page.locator("#loan-doc-parcel-2-amount")).toBeFocused();
+  await page.locator("#loan-doc-parcel-2-amount").fill("300000");
+  await page.locator("#loan-doc-parcel-2-amount").blur();
+
+  const card = page.locator('[data-loan-doc-copy="agreement-partial-recon-fixed"]').locator("xpath=ancestor::article[1]");
+  await expect(card).toContainText("shall be $100,000.00 for Parcel 1, $200,000.00 for Parcel 2, and $300,000.00 for Parcel 3.");
+  await expect(page.locator('[data-loan-doc-copy="agreement-partial-recon-fixed"]')).toBeEnabled();
+
+  await page.locator("#loan-doc-field-include_apns").check();
+  await expect(page.locator('[data-loan-doc-copy="agreement-partial-recon-fixed"]')).toBeDisabled();
+  for (const [index, apn] of [[0, "444-22-6464"], [1, "444-22-6465"], [2, "444-22-6466"]]) {
+    await page.locator(`#loan-doc-parcel-${index}-apn`).fill(apn);
+  }
+  await expect(card).toContainText("$100,000.00 for Parcel 1 (APN: 444-22-6464), $200,000.00 for Parcel 2 (APN: 444-22-6465), and $300,000.00 for Parcel 3 (APN: 444-22-6466).");
+  await expect(page.locator('[data-loan-doc-copy="agreement-partial-recon-fixed"]')).toBeEnabled();
+
+  await page.locator('[data-loan-doc-parcel-remove="2"]').click();
+  await expect(page.locator("#loan-doc-parcel-2-amount")).toHaveCount(0);
+  await expect(card).toContainText("$100,000.00 for Parcel 1 (APN: 444-22-6464) and $200,000.00 for Parcel 2 (APN: 444-22-6465).");
+
+  await page.locator('[data-loan-doc-parcel-remove="1"]').click();
+  await expect(page.locator("[data-loan-doc-parcel-remove]")).toHaveCount(0);
+  await expect(card).toContainText("shall be $100,000.00 for Parcel 1 (APN: 444-22-6464).");
+
+  await page.locator("#loan-doc-parcel-0-number").fill("3");
+  await expect(card).toContainText("shall be $100,000.00 for Parcel 3 (APN: 444-22-6464).");
 });

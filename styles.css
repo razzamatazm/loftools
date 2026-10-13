@@ -1846,6 +1846,29 @@ textarea {
   justify-content: space-between;
 }
 
+.loan-doc-parcel-list {
+  display: grid;
+  gap: 10px;
+}
+
+.loan-doc-parcel-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.loan-doc-parcel-row .field {
+  flex: 1 1 180px;
+}
+
+.loan-doc-parcel-row .loan-doc-parcel-number {
+  flex: 0 0 90px;
+}
+
 .loan-docs-targets {
   margin-top: 18px;
   display: grid;

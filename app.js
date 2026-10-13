@@ -1,4 +1,10 @@
 const STORAGE_KEY = "loftools-state-v1";
+// Template tokens that render the whole parcel list, mapped to the parcel value they list.
+const LOAN_DOC_PARCEL_TOKENS = {
+  parcel_release_amounts: "amount",
+  parcel_minimum_amounts: "minimum",
+};
+
 const leaseCapStep = 0.5;
 const leaseCapCount = 5;
 const aptRentTypeOptions = [
@@ -723,9 +729,31 @@ function createLoanDocsDefaults() {
     expandedTargets: {},
     inputs: Object.fromEntries(LOAN_DOC_SCENARIOS.map((scenario) => [
       scenario.id,
-      Object.fromEntries((scenario.fields || []).map((field) => [field.id, field.defaultValue ?? (field.type === "checkbox" ? false : "")])),
+      Object.fromEntries((scenario.fields || []).map((field) => [field.id, getLoanDocFieldDefault(field)])),
     ])),
   };
+}
+
+function getLoanDocFieldDefault(field) {
+  if (field.type === "parcel-list") return Array.from({ length: field.defaultItems || field.minItems || 1 }, createLoanDocParcel);
+  return field.defaultValue ?? (field.type === "checkbox" ? false : "");
+}
+
+function createLoanDocParcel() {
+  return { number: "", amount: "", minimum: "", apn: "" };
+}
+
+function normalizeLoanDocParcels(rawValue, field) {
+  const parcels = Array.isArray(rawValue)
+    ? rawValue.map((parcel) => ({
+        number: String(parcel?.number ?? ""),
+        amount: String(parcel?.amount ?? ""),
+        minimum: String(parcel?.minimum ?? ""),
+        apn: String(parcel?.apn ?? ""),
+      }))
+    : [];
+  while (parcels.length < (field.minItems || 1)) parcels.push(createLoanDocParcel());
+  return parcels;
 }
 
 function normalizeLoanDocs(input, fallback) {
@@ -737,6 +765,10 @@ function normalizeLoanDocs(input, fallback) {
       if (!scenario || !rawScenarioInputs || typeof rawScenarioInputs !== "object") return;
       scenario.fields.forEach((field) => {
         const rawValue = rawScenarioInputs[field.id];
+        if (field.type === "parcel-list") {
+          inputs[scenarioId][field.id] = normalizeLoanDocParcels(rawValue, field);
+          return;
+        }
         inputs[scenarioId][field.id] = field.type === "checkbox" ? rawValue === true : String(rawValue ?? inputs[scenarioId][field.id] ?? "");
       });
     });
@@ -1178,7 +1210,7 @@ function bindTabFlows() {
       activeTabButton,
       elements.loanDocs.search,
       ...Array.from(elements.loanDocs.scenarios.querySelectorAll("[data-loan-doc-scenario]")),
-      ...Array.from(elements.loanDocs.inputGrid.querySelectorAll("[data-loan-doc-field]")),
+      ...Array.from(elements.loanDocs.inputGrid.querySelectorAll("[data-loan-doc-field], [data-loan-doc-parcel-key]:not([tabindex='-1']), [data-loan-doc-parcel-remove], [data-loan-doc-parcel-add]")),
       ...Array.from(elements.loanDocs.targets.querySelectorAll("[data-loan-doc-toggle], [data-loan-doc-copy]:not(:disabled)")),
     ]);
     return;
@@ -1387,7 +1419,7 @@ function renderLoanDocs() {
   elements.loanDocs.guidance.textContent = scenario.guidance || "";
   const visibleFields = getVisibleLoanDocFields(scenario, scenarioInputs);
   elements.loanDocs.fields.hidden = !visibleFields.length;
-  elements.loanDocs.inputGrid.innerHTML = visibleFields.map((field) => renderLoanDocField(field, scenarioInputs[field.id])).join("");
+  elements.loanDocs.inputGrid.innerHTML = visibleFields.map((field) => renderLoanDocField(field, scenarioInputs[field.id], scenarioInputs)).join("");
   if (!consumePendingFocus()) restoreActiveInputState(elements.loanDocs.inputGrid, inputFocusState);
   renderLoanDocsTargetsSection(scenario, scenarioInputs, activeTargets, groupedTargets);
   bindLoanDocsEvents();
@@ -1410,8 +1442,9 @@ function renderLoanDocsTargetsSection(scenario, scenarioInputs, activeTargets = 
   bindLoanDocsTargetEvents();
 }
 
-function renderLoanDocField(field, value) {
+function renderLoanDocField(field, value, inputs) {
   const fieldId = `loan-doc-field-${field.id}`;
+  if (field.type === "parcel-list") return renderLoanDocParcelList(field, value, inputs);
   if (field.type === "select") {
     return `
       <label class="field">
@@ -1454,6 +1487,43 @@ function renderLoanDocField(field, value) {
         placeholder="${escapeHtml(getLoanDocFieldPlaceholder(field))}"
       />
     </label>
+  `;
+}
+
+function renderLoanDocParcelList(field, parcels, inputs) {
+  const valueKey = getLoanDocParcelValueKey(inputs);
+  const valueLabel = valueKey === "minimum" ? "Minimum Release Amount" : "Release Amount";
+  const canRemove = parcels.length > (field.minItems || 1);
+  const renderInput = (index, key, label, placeholder, inputMode, className = "") => `
+    <label class="field ${className}">
+      <span>${escapeHtml(label)}</span>
+      <input
+        id="loan-doc-parcel-${index}-${key}"
+        type="text"
+        inputmode="${inputMode}"
+        data-focus-key="loan-doc-parcel-${index}-${key}"
+        data-loan-doc-parcel-index="${index}"
+        data-loan-doc-parcel-key="${key}"
+        ${key === "number" ? 'tabindex="-1"' : ""}
+        value="${escapeHtml(parcels[index][key] || "")}"
+        placeholder="${escapeHtml(placeholder)}"
+      />
+    </label>
+  `;
+  return `
+    <div class="field-full-width loan-doc-parcel-list">
+      ${parcels.map((parcel, index) => `
+        <div class="loan-doc-parcel-row">
+          ${renderInput(index, "number", "Parcel No.", String(index + 1), "text", "loan-doc-parcel-number")}
+          ${renderInput(index, valueKey, valueLabel, "$______", "decimal")}
+          ${inputs.include_apns === true ? renderInput(index, "apn", "APN", "444-22-6464", "text") : ""}
+          ${canRemove ? `<button class="secondary-btn" type="button" data-focus-key="loan-doc-parcel-remove-${index}" data-loan-doc-parcel-remove="${index}">Remove</button>` : ""}
+        </div>
+      `).join("")}
+      <div>
+        <button class="secondary-btn" type="button" data-focus-key="loan-doc-parcel-add" data-loan-doc-parcel-add>Add Parcel</button>
+      </div>
+    </div>
   `;
 }
 
@@ -2347,7 +2417,46 @@ function bindLoanDocsEvents() {
     }
   });
 
+  bindLoanDocParcelEvents();
   bindLoanDocsTargetEvents();
+}
+
+function bindLoanDocParcelEvents() {
+  const scenario = getSelectedLoanDocScenario();
+  const inputs = scenario ? state.loanDocs.inputs[scenario.id] : null;
+  if (!Array.isArray(inputs?.parcels)) return;
+  const grid = elements.loanDocs.inputGrid;
+
+  grid.querySelectorAll("[data-loan-doc-parcel-key]").forEach((input) => {
+    const parcel = inputs.parcels[Number(input.dataset.loanDocParcelIndex)];
+    const key = input.dataset.loanDocParcelKey;
+    if (!parcel || !key) return;
+    input.addEventListener("input", () => {
+      parcel[key] = input.value;
+      renderLoanDocsTargetsSection(scenario, inputs);
+      persistState();
+    });
+    if (key === "apn" || key === "number") return;
+    input.addEventListener("blur", () => {
+      parcel[key] = formatMoneyInput(input.value, 2);
+      input.value = parcel[key];
+      renderLoanDocsTargetsSection(scenario, inputs);
+      persistState();
+    });
+  });
+
+  grid.querySelector("[data-loan-doc-parcel-add]")?.addEventListener("click", () => {
+    inputs.parcels.push(createLoanDocParcel());
+    queuePendingFocus(`focus:loan-doc-parcel-${inputs.parcels.length - 1}-${getLoanDocParcelValueKey(inputs)}`);
+    renderLoanDocs();
+  });
+
+  grid.querySelectorAll("[data-loan-doc-parcel-remove]").forEach((button) => {
+    button.addEventListener("click", () => {
+      inputs.parcels.splice(Number(button.dataset.loanDocParcelRemove), 1);
+      renderLoanDocs();
+    });
+  });
 }
 
 function bindLoanDocsTargetEvents() {
@@ -4159,6 +4268,7 @@ function getVisibleLoanDocScenarios() {
 function getLoanDocTargetsForScenario(scenario, inputs) {
   return (scenario.targets || [])
     .filter((target) => loanDocTargetMatchesConditions(target, inputs))
+    .map((target) => applyLoanDocTemplateConditionals(target, inputs))
     .map((target) => ({
       ...target,
       missingFieldLabels: getLoanDocMissingFieldLabels(target, scenario, inputs),
@@ -4173,12 +4283,29 @@ function getLoanDocTargetsForScenario(scenario, inputs) {
     }));
 }
 
+// Resolves {{#if field=value}}...{{/if}} blocks so later steps only see the text that applies.
+function applyLoanDocTemplateConditionals(target, inputs) {
+  const resolved = { ...target };
+  ["template", "copyTemplate", "richTemplate", "richCopyTemplate"].forEach((key) => {
+    if (typeof target[key] !== "string") return;
+    resolved[key] = target[key].replace(/\{\{#if ([\w]+)=([^}]*)\}\}([\s\S]*?)\{\{\/if\}\}/g, (_, field, expected, body) => (
+      String(inputs?.[field] ?? "") === expected ? body : ""
+    ));
+  });
+  return resolved;
+}
+
 // A target can't be copied while any token it references would render as a [placeholder].
 function getLoanDocMissingFieldLabels(target, scenario, inputs) {
   const templates = [target.template, target.copyTemplate, target.richTemplate, target.richCopyTemplate].join("\n");
   const labels = new Set();
   for (const match of templates.matchAll(/\{\{([^}]+)\}\}/g)) {
     const key = match[1].trim();
+    const parcelValueKey = LOAN_DOC_PARCEL_TOKENS[key];
+    if (parcelValueKey) {
+      getLoanDocParcelMissingLabels(inputs, parcelValueKey).forEach((label) => labels.add(label));
+      continue;
+    }
     const value = resolveLoanDocTemplateValue(key, scenario, inputs);
     if (value !== false && value != null && value !== "") continue;
     const field = getLoanDocFieldById(scenario, key) || getLoanDocFieldById(scenario, key.replace(/_words$/, ""));
@@ -4292,10 +4419,43 @@ function resolveLoanDocTemplateValue(key, scenario, inputs) {
 }
 
 function getLoanDocDerivedValue(key, scenario, inputs) {
+  if (LOAN_DOC_PARCEL_TOKENS[key]) return formatLoanDocParcelList(inputs, LOAN_DOC_PARCEL_TOKENS[key]);
   if (scenario?.id !== "interest-rate-bump") return null;
   if (key === "second_start_date") return deriveLoanDocNextDay(inputs?.first_end_date);
   if (key === "third_start_date") return deriveLoanDocNextDay(inputs?.second_end_date);
   return null;
+}
+
+function getLoanDocParcelValueKey(inputs) {
+  return inputs?.consideration_mode === "net-proceeds" ? "minimum" : "amount";
+}
+
+function formatLoanDocParcelList(inputs, valueKey) {
+  const parcels = Array.isArray(inputs?.parcels) ? inputs.parcels : [];
+  const items = parcels.map((parcel, index) => {
+    const number = getLoanDocParcelNumber(parcel, index);
+    const amount = parcel[valueKey] || `[Parcel ${number} amount]`;
+    const apn = inputs.include_apns === true ? ` (APN: ${parcel.apn || `[Parcel ${number} APN]`})` : "";
+    return `${amount} for Parcel ${number}${apn}`;
+  });
+  if (items.length <= 2) return items.join(" and ");
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+function getLoanDocParcelMissingLabels(inputs, valueKey) {
+  const parcels = Array.isArray(inputs?.parcels) ? inputs.parcels : [];
+  return parcels.flatMap((parcel, index) => {
+    const number = getLoanDocParcelNumber(parcel, index);
+    return [
+      ...(parcel[valueKey] ? [] : [`Parcel ${number} ${valueKey === "minimum" ? "Minimum Amount" : "Amount"}`]),
+      ...(inputs.include_apns === true && !parcel.apn ? [`Parcel ${number} APN`] : []),
+    ];
+  });
+}
+
+// Parcel numbers default to list position but can be overridden, e.g. releasing only Parcel 3.
+function getLoanDocParcelNumber(parcel, index) {
+  return String(parcel.number || "").trim() || String(index + 1);
 }
 
 function isLoanDocMoneyField(field) {
