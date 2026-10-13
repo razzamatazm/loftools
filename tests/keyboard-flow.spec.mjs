@@ -484,3 +484,18 @@ test("loan docs populated text inputs and textareas auto-select on keyboard focu
   await expectFocused(page, "#loan-doc-field-non_recourse_text");
   await expectSelectionToMatchValue(page, "#loan-doc-field-non_recourse_text");
 });
+
+test("loan doc copy blocks stay disabled until their referenced inputs are filled", async ({ page }) => {
+  await page.getByRole("button", { name: "Loan Doc Manual", exact: true }).click();
+  await page.locator('[data-loan-doc-scenario="holdback-future-advances"]').click();
+
+  const reserveCopy = page.locator('[data-loan-doc-copy="agreement-5b-reserve"]');
+  const eftCopy = page.locator('[data-loan-doc-copy="eft-note"]');
+  await expect(reserveCopy).toBeDisabled();
+  await expect(eftCopy).toBeEnabled();
+  await expect(reserveCopy.locator("xpath=..")).toContainText("to copy.");
+
+  await page.locator("#loan-doc-field-reserve_amount").fill("50000");
+  await expect(reserveCopy).toBeEnabled();
+  await expect(page.locator('[data-loan-doc-copy="agreement-5b-interest"]')).toBeDisabled();
+});

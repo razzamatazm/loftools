@@ -1971,7 +1971,21 @@ textarea {
 .loan-doc-target-actions {
   margin-top: 12px;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 12px;
+}
+
+.loan-doc-missing-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.loan-doc-target-actions .secondary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--muted);
 }
 
 .loan-doc-copy-preview {

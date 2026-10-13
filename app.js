@@ -1179,7 +1179,7 @@ function bindTabFlows() {
       elements.loanDocs.search,
       ...Array.from(elements.loanDocs.scenarios.querySelectorAll("[data-loan-doc-scenario]")),
       ...Array.from(elements.loanDocs.inputGrid.querySelectorAll("[data-loan-doc-field]")),
-      ...Array.from(elements.loanDocs.targets.querySelectorAll("[data-loan-doc-toggle], [data-loan-doc-copy]")),
+      ...Array.from(elements.loanDocs.targets.querySelectorAll("[data-loan-doc-toggle], [data-loan-doc-copy]:not(:disabled)")),
     ]);
     return;
   }
@@ -1474,6 +1474,7 @@ function renderLoanDocTarget(target) {
   const isActive = state.loanDocs.selectedTargetId === target.id;
   const copyPreview = getLoanDocCopyText(target);
   const showsCustomCopyPreview = copyPreview && copyPreview !== stripLeadingSectionMarker(target.renderedText || "");
+  const missingLabels = target.missingFieldLabels || [];
   return `
     <article class="loan-doc-target-card ${isActive ? "is-active" : ""}">
       <div class="loan-doc-target-head">
@@ -1491,7 +1492,8 @@ function renderLoanDocTarget(target) {
           </div>
         ` : ""}
         <div class="loan-doc-target-actions">
-          <button class="secondary-btn" type="button" data-focus-key="loan-doc-copy-${escapeHtml(target.id)}" data-loan-doc-copy="${escapeHtml(target.id)}">Copy Block</button>
+          ${missingLabels.length ? `<span class="loan-doc-missing-note">Fill in ${escapeHtml(missingLabels.join(", "))} to copy.</span>` : ""}
+          <button class="secondary-btn" type="button" data-focus-key="loan-doc-copy-${escapeHtml(target.id)}" data-loan-doc-copy="${escapeHtml(target.id)}" ${missingLabels.length ? "disabled" : ""}>Copy Block</button>
         </div>
       </div>
     </article>
@@ -4159,6 +4161,7 @@ function getLoanDocTargetsForScenario(scenario, inputs) {
     .filter((target) => loanDocTargetMatchesConditions(target, inputs))
     .map((target) => ({
       ...target,
+      missingFieldLabels: getLoanDocMissingFieldLabels(target, scenario, inputs),
       renderedText: renderLoanDocTemplate(target.template || "", scenario, inputs),
       renderedCopyText: renderLoanDocTemplate(target.copyTemplate || target.template || "", scenario, inputs),
       renderedRichText: renderLoanDocRichTemplate(target.richTemplate || target.template || "", scenario, inputs),
@@ -4168,6 +4171,20 @@ function getLoanDocTargetsForScenario(scenario, inputs) {
         inputs,
       ),
     }));
+}
+
+// A target can't be copied while any token it references would render as a [placeholder].
+function getLoanDocMissingFieldLabels(target, scenario, inputs) {
+  const templates = [target.template, target.copyTemplate, target.richTemplate, target.richCopyTemplate].join("\n");
+  const labels = new Set();
+  for (const match of templates.matchAll(/\{\{([^}]+)\}\}/g)) {
+    const key = match[1].trim();
+    const value = resolveLoanDocTemplateValue(key, scenario, inputs);
+    if (value !== false && value != null && value !== "") continue;
+    const field = getLoanDocFieldById(scenario, key) || getLoanDocFieldById(scenario, key.replace(/_words$/, ""));
+    labels.add(field?.label || key.replace(/_/g, " "));
+  }
+  return [...labels];
 }
 
 function loanDocTargetMatchesConditions(target, inputs) {
