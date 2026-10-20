@@ -1,6 +1,6 @@
 # Userscripts
 
-Tampermonkey userscripts for Humperdink. Teammates install them from the guide at
+Tampermonkey userscripts for Humperdink, TitlePro and Redfin. Teammates install them from the guide at
 https://loftools.thepopcorn.party/install/ (`install/index.html`), and Tampermonkey
 updates them from the addresses in each script's header.
 
@@ -8,6 +8,7 @@ updates them from the addresses in each script's header.
 |---|---|
 | `send-to-hot-task.user.js` | `operation-hot-task` repo, `tools/humperdink/send-to-hot-task.user.js`. Hot Task's tests run that file against its parser and Teams app id. This is a served copy. |
 | `titlepro-to-humperdink.user.js` | This file. Behaviour notes live in `operation-hot-task` at `tools/titlepro/README.md`. |
+| `redfin-sale-summary.user.js` | This file. |
 | `humperdink-copy-link.user.js` | This file. Personal script, not for teammates: keep it off the install guide. |
 
 ## Rules
