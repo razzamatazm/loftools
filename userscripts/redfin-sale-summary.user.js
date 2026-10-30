@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Redfin Comp Printer
 // @namespace    loneoakfund
-// @version      2.0.0
+// @version      2.1.0
 // @description  Sale summary box (with unit type) on Redfin home pages, one-page print layout, and a comp collector that prints a summary table page plus one page per comp. Replaces the old "sale summary" userscript.
 // @match        https://www.redfin.com/*
 // @grant        GM_getValue
@@ -27,7 +27,8 @@
     hijackCmdP: true,             // true = Cmd+P on a home page prints the one-page layout
     expandStreetSuffix: true,     // "614 16th St" -> "614 16th Street" in the comp table
     tableTitle: 'Recent Sale Comps',
-    outlierMinComps: 3,           // only auto-drop the high $/SF comp when there are at least this many comps
+    defaultListDiscountPct: 5,    // starting listing discount; change it any time in the panel
+    outlierMinComps: 3,          // only auto-drop the high $/SF comp when there are at least this many comps
     askSubjectSf: true,           // prompt for subject SF on Print set / Copy table if the box is empty
     removeFromClones: [           // Redfin UI that is useless on paper
       '.DesktopHomeownerConversionUnclaimedContent', // "Is this your home? / I own ..."
@@ -49,7 +50,7 @@
   const gmSet = (k, v) => (hasGM ? GM_setValue(k, v) : localStorage.setItem(k, JSON.stringify(v)));
   const load = () => gmGet(KEY, []);
   const save = (v) => gmSet(KEY, v);
-  const opts = () => Object.assign({ summaryPage: true, autoOutlier: true, subjectSf: '' }, gmGet(OPT_KEY, {}));
+  const opts = () => Object.assign({ summaryPage: true, autoOutlier: true, subjectSf: '', listDiscountPct: CFG.defaultListDiscountPct }, gmGet(OPT_KEY, {}));
   const setOpt = (k, v) => gmSet(OPT_KEY, Object.assign(opts(), { [k]: v }));
 
   const propId = () => (location.pathname.match(HOME_RE) || [])[1];
@@ -131,22 +132,39 @@
       let below = {};
       try { below = JSON.parse(belowText).payload || {}; } catch (e) { /* optional */ }
       const pub = (below.publicRecordsInfo && below.publicRecordsInfo.basicInfo) || {};
-      const soldEvt = ((below.propertyHistoryInfo && below.propertyHistoryInfo.events) || [])
-        .find((e) => /sold/i.test(e.eventDescription || '') && e.eventDate);
+      // Sale history, newest first, ignoring rental events
+      const events = ((below.propertyHistoryInfo && below.propertyHistoryInfo.events) || [])
+        .filter((e) => e.eventDate && !/rent/i.test(e.eventDescription || ''));
+      const desc = (e) => e.eventDescription || '';
+      const soldEvt = events.find((e) => SOLD_RE.test(desc(e)));
+      const newest = events.find((e) => SOLD_RE.test(desc(e)) || LISTING_RE.test(desc(e)) || OFF_RE.test(desc(e)));
+      // The public data feed can report an active listing as "Sold" (its last sale), so trust the history
+      let kind = 'sale';
+      if (newest && LISTING_RE.test(desc(newest))) kind = 'listing';
+      const listEvt = events.find((e) => /^(re)?listed\b/i.test(desc(e)));
+      const lastAsk = events.find((e) => LISTING_RE.test(desc(e)) && e.price);
+
       const typeName = (belowText.match(/"propertyTypeName":"([^"]+)"/) || [])[1] || pub.propertyTypeName || '';
       const street = (a.streetAddress && a.streetAddress.assembledAddress) || '';
-      const price = (a.priceInfo && a.priceInfo.amount) || (a.latestPriceInfo && a.latestPriceInfo.amount) ||
-        (soldEvt && soldEvt.price) || null;
+      const feedPrice = (a.priceInfo && a.priceInfo.amount) || (a.latestPriceInfo && a.latestPriceInfo.amount) || null;
+      const feedIsSold = /sold/i.test((a.priceInfo && a.priceInfo.label) || '');
+      const price = kind === 'listing'
+        ? ((lastAsk && lastAsk.price) || (!feedIsSold && feedPrice) || null)
+        : (feedPrice || (soldEvt && soldEvt.price) || null);
+      const date = kind === 'listing'
+        ? ((listEvt && listEvt.eventDate) || null)
+        : (a.soldDate || (soldEvt && soldEvt.eventDate) || null);
       const sqft = (a.sqFt && a.sqFt.value) || pub.totalSqFt || null;
       const d = {
         pid,
+        kind,
+        status: kind === 'listing' ? desc(newest) : 'Sold',
         street,
         fullAddress: [street, a.city, [a.state, a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', '),
         typeName,
         unitType: unitType(typeName, belowText),
-        priceLabel: (a.priceInfo && a.priceInfo.label) || 'Price',
         price,
-        soldDate: a.soldDate || (soldEvt && soldEvt.eventDate) || null,
+        date,
         tz: a.soldDateTimeZone || 'America/Los_Angeles',
         sqft,
         lot: a.lotSize || pub.lotSqFt || null,
@@ -158,21 +176,39 @@
     dataCache[pid] = p;
     p.catch(() => delete dataCache[pid]);
     const d = Object.assign({}, await p);
-    // Some sold homes hide beds/baths/sq ft from the data feed but still show them in the page banner
+    // On the home's own page, the banner is what you see: use it for status, price, beds, baths and sq ft
     if (pid === propId()) fillFromBanner(d);
-    d.ppsf = d.price && d.sqft ? d.price / d.sqft : null;
     return d;
   }
 
+  const SOLD_RE = /\bsold\b/i;
+  const LISTING_RE = /^(listed|relisted|price changed|pending|contingent|back on market|coming soon|active)/i;
+  const OFF_RE = /^(listing removed|delisted|withdrawn|expired|cancel)/i;
+
   function fillFromBanner(d) {
-    const stats = document.querySelector('.bp-AddressBannerSectionV2 .HomeMainStatsV2, .bp-AddressBannerSectionV2 .top-stats');
+    const banner = document.querySelector('.bp-AddressBannerSectionV2');
+    if (!banner) return;
+    const statusEl = banner.querySelector('[class*="ListingStatusBannerSection"]');
+    const status = statusEl ? statusEl.innerText.trim() : '';
+    if (/sold/i.test(status)) d.kind = 'sale';
+    else if (/for sale|pending|contingent|coming soon|active|under contract/i.test(status)) { d.kind = 'listing'; d.status = status; }
+    const stats = banner.querySelector('.HomeMainStatsV2, .top-stats');
     if (!stats) return;
     const t = stats.innerText.replace(/\s+/g, ' ');
     const num = (re) => { const m = t.match(re); return m ? parseFloat(m[1].replace(/,/g, '')) : null; };
-    if (d.beds == null) d.beds = num(/([\d.]+)\s*bd/i);
-    if (d.baths == null) d.baths = num(/([\d.]+)\s*ba/i);
-    if (!d.sqft) d.sqft = num(/([\d,]+)\s*sq\s*ft/i);
-    if (!d.price) d.price = num(/\$([\d,]+)/);
+    d.price = num(/\$([\d,]+)/) || d.price;
+    d.beds = num(/([\d.]+)\s*bd/i) ?? d.beds;
+    d.baths = num(/([\d.]+)\s*ba/i) ?? d.baths;
+    d.sqft = num(/([\d,]+)\s*sq\s*ft/i) || d.sqft;
+  }
+
+  // Price used for the comp: sale price, or list price less the listing discount
+  function effective(c, o = opts()) {
+    const d = (c && c.data) || {};
+    const kind = c.kindOverride || d.kind || 'sale';
+    const pct = parseFloat(o.listDiscountPct) || 0;
+    const price = d.price == null ? null : (kind === 'listing' ? d.price * (1 - pct / 100) : d.price);
+    return { kind, pct, listPrice: d.price, price, ppsf: price && d.sqft ? price / d.sqft : null, date: d.date ?? d.soldDate };
   }
 
   /* ================================================================== *
@@ -187,17 +223,23 @@
         #tm-sale-summary .tm-note{font-weight:400;color:#767676;font-size:13px}`;
 
   function boxHtml(d) {
-    const sold = d.priceLabel.toLowerCase().includes('sold') || d.soldDate;
+    const listing = d.kind === 'listing';
+    const ppsf = d.price && d.sqft ? d.price / d.sqft : null;
     const rows = [
       ['Address', esc(d.fullAddress)],
       ['Unit Type', esc(d.unitType) + (d.typeName && d.unitType !== d.typeName ? ` <span class="tm-note">(${esc(d.typeName)})</span>` : '')],
-      [sold ? 'Last Sale Price' : 'Price', fmtMoney(d.price)],
-      [sold ? 'Last Sale Date' : 'Sale Date', fmtDate(d.soldDate, d.tz, true)],
+      ['Comp Type', listing ? `Listing <span class="tm-note">(${esc(d.status || 'active')})</span>` : 'Sale'],
+      [listing ? 'List Price' : 'Last Sale Price', fmtMoney(d.price)],
+      [listing ? 'List Date' : 'Last Sale Date', fmtDate(d.date ?? d.soldDate, d.tz, true)],
       ['Square Feet', fmtInt(d.sqft)],
       ['Lot Size', d.lot ? `${fmtInt(d.lot)} SF <span class="tm-note">(${(d.lot / 43560).toFixed(2)} ac)</span>` : ''],
       ['Bed / Bath', `${d.beds ?? '-'} bd / ${d.baths ?? '-'} ba`],
-      ['Price / SF', fmtMoney(d.ppsf)],
+      ['Price / SF', fmtMoney(ppsf) + (listing ? ' <span class="tm-note">(on list price)</span>' : '')],
     ];
+    if (listing) {
+      const e = effective({ data: d });
+      if (e.pct) rows.push([`Less ${e.pct}%`, `${fmtMoney(e.price)} <span class="tm-note">(${fmtMoney(e.ppsf)}/sf)</span>`]);
+    }
     return `<style>${BOX_STYLE}</style><table><tbody>${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</tbody></table>`;
   }
 
@@ -266,6 +308,10 @@
   .tmc-table td { text-align: center; padding: 3px 5px; border-bottom: 1px solid #e3e3e3; white-space: nowrap; }
   .tmc-table td.num { text-align: right; }
   .tmc-table tr.tmc-x td { text-decoration: line-through; color: #777; }
+  .tmc-table tr.tmc-l td { font-style: italic; }
+  .tmc-table th:last-child, .tmc-table td.tmc-cmt { text-align: left; white-space: normal; font-size: 10px; color: #444; }
+  .tmc-listnote { font: 600 12px Arial, sans-serif; color: #8a5a00; background: #fff6e0; border: 1px solid #f0d58c;
+                  border-radius: 6px; padding: 5px 9px; margin: 0 0 8px; }
   .tmc-table tr.tmc-avg td { border-top: 1.5px solid #333; border-bottom: 0; font-weight: 700; }
   .tmc-table tr.tmc-avg td:first-child { text-align: right; }
   .tmc-table tr.tmc-gap td, .tmc-table tr.tmc-value td { border: 0; }
@@ -297,6 +343,9 @@
   #tmc-panel .tmc-btn:disabled { opacity: .45; cursor: default; }
   #tmc-panel .tmc-empty { color: #888; margin: 0 0 8px; }
   #tmc-panel .tmc-hint { color: #888; font-size: 11px; margin: 0 0 6px; }
+  #tmc-panel li button.tmc-kind { font: 700 10px Arial, sans-serif; color: #2a6; border: 1px solid #2a6; border-radius: 3px;
+    padding: 0 3px; line-height: 14px; }
+  #tmc-panel li button.tmc-kind.tmc-kind-l { color: #b07000; border-color: #e0a020; background: #fff6e0; }
   #tmc-panel .tmc-auto { font-size: 10px; color: #fff; background: #c82021; border-radius: 3px; padding: 0 4px; }
   #tmc-panel .tmc-sf { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12px; margin: 0 0 4px; }
   #tmc-panel .tmc-sf input { flex: 1; min-width: 0; border: 1px solid #ccc; border-radius: 5px; padding: 3px 6px; font: 12px Arial, sans-serif; }
@@ -355,18 +404,26 @@
     };
   }
 
-  // Fill in table data for any stored comp that is missing it (older saves)
+  // Fill in table data for stored comps saved by older versions (no data, or no sale/listing type)
   async function withData(set) {
     let changed = false;
     for (const c of set) {
       if (!c.pid) c.pid = ((c.url || c.key || '').match(HOME_RE) || [])[1]; // saves from v1
-      if (!c.data && c.pid) {
-        try { c.data = await getHomeData(c.pid); changed = true; } catch (e) { /* leave blank */ }
+      if ((!c.data || !c.data.kind) && c.pid) {
+        try {
+          const fresh = await getHomeData(c.pid);
+          const old = c.data || {};
+          // keep values the old save had (e.g. read off the page banner) where the feed is blank
+          Object.keys(old).forEach((k) => { if (fresh[k] == null && old[k] != null) fresh[k] = old[k]; });
+          if (fresh.date == null && old.soldDate) fresh.date = old.soldDate;
+          c.data = fresh;
+          changed = true;
+        } catch (e) { /* leave as is */ }
       }
     }
     if (changed) {
       const cur = load();
-      cur.forEach((c) => { const f = set.find((s) => s.key === c.key); if (f && f.data && !c.data) c.data = f.data; });
+      cur.forEach((c) => { const f = set.find((s) => s.key === c.key); if (f && f.data) { c.data = f.data; c.pid = f.pid; } });
       save(cur);
     }
     return set;
@@ -375,7 +432,7 @@
   /* ================================================================== *
    * Comp table (first page + clipboard)
    * ================================================================== */
-  const COLS = ['Address', 'Unit Type', 'Price', 'Date', 'Square Feet', 'Lot', 'Beds', 'Bath', 'Price/SF'];
+  const COLS = ['Address', 'Unit Type', 'Price', 'Date', 'Square Feet', 'Lot', 'Beds', 'Bath', 'Price/SF', 'Comments'];
 
   // Which comps are struck from the averages.
   // c.override: 'in' | 'out' is your manual choice; otherwise the highest $/SF comp is dropped automatically.
@@ -383,7 +440,7 @@
     const manual = (c) => c.override || (c.exclude ? 'out' : null); // c.exclude = v2.0 saves
     let autoIdx = -1;
     if (o.autoOutlier) {
-      const priced = set.map((c, i) => [i, c.data && c.data.ppsf]).filter(([, p]) => p != null && !isNaN(p));
+      const priced = set.map((c, i) => [i, effective(c, o).ppsf]).filter(([, p]) => p != null && !isNaN(p));
       if (priced.length >= CFG.outlierMinComps) autoIdx = priced.reduce((m, x) => (x[1] > m[1] ? x : m))[0];
     }
     return set.map((c, i) => {
@@ -397,20 +454,24 @@
     const ex = exclusions(set, o);
     const rows = set.map((c, i) => {
       const d = c.data || {};
+      const e = effective(c, o);
+      const listing = e.kind === 'listing';
       return {
         exclude: ex[i].excluded,
         auto: ex[i].auto,
-        raw: d,
+        listing,
+        raw: Object.assign({}, d, { price: e.price, ppsf: e.ppsf }),
         cells: [
           expandStreet(d.street || c.addr.split(',')[0]),
           d.unitType || '',
-          fmtMoney(d.price),
-          fmtDate(d.soldDate, d.tz, false),
+          fmtMoney(e.price),
+          fmtDate(e.date, d.tz, false),
           fmtInt(d.sqft),
           fmtInt(d.lot),
           d.beds ?? '',
           d.baths ?? '',
-          fmtMoney(d.ppsf, 2),
+          fmtMoney(e.ppsf, 2),
+          listing ? `Listing: ${fmtMoney(e.listPrice)} list${e.pct ? ` less ${e.pct}%` : ''}` : '',
         ],
       };
     });
@@ -420,25 +481,33 @@
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
     };
     const avgPpsf = avg('ppsf');
-    const avgRow = ['Average:', '', fmtMoney(avg('price')), '', fmtInt(avg('sqft')), fmtInt(avg('lot')), '', '', fmtMoney(avgPpsf, 2)];
+    const avgRow = ['Average:', '', fmtMoney(avg('price')), '', fmtInt(avg('sqft')), fmtInt(avg('lot')), '', '', fmtMoney(avgPpsf, 2), ''];
     const sf = parseFloat(String(o.subjectSf || '').replace(/[^\d.]/g, ''));
     let valueRow = null;
     if (sf > 0 && avgPpsf != null) {
       valueRow = ['Value based on Average Sale Comp', '', `${fmtInt(sf)} sf x ${fmtMoney(avgPpsf, 2)}/sf`, '',
-        fmtMoney(sf * avgPpsf), '', '', '', ''];
+        fmtMoney(sf * avgPpsf), '', '', '', '', ''];
     }
-    return { rows, avgRow, valueRow, anyAuto: rows.some((r) => r.auto), anyExcluded: rows.some((r) => r.exclude) };
+    const anyListing = rows.some((r) => r.listing);
+    return { rows, avgRow, valueRow, anyAuto: rows.some((r) => r.auto), anyExcluded: rows.some((r) => r.exclude),
+      anyListing, pct: parseFloat(o.listDiscountPct) || 0 };
   }
 
   const NUM_COLS = new Set([2, 4, 5, 8]);
   function tableHtml(model, forClipboard) {
+    const LAST = COLS.length - 1; // Comments
     const td = (v, i, extra = '') => {
-      const style = forClipboard ? ` style="${extra}${NUM_COLS.has(i) ? 'text-align:right;' : i === 0 ? '' : 'text-align:center;'}"` : '';
-      return `<td${!forClipboard && NUM_COLS.has(i) ? ' class="num"' : ''}${style}>${esc(v)}</td>`;
+      const align = NUM_COLS.has(i) ? 'text-align:right;' : (i === 0 || i === LAST) ? '' : 'text-align:center;';
+      const style = forClipboard ? ` style="${extra}${align}"` : '';
+      const cls = forClipboard ? '' : NUM_COLS.has(i) ? ' class="num"' : i === LAST ? ' class="tmc-cmt"' : '';
+      return `<td${cls}${style}>${esc(v)}</td>`;
     };
     const head = `<tr>${COLS.map((c) => `<th>${c}</th>`).join('')}</tr>`;
-    const body = model.rows.map((r) =>
-      `<tr${r.exclude ? ' class="tmc-x"' : ''}>${r.cells.map((v, i) => td(v, i, r.exclude ? 'text-decoration:line-through;' : '')).join('')}</tr>`).join('');
+    const body = model.rows.map((r) => {
+      const cls = [r.exclude && 'tmc-x', r.listing && 'tmc-l'].filter(Boolean).join(' ');
+      const extra = (r.exclude ? 'text-decoration:line-through;' : '') + (r.listing ? 'font-style:italic;' : '');
+      return `<tr${cls ? ` class="${cls}"` : ''}>${r.cells.map((v, i) => td(v, i, extra)).join('')}</tr>`;
+    }).join('');
     const avg = `<tr class="tmc-avg">${model.avgRow.map((v, i) => td(v, i, 'font-weight:bold;')).join('')}</tr>`;
     let value = '';
     if (model.valueRow) {
@@ -502,6 +571,8 @@
       pg.className = 'tmc-page tmc-summary';
       const model = tableModel(comps);
       pg.innerHTML = `<h2>${esc(CFG.tableTitle)}</h2>${tableHtml(model, false)}` +
+        (model.anyListing ? `<div class="tmc-note2">Italic rows are active/pending listings: list price` +
+          `${model.pct ? ` less ${model.pct}%` : ''}, dated by list date.</div>` : '') +
         (model.anyExcluded ? `<div class="tmc-note2">Struck-through comps are excluded from the averages` +
           `${model.anyAuto ? ' (highest $/SF comp dropped as an outlier)' : ''}.</div>` : '');
       r.appendChild(pg);
@@ -509,6 +580,15 @@
     comps.forEach((c) => {
       const wrap = document.createElement('div');
       wrap.className = 'tmc-page tmc-comp';
+      const e = effective(c);
+      if (e.kind === 'listing' && c.data) {
+        const note = document.createElement('div');
+        note.className = 'tmc-listnote';
+        note.textContent = `Listing comp: ${fmtMoney(e.listPrice)} list` +
+          (e.pct ? ` less ${e.pct}% = ${fmtMoney(e.price)} (${fmtMoney(e.ppsf, 2)}/sf)` : '') +
+          (e.date ? `, listed ${fmtDate(e.date, c.data.tz, false)}` : '');
+        wrap.appendChild(note);
+      }
       if (c.photo) {
         const img = document.createElement('img');
         img.className = 'tmc-photo';
@@ -600,9 +680,10 @@
         <button class="tmc-toggle" id="tmc-toggle" title="Show / hide">&#9662;</button>
       </div>
       <div class="tmc-body">
-        <p class="tmc-hint" id="tmc-hint">Unticked comps are struck from the averages.</p>
+        <p class="tmc-hint" id="tmc-hint">Unticked comps are struck from the averages. S = sale, L = listing (click to switch).</p>
         <ol id="tmc-list"></ol>
         <label class="tmc-sf">Subject SF <input type="text" inputmode="numeric" id="tmc-subject-sf" placeholder="e.g. 2,910"></label>
+        <label class="tmc-sf">Listing discount <input type="text" inputmode="decimal" id="tmc-disc" style="flex:0 0 46px;text-align:right"> %</label>
         <div class="tmc-valline" id="tmc-valline"></div>
         <p class="tmc-empty" id="tmc-empty">No comps collected yet.</p>
         <div class="tmc-row">
@@ -675,6 +756,15 @@
     outBox.onchange = () => { setOpt('autoOutlier', outBox.checked); update(() => {}); };
     const sfBox = panel.querySelector('#tmc-subject-sf');
     sfBox.oninput = () => { setOpt('subjectSf', sfBox.value.trim()); showValue(load()); rerenderPreview(); };
+    const discBox = panel.querySelector('#tmc-disc');
+    discBox.value = opts().listDiscountPct;
+    discBox.oninput = () => {
+      const v = discBox.value.replace(/[^\d.]/g, '');
+      setOpt('listDiscountPct', v === '' ? 0 : parseFloat(v));
+      const box = document.getElementById('tm-sale-summary');
+      if (box) delete box.dataset.tmcPid; // redraw the "Less X%" line
+      update(() => {});
+    };
   }
 
   function askSubjectSf() {
@@ -747,12 +837,23 @@
       inc.checked = !ex[i].excluded;
       inc.title = ex[i].auto ? 'Auto-dropped as the highest $/SF. Tick to keep it in.' : 'Include in averages';
       inc.onchange = () => update((s) => { s[i].override = inc.checked ? 'in' : 'out'; delete s[i].exclude; });
+      const e = effective(c);
+      const kindBtn = document.createElement('button');
+      kindBtn.className = 'tmc-kind' + (e.kind === 'listing' ? ' tmc-kind-l' : '');
+      kindBtn.textContent = e.kind === 'listing' ? 'L' : 'S';
+      kindBtn.title = (e.kind === 'listing' ? 'Listing (list price less discount)' : 'Sale') +
+        (c.kindOverride ? ', set by you' : ', detected') + '. Click to switch.';
+      kindBtn.onclick = () => update((s) => {
+        const cur = s[i].kindOverride || (s[i].data && s[i].data.kind) || 'sale';
+        const next = cur === 'listing' ? 'sale' : 'listing';
+        if (s[i].data && s[i].data.kind === next) delete s[i].kindOverride; else s[i].kindOverride = next;
+      });
       const name = document.createElement('span');
       name.className = 'tmc-name';
       name.textContent = (c.data && c.data.street ? expandStreet(c.data.street) : c.addr.split(',')[0]) +
-        (c.data && c.data.ppsf ? `  ${fmtMoney(c.data.ppsf)}/sf` : '');
+        (e.ppsf ? `  ${fmtMoney(e.ppsf)}/sf` : '');
       name.title = c.addr;
-      li.append(inc, name);
+      li.append(inc, kindBtn, name);
       if (ex[i].auto) {
         const tag = document.createElement('span');
         tag.className = 'tmc-auto';
