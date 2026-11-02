@@ -9,7 +9,7 @@ at Violentmonkey, so keep new scripts to APIs Violentmonkey supports (see https:
 |---|---|
 | `send-to-hot-task.user.js` | `operation-hot-task` repo, `tools/humperdink/send-to-hot-task.user.js`. Hot Task's tests run that file against its parser and Teams app id. This is a served copy. |
 | `titlepro-to-humperdink.user.js` | This file. Behaviour notes live in `operation-hot-task` at `tools/titlepro/README.md`. |
-| `redfin-sale-summary.user.js` | This file. |
+| `redfin-sale-summary.user.js` | This file. Runs on Redfin and Zillow; site-specific code is in its `REDFIN` and `ZILLOW` adapters. Keep the file name and `@name` ("Redfin Comp Printer") even though it covers Zillow: the file name is every install's update address, and Violentmonkey matches a reinstall to the existing copy by name, so renaming either one leaves teammates with two copies or none. |
 | `humperdink-copy-link.user.js` | This file. Personal script, not for teammates: keep it off the install guide. |
 
 ## Rules

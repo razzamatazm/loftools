@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Redfin Comp Printer
 // @namespace    loneoakfund
-// @version      2.1.0
-// @description  Sale summary box (with unit type) on Redfin home pages, one-page print layout, and a comp collector that prints a summary table page plus one page per comp. Replaces the old "sale summary" userscript.
+// @version      3.0.0
+// @description  Sale summary box (with unit type) on Redfin and Zillow home pages, and a comp collector shared across both sites that copies a comp table for Excel and prints a summary table page plus one page per comp.
 // @match        https://www.redfin.com/*
+// @match        https://www.zillow.com/*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_addValueChangeListener
@@ -13,6 +14,12 @@
 // @updateURL    https://loftools.thepopcorn.party/userscripts/redfin-sale-summary.user.js
 // ==/UserScript==
 
+/* One script for both sites so they share one comp set: GM storage belongs to the
+   script, not the site, so comps added on Redfin and on Zillow print together.
+   Everything site-specific lives in the REDFIN and ZILLOW adapters below; the
+   panel, table, averages and print pages only see the data shape they return.
+   Comp pages are built from that data rather than cloned from the site, so a
+   Zillow comp prints the same from a Redfin tab and vice versa. */
 (function () {
   'use strict';
 
@@ -20,28 +27,22 @@
    * Settings
    * ================================================================== */
   const CFG = {
-    photoMaxHeightIn: 3.0,        // property photo height on the printout
+    photoMaxHeightIn: 3.6,        // property photo height on the printout
     pageMarginIn: 0.4,            // US Letter page margins
     fitOnePage: true,             // auto-shrink a comp that runs past one page
-    expandDescription: false,     // true = print full "About this home" text
     hijackCmdP: true,             // true = Cmd+P on a home page prints the one-page layout
     expandStreetSuffix: true,     // "614 16th St" -> "614 16th Street" in the comp table
     tableTitle: 'Recent Sale Comps',
     defaultListDiscountPct: 5,    // starting listing discount; change it any time in the panel
     outlierMinComps: 3,          // only auto-drop the high $/SF comp when there are at least this many comps
     askSubjectSf: true,           // prompt for subject SF on Print set / Copy table if the box is empty
-    removeFromClones: [           // Redfin UI that is useless on paper
-      '.DesktopHomeownerConversionUnclaimedContent', // "Is this your home? / I own ..."
-      'button', 'iframe', 'script', 'noscript',
-    ],
   };
 
   const KEY = 'tmcCompSet';
   const OPT_KEY = 'tmcOptions';
-  const HOME_RE = /\/home\/(\d+)/;
 
   /* ================================================================== *
-   * Storage (shared across tabs)
+   * Storage (shared across tabs and across both sites)
    * ================================================================== */
   const hasGM = typeof GM_getValue === 'function';
   const gmGet = (k, d) => {
@@ -52,10 +53,6 @@
   const save = (v) => gmSet(KEY, v);
   const opts = () => Object.assign({ summaryPage: true, autoOutlier: true, subjectSf: '', listDiscountPct: CFG.defaultListDiscountPct }, gmGet(OPT_KEY, {}));
   const setOpt = (k, v) => gmSet(OPT_KEY, Object.assign(opts(), { [k]: v }));
-
-  const propId = () => (location.pathname.match(HOME_RE) || [])[1];
-  const isHome = () => !!propId();
-  const pageKey = () => location.origin + location.pathname.replace(/\/$/, '');
 
   /* ================================================================== *
    * Formatting helpers
@@ -70,6 +67,9 @@
     });
   };
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // A calendar date with no time ("2026-10-30", "10/30/2026") as noon UTC, so no US time zone shifts it a day
+  const dayMs = (y, m, d) => Date.UTC(+y, +m - 1, +d, 12);
+  const numOf = (s) => { const n = parseFloat(String(s ?? '').replace(/[^\d.]/g, '')); return isNaN(n) ? null : n; };
 
   const SUFFIX = {
     st: 'Street', ave: 'Avenue', av: 'Avenue', blvd: 'Boulevard', dr: 'Drive', ln: 'Lane', rd: 'Road', ct: 'Court',
@@ -86,25 +86,22 @@
     return fixed + unit;
   }
 
+  const PLEX = { duplex: 'Duplex', triplex: 'Triplex', fourplex: 'Fourplex', quadplex: 'Fourplex', quadruplex: 'Fourplex' };
+  const PLEX_RE = /\b(duplex|triplex|fourplex|quadplex|quadruplex)\b/i;
+  const plexByUnits = (n) => ({ 2: 'Duplex', 3: 'Triplex', 4: 'Fourplex' }[n] || null);
+
   function unitType(typeName, rawText) {
     const t = (typeName || '').toLowerCase();
-    const plexM = (rawText || '').match(/\b(duplex|triplex|fourplex|quadplex|quadruplex)\b/i);
-    const plex = plexM && [null, { duplex: 'Duplex', triplex: 'Triplex', fourplex: 'Fourplex', quadplex: 'Fourplex', quadruplex: 'Fourplex' }[plexM[1].toLowerCase()]];
+    const plexM = (rawText || '').match(PLEX_RE);
+    const plex = plexM && PLEX[plexM[1].toLowerCase()];
     if (t.includes('single family')) return 'SFR';
     if (t.includes('condo') || t.includes('co-op')) return 'Condo';
     if (t.includes('townhouse')) return 'Townhome';
-    if (t.includes('multi-family') && t.includes('2-4')) {
-      const units = unitCount(rawText);
-      if (units === 2) return 'Duplex';
-      if (units === 3) return 'Triplex';
-      if (units === 4) return 'Fourplex';
-      if (plex) return plex[1];
-      return 'Multi 2-4';
-    }
+    if (t.includes('multi-family') && t.includes('2-4')) return plexByUnits(unitCount(rawText)) || plex || 'Multi 2-4';
     if (t.includes('multi-family')) return 'Multi 5+';
     if (t.includes('land')) return 'Land';
     if (t.includes('mobile') || t.includes('manufactured')) return 'Mobile';
-    if (plex) return plex[1];
+    if (plex) return plex;
     return typeName || '';
   }
   function unitCount(rawText) {
@@ -115,91 +112,267 @@
   }
 
   /* ================================================================== *
-   * Redfin data (their own JSON endpoints, same origin)
+   * Sale history -> sale or listing
+   * Both sites' status fields lag (a home that sold last week can still say
+   * Pending), so the newest sale/listing event in the history decides.
+   * events: newest first, [{ date, desc, price }]
    * ================================================================== */
-  const dataCache = {};
-  async function fetchJsonText(url) {
-    const r = await fetch(url, { credentials: 'include' });
-    return (await r.text()).replace(/^\{\}&&/, '');
+  const SOLD_RE = /\bsold\b/i;
+  const LISTING_RE = /^(listed|relisted|price change|pending|contingent|back on market|coming soon|active)/i;
+  const OFF_RE = /^(listing removed|delisted|withdrawn|expired|cancel)/i;
+
+  function readHistory(events) {
+    const ev = events.filter((e) => e.date && !/rent/i.test(e.desc || ''));
+    const soldEvt = ev.find((e) => SOLD_RE.test(e.desc));
+    const newest = ev.find((e) => SOLD_RE.test(e.desc) || LISTING_RE.test(e.desc) || OFF_RE.test(e.desc));
+    return {
+      kind: newest && LISTING_RE.test(newest.desc) ? 'listing' : 'sale',
+      newest,
+      soldEvt,
+      listEvt: ev.find((e) => /^(re)?listed\b/i.test(e.desc)),
+      lastAsk: ev.find((e) => LISTING_RE.test(e.desc) && e.price),
+    };
   }
-  async function getHomeData(pid) {
-    if (!pid) return null;
-    const p = dataCache[pid] || (async () => {
-      const above = JSON.parse(await fetchJsonText(`/stingray/api/home/details/aboveTheFold?propertyId=${pid}&accessLevel=1`)).payload;
+
+  /* ================================================================== *
+   * Site adapters. Each returns home data in this shape:
+   *   { site, pid, kind: 'sale'|'listing', status, street, fullAddress, typeName,
+   *     unitType, price, date, tz, sqft, lot, beds, baths, yearBuilt, photo, desc }
+   * ================================================================== */
+  const REDFIN = {
+    id: 'redfin',
+    name: 'Redfin',
+    match: /(^|\.)redfin\.com$/,
+    pidOf: (url) => (String(url || '').match(/\/home\/(\d+)/) || [])[1],
+    keyFor: (pid, url) => {
+      // Saves before 3.0 keyed comps on origin + path; keep that so they still match
+      const u = new URL(url || location.href, location.href);
+      return u.origin + u.pathname.replace(/\/$/, '');
+    },
+
+    async fetchData(pid) {
+      const getText = async (url) => (await (await fetch(url, { credentials: 'include' })).text()).replace(/^\{\}&&/, '');
+      const above = JSON.parse(await getText(`/stingray/api/home/details/aboveTheFold?propertyId=${pid}&accessLevel=1`)).payload;
       let belowText = '';
-      try { belowText = await fetchJsonText(`/stingray/api/home/details/belowTheFold?propertyId=${pid}&accessLevel=1`); } catch (e) { /* optional */ }
+      try { belowText = await getText(`/stingray/api/home/details/belowTheFold?propertyId=${pid}&accessLevel=1`); } catch (e) { /* optional */ }
       const a = above.addressSectionInfo || {};
       let below = {};
       try { below = JSON.parse(belowText).payload || {}; } catch (e) { /* optional */ }
       const pub = (below.publicRecordsInfo && below.publicRecordsInfo.basicInfo) || {};
-      // Sale history, newest first, ignoring rental events
-      const events = ((below.propertyHistoryInfo && below.propertyHistoryInfo.events) || [])
-        .filter((e) => e.eventDate && !/rent/i.test(e.eventDescription || ''));
-      const desc = (e) => e.eventDescription || '';
-      const soldEvt = events.find((e) => SOLD_RE.test(desc(e)));
-      const newest = events.find((e) => SOLD_RE.test(desc(e)) || LISTING_RE.test(desc(e)) || OFF_RE.test(desc(e)));
-      // The public data feed can report an active listing as "Sold" (its last sale), so trust the history
-      let kind = 'sale';
-      if (newest && LISTING_RE.test(desc(newest))) kind = 'listing';
-      const listEvt = events.find((e) => /^(re)?listed\b/i.test(desc(e)));
-      const lastAsk = events.find((e) => LISTING_RE.test(desc(e)) && e.price);
+      const h = readHistory(((below.propertyHistoryInfo && below.propertyHistoryInfo.events) || [])
+        .map((e) => ({ date: e.eventDate, desc: e.eventDescription || '', price: e.price })));
+      const kind = h.kind;
 
       const typeName = (belowText.match(/"propertyTypeName":"([^"]+)"/) || [])[1] || pub.propertyTypeName || '';
       const street = (a.streetAddress && a.streetAddress.assembledAddress) || '';
       const feedPrice = (a.priceInfo && a.priceInfo.amount) || (a.latestPriceInfo && a.latestPriceInfo.amount) || null;
       const feedIsSold = /sold/i.test((a.priceInfo && a.priceInfo.label) || '');
-      const price = kind === 'listing'
-        ? ((lastAsk && lastAsk.price) || (!feedIsSold && feedPrice) || null)
-        : (feedPrice || (soldEvt && soldEvt.price) || null);
-      const date = kind === 'listing'
-        ? ((listEvt && listEvt.eventDate) || null)
-        : (a.soldDate || (soldEvt && soldEvt.eventDate) || null);
-      const sqft = (a.sqFt && a.sqFt.value) || pub.totalSqFt || null;
-      const d = {
+      const photo0 = (((above.mediaBrowserInfo || {}).photos || [])[0] || {}).photoUrls || {};
+      return {
+        site: 'redfin',
         pid,
         kind,
-        status: kind === 'listing' ? desc(newest) : 'Sold',
+        status: kind === 'listing' ? h.newest.desc : 'Sold',
         street,
         fullAddress: [street, a.city, [a.state, a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', '),
         typeName,
         unitType: unitType(typeName, belowText),
-        price,
-        date,
+        price: kind === 'listing'
+          ? ((h.lastAsk && h.lastAsk.price) || (!feedIsSold && feedPrice) || null)
+          : (feedPrice || (h.soldEvt && h.soldEvt.price) || null),
+        date: kind === 'listing'
+          ? ((h.listEvt && h.listEvt.date) || null)
+          : (a.soldDate || (h.soldEvt && h.soldEvt.date) || null),
         tz: a.soldDateTimeZone || 'America/Los_Angeles',
-        sqft,
+        sqft: (a.sqFt && a.sqFt.value) || pub.totalSqFt || null,
         lot: a.lotSize || pub.lotSqFt || null,
         beds: a.beds ?? pub.beds ?? null,
         baths: a.baths ?? pub.baths ?? null,
+        yearBuilt: a.yearBuilt || pub.yearBuilt || null,
+        photo: photo0.fullScreenPhotoUrl || photo0.nonFullScreenPhotoUrl || '',
+        desc: '',
       };
-      return d;
-    })();
-    dataCache[pid] = p;
-    p.catch(() => delete dataCache[pid]);
-    const d = Object.assign({}, await p);
+    },
+
     // On the home's own page, the banner is what you see: use it for status, price, beds, baths and sq ft
-    if (pid === propId()) fillFromBanner(d);
+    fromPage(d) {
+      const banner = document.querySelector('.bp-AddressBannerSectionV2');
+      const remarks = document.querySelector('#marketing-remarks-scroll, .remarks');
+      if (remarks) d.desc = remarks.innerText.trim();
+      const photo = document.querySelector('.InlinePhotoPreviewSection #MBImage img') ||
+        document.querySelector('[data-rf-test-id="mediaBrowser"] img') ||
+        document.querySelector('.InlinePhotoPreviewSection img');
+      if (photo && (photo.currentSrc || photo.src)) d.photo = new URL(photo.currentSrc || photo.src, location.href).href;
+      if (!banner) return;
+      const statusEl = banner.querySelector('[class*="ListingStatusBannerSection"]');
+      const status = statusEl ? statusEl.innerText.trim() : '';
+      if (/sold/i.test(status)) d.kind = 'sale';
+      else if (/for sale|pending|contingent|coming soon|active|under contract/i.test(status)) { d.kind = 'listing'; d.status = status; }
+      const stats = banner.querySelector('.HomeMainStatsV2, .top-stats');
+      if (!stats) return;
+      const t = stats.innerText.replace(/\s+/g, ' ');
+      const num = (re) => { const m = t.match(re); return m ? parseFloat(m[1].replace(/,/g, '')) : null; };
+      d.price = num(/\$([\d,]+)/) || d.price;
+      d.beds = num(/([\d.]+)\s*bd/i) ?? d.beds;
+      d.baths = num(/([\d.]+)\s*ba/i) ?? d.baths;
+      d.sqft = num(/([\d,]+)\s*sq\s*ft/i) || d.sqft;
+    },
+
+    anchor: () => document.querySelector('.bp-AddressBannerSectionV2'),
+    pageSig: () => '',
+  };
+
+  const ZILLOW_TYPES = {
+    SINGLE_FAMILY: 'Single Family', CONDO: 'Condo', TOWNHOUSE: 'Townhouse', MULTI_FAMILY: 'Multi-Family',
+    APARTMENT: 'Apartment', MANUFACTURED: 'Manufactured', LOT: 'Lot / Land', HOME_TYPE_UNKNOWN: '',
+  };
+  const ZILLOW_ACTIVE = /^(FOR_SALE|PENDING|COMING_SOON|ACTIVE|UNDER_CONTRACT|CONTINGENT)/;
+
+  const ZILLOW = {
+    id: 'zillow',
+    name: 'Zillow',
+    match: /(^|\.)zillow\.com$/,
+    pidOf: (url) => (String(url || '').match(/\/(\d+)_zpid/) || [])[1],
+    keyFor: (pid) => `https://www.zillow.com/homedetails/${pid}_zpid`,
+
+    // The home's data sits in the page's __NEXT_DATA__. A home opened over the search map keeps the
+    // search page's __NEXT_DATA__, so then fetch the home's own page and read it from there.
+    propertyFrom(nextJson) {
+      const cp = ((JSON.parse(nextJson).props || {}).pageProps || {}).componentProps || {};
+      let cache = cp.gdpClientCache;
+      if (typeof cache === 'string') cache = JSON.parse(cache);
+      return Object.values(cache || {}).map((v) => v && v.property).find(Boolean) || null;
+    },
+    async property(pid, url) {
+      const own = document.getElementById('__NEXT_DATA__');
+      if (own) {
+        try { const p = ZILLOW.propertyFrom(own.textContent); if (p && String(p.zpid) === String(pid)) return p; } catch (e) { /* fetch instead */ }
+      }
+      const path = url && ZILLOW.pidOf(url) === String(pid) ? new URL(url, location.href).pathname : `/homedetails/${pid}_zpid/`;
+      const html = await (await fetch(path, { credentials: 'include' })).text();
+      const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+      const p = m && ZILLOW.propertyFrom(m[1]);
+      if (!p) throw new Error('Zillow sent no home data (it may want a captcha; reload the page)');
+      return p;
+    },
+
+    unitType(p) {
+      const reso = p.resoFacts || {};
+      const sub = [].concat(reso.propertySubType || [], reso.structureType || [], reso.architecturalStyle || []).join(' ');
+      const units = numOf(reso.numberOfUnitsTotal);
+      const plexM = sub.match(PLEX_RE) || (p.description || '').match(PLEX_RE);
+      switch (p.homeType) {
+        case 'SINGLE_FAMILY': return 'SFR';
+        case 'CONDO': return 'Condo';
+        case 'TOWNHOUSE': return 'Townhome';
+        case 'MANUFACTURED': return 'Mobile';
+        case 'LOT': return 'Land';
+        case 'APARTMENT': return 'Multi 5+';
+        case 'MULTI_FAMILY':
+          if (units >= 5) return 'Multi 5+';
+          return plexByUnits(units) || (plexM && PLEX[plexM[1].toLowerCase()]) || 'Multi-family';
+        default: return ZILLOW_TYPES[p.homeType] ?? p.homeType ?? '';
+      }
+    },
+
+    async fetchData(pid, url) {
+      const p = await ZILLOW.property(pid, url);
+      const reso = p.resoFacts || {};
+      const sold = (String(p.dateSoldString || '').match(/^(\d{4})-(\d\d)-(\d\d)/) || []).slice(1);
+      const soldMs = sold.length ? dayMs(...sold) : null;
+      const posted = p.datePosted || null;
+      // Without the history table (it loads after the page), a sale dated on or after the listing date wins
+      const kind = ZILLOW_ACTIVE.test(p.homeStatus || '') && !(soldMs && (!posted || soldMs >= posted)) ? 'listing' : 'sale';
+      const lotAcres = /acre/i.test(p.lotAreaUnits || '');
+      const lot = p.lotAreaValue ? (lotAcres ? p.lotAreaValue * 43560 : p.lotAreaValue) : (p.lotSize || null);
+      const big = ((((p.originalPhotos || [])[0] || {}).mixedSources || {}).jpeg || []).slice(-1)[0];
+      const typeName = [ZILLOW_TYPES[p.homeType] ?? p.homeType, [].concat(reso.propertySubType || []).join(', ')]
+        .filter(Boolean).join(': ');
+      return {
+        site: 'zillow',
+        pid: String(pid),
+        kind,
+        status: kind === 'listing' ? ZILLOW.statusName(p) : 'Sold',
+        street: p.streetAddress || (p.address && p.address.streetAddress) || '',
+        fullAddress: [p.streetAddress, p.city, [p.state, p.zipcode].filter(Boolean).join(' ')].filter(Boolean).join(', '),
+        typeName,
+        unitType: ZILLOW.unitType(p),
+        price: kind === 'listing' ? p.price || null : (p.lastSoldPrice || (/SOLD/.test(p.homeStatus || '') && p.price) || null),
+        date: kind === 'listing' ? posted : soldMs,
+        tz: p.timeZone || 'America/Los_Angeles',
+        sqft: p.livingAreaValue || p.livingArea || null,
+        lot,
+        beds: p.bedrooms ?? null,
+        baths: p.bathrooms ?? null,
+        yearBuilt: p.yearBuilt || reso.yearBuilt || null,
+        photo: (big && big.url) || p.hiResImageLink || '',
+        desc: p.description || '',
+      };
+    },
+
+    statusName(p) {
+      const sub = p.listingSubType || {};
+      if (sub.isPending || /PENDING/.test(p.homeStatus)) return 'Pending';
+      if (sub.isComingSoon || /COMING_SOON/.test(p.homeStatus)) return 'Coming soon';
+      if (p.contingentListingType) return 'Contingent';
+      return 'For sale';
+    },
+
+    // The price history table on the page, newest first. Each row carries a plain-text label:
+    // "Date: 10/30/2026, Event: Sold, Price: $570,000 (-8.8%)"
+    history() {
+      return [...document.querySelectorAll('tr[label^="Date:"]')].map((r) => {
+        const m = r.getAttribute('label').match(/^Date:\s*(\d+)\/(\d+)\/(\d+),\s*Event:\s*([^,]+)(?:,\s*Price:\s*([^(]*))?/);
+        return m && { date: dayMs(m[3], m[1], m[2]), desc: m[4].trim(), price: numOf(m[5]) };
+      }).filter(Boolean);
+    },
+
+    fromPage(d) {
+      const events = ZILLOW.history();
+      if (!events.length) return;
+      const h = readHistory(events);
+      if (!h.newest) return;
+      d.kind = h.kind;
+      if (h.kind === 'sale' && h.soldEvt) {
+        d.status = 'Sold';
+        d.price = h.soldEvt.price || d.price;
+        d.date = h.soldEvt.date;
+      } else if (h.kind === 'listing') {
+        const pill = document.querySelector('[data-testid="gallery-status-pill"]');
+        const pillText = pill ? pill.innerText.trim() : '';
+        d.status = /sale|pending|contingent|coming|active|contract/i.test(pillText) ? pillText : h.newest.desc;
+        d.price = (h.lastAsk && h.lastAsk.price) || d.price;
+        d.date = (h.listEvt && h.listEvt.date) || d.date;
+      }
+    },
+
+    anchor: () => [...document.querySelectorAll('[data-testid="home-details-chip-container"]')]
+      .reverse().find((e) => e.offsetParent !== null) || null,
+    // Redraw the box once the history table has loaded, since it can change sale vs listing
+    pageSig: () => String(document.querySelectorAll('tr[label^="Date:"]').length),
+  };
+
+  const SITES = { redfin: REDFIN, zillow: ZILLOW };
+  const SITE = [REDFIN, ZILLOW].find((s) => s.match.test(location.hostname));
+  if (!SITE) return;
+  const siteOf = (c) => SITES[c.site || (c.data && c.data.site) || 'redfin'] || REDFIN;
+
+  const propId = () => SITE.pidOf(location.pathname);
+  const isHome = () => !!propId();
+
+  /* ================================================================== *
+   * Home data, cached per page load
+   * ================================================================== */
+  const dataCache = {};
+  async function getHomeData(pid, url) {
+    if (!pid) return null;
+    const ck = SITE.id + ':' + pid;
+    const p = dataCache[ck] || SITE.fetchData(pid, url);
+    dataCache[ck] = p;
+    p.catch(() => delete dataCache[ck]);
+    const d = Object.assign({}, await p);
+    if (String(pid) === String(propId())) SITE.fromPage(d);
     return d;
-  }
-
-  const SOLD_RE = /\bsold\b/i;
-  const LISTING_RE = /^(listed|relisted|price changed|pending|contingent|back on market|coming soon|active)/i;
-  const OFF_RE = /^(listing removed|delisted|withdrawn|expired|cancel)/i;
-
-  function fillFromBanner(d) {
-    const banner = document.querySelector('.bp-AddressBannerSectionV2');
-    if (!banner) return;
-    const statusEl = banner.querySelector('[class*="ListingStatusBannerSection"]');
-    const status = statusEl ? statusEl.innerText.trim() : '';
-    if (/sold/i.test(status)) d.kind = 'sale';
-    else if (/for sale|pending|contingent|coming soon|active|under contract/i.test(status)) { d.kind = 'listing'; d.status = status; }
-    const stats = banner.querySelector('.HomeMainStatsV2, .top-stats');
-    if (!stats) return;
-    const t = stats.innerText.replace(/\s+/g, ' ');
-    const num = (re) => { const m = t.match(re); return m ? parseFloat(m[1].replace(/,/g, '')) : null; };
-    d.price = num(/\$([\d,]+)/) || d.price;
-    d.beds = num(/([\d.]+)\s*bd/i) ?? d.beds;
-    d.baths = num(/([\d.]+)\s*ba/i) ?? d.baths;
-    d.sqft = num(/([\d,]+)\s*sq\s*ft/i) || d.sqft;
   }
 
   // Price used for the comp: sale price, or list price less the listing discount
@@ -212,60 +385,58 @@
   }
 
   /* ================================================================== *
-   * Sale summary box (replaces the old standalone userscript)
+   * Sale summary rows (the box on the page, and the facts on each printed comp)
    * ================================================================== */
-  const BOX_STYLE = `
-        #tm-sale-summary{border:1px solid #d5d5d5;border-radius:12px;padding:14px 18px;margin:12px 0;background:#fff;font-size:15px;line-height:1.35}
-        #tm-sale-summary table{border-collapse:collapse;width:100%}
-        #tm-sale-summary td{padding:4px 0;vertical-align:top}
-        #tm-sale-summary td:first-child{color:#595959;width:140px;white-space:nowrap;padding-right:16px}
-        #tm-sale-summary td:last-child{font-weight:600}
-        #tm-sale-summary .tm-note{font-weight:400;color:#767676;font-size:13px}`;
-
-  function boxHtml(d) {
-    const listing = d.kind === 'listing';
+  function summaryRows(d, kindOverride) {
+    const listing = (kindOverride || d.kind) === 'listing';
     const ppsf = d.price && d.sqft ? d.price / d.sqft : null;
     const rows = [
       ['Address', esc(d.fullAddress)],
       ['Unit Type', esc(d.unitType) + (d.typeName && d.unitType !== d.typeName ? ` <span class="tm-note">(${esc(d.typeName)})</span>` : '')],
-      ['Comp Type', listing ? `Listing <span class="tm-note">(${esc(d.status || 'active')})</span>` : 'Sale'],
+      ['Comp Type', listing ? `Listing <span class="tm-note">(${esc(d.kind === 'listing' ? d.status || 'active' : 'set by you')})</span>` : 'Sale'],
       [listing ? 'List Price' : 'Last Sale Price', fmtMoney(d.price)],
       [listing ? 'List Date' : 'Last Sale Date', fmtDate(d.date ?? d.soldDate, d.tz, true)],
       ['Square Feet', fmtInt(d.sqft)],
       ['Lot Size', d.lot ? `${fmtInt(d.lot)} SF <span class="tm-note">(${(d.lot / 43560).toFixed(2)} ac)</span>` : ''],
       ['Bed / Bath', `${d.beds ?? '-'} bd / ${d.baths ?? '-'} ba`],
-      ['Price / SF', fmtMoney(ppsf) + (listing ? ' <span class="tm-note">(on list price)</span>' : '')],
     ];
+    if (d.yearBuilt) rows.push(['Year Built', esc(d.yearBuilt)]);
+    rows.push(['Price / SF', fmtMoney(ppsf) + (listing ? ' <span class="tm-note">(on list price)</span>' : '')]);
     if (listing) {
-      const e = effective({ data: d });
+      const e = effective({ data: d, kindOverride });
       if (e.pct) rows.push([`Less ${e.pct}%`, `${fmtMoney(e.price)} <span class="tm-note">(${fmtMoney(e.ppsf)}/sf)</span>`]);
     }
-    return `<style>${BOX_STYLE}</style><table><tbody>${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</tbody></table>`;
+    return `<table><tbody>${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</tbody></table>`;
   }
 
   let boxFor = null;
+  let curData = null; // data for the home on screen, once loaded
   async function ensureBox() {
     const pid = propId();
     if (!pid) return;
-    const banner = document.querySelector('.bp-AddressBannerSectionV2');
-    if (!banner) return;
+    const anchor = SITE.anchor();
+    if (!anchor) return;
+    const sig = pid + '|' + SITE.pageSig();
     let box = document.getElementById('tm-sale-summary');
-    if (box && box.dataset.tmcPid === pid) return;
-    if (boxFor === pid) return; // fetch in flight
-    boxFor = pid;
+    if (box && box.dataset.tmcSig === sig && box.isConnected && box.previousElementSibling === anchor) return;
+    if (boxFor === sig) return; // fetch in flight
+    boxFor = sig;
     try {
-      const d = await getHomeData(pid);
+      const d = await getHomeData(pid, location.href);
       if (propId() !== pid) return;
+      curData = d;
       box = document.getElementById('tm-sale-summary');
-      if (!box) {
+      if (!box || box.previousElementSibling !== anchor) {
+        if (box) box.remove();
         box = document.createElement('div');
         box.id = 'tm-sale-summary';
-        banner.insertAdjacentElement('afterend', box);
+        box.className = 'tm-sum';
+        anchor.insertAdjacentElement('afterend', box);
       }
-      box.dataset.tmcPid = pid;
-      box.innerHTML = boxHtml(d);
+      box.dataset.tmcSig = sig;
+      box.innerHTML = summaryRows(d);
     } catch (e) {
-      console.warn('[Redfin Comp Printer] summary box failed', e);
+      console.warn('[Comp Printer] summary box failed', e);
     } finally {
       boxFor = null;
     }
@@ -275,6 +446,14 @@
    * Styles
    * ================================================================== */
   const css = `
+  .tm-sum{border:1px solid #d5d5d5;border-radius:12px;padding:14px 18px;margin:12px 0;background:#fff;color:#222;
+    font:15px/1.35 -apple-system,BlinkMacSystemFont,Arial,sans-serif}
+  .tm-sum table{border-collapse:collapse;width:100%}
+  .tm-sum td{padding:4px 0;vertical-align:top}
+  .tm-sum td:first-child{color:#595959;width:140px;white-space:nowrap;padding-right:16px}
+  .tm-sum td:last-child{font-weight:600}
+  .tm-sum .tm-note{font-weight:400;color:#767676;font-size:13px}
+
   #tmc-print-root { display: none; }
   @media print {
     @page { size: letter; margin: ${CFG.pageMarginIn}in; }
@@ -287,19 +466,21 @@
     display: block !important; width: ${8.5 - 2 * CFG.pageMarginIn}in; margin: 20px auto;
     background: #fff; box-shadow: 0 0 0 ${CFG.pageMarginIn}in #fff, 0 0 0 calc(${CFG.pageMarginIn}in + 1px) #bbb;
   }
-  body.tmc-preview { background: #e9e9e9 !important; }
+  body.tmc-preview { background: #e9e9e9 !important; overflow: auto !important; }
   body.tmc-preview .tmc-page { border-bottom: 2px dashed #f33; padding-bottom: 12px; margin-bottom: 12px; }
 
-  #tmc-print-root { width: 100%; font-size: 14px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #tmc-print-root { width: 100%; font: 14px/1.4 Arial, sans-serif; color: #111; text-align: left;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .tmc-page { break-after: page; page-break-after: always; }
   .tmc-page:last-child { break-after: auto; page-break-after: auto; }
   .tmc-comp > * { break-inside: avoid; page-break-inside: avoid; }
-  .tmc-photo { display: block; margin: 0 auto 10px; max-width: 100%; max-height: ${CFG.photoMaxHeightIn}in;
+  .tmc-addr { font: 700 20px/1.25 Arial, sans-serif; margin: 0 0 10px; color: #111; }
+  .tmc-photo { display: block; margin: 0 auto 12px; max-width: 100%; max-height: ${CFG.photoMaxHeightIn}in;
                width: auto; height: auto; border-radius: 8px; }
-  .tmc-sec { width: 100% !important; max-width: none !important; margin: 0 0 10px !important; }
-  .tmc-sec .bp-Section, .tmc-sec section { margin: 0 0 8px !important; padding-top: 10px !important; padding-bottom: 10px !important; }
-  .tmc-src { font: 10px/1.3 Arial, sans-serif; color: #777; margin-top: 4px; word-break: break-all; }
-  ${CFG.expandDescription ? `.tmc-sec .sectionContentContainer { max-height: none !important; overflow: visible !important; }` : ''}
+  .tmc-comp .tm-sum { margin: 0 0 12px; font-size: 14px; }
+  .tmc-about h3 { font: 700 15px Arial, sans-serif; margin: 0 0 4px; }
+  .tmc-about p { margin: 0; font-size: 12.5px; line-height: 1.45; white-space: pre-line; }
+  .tmc-src { font: 10px/1.3 Arial, sans-serif; color: #777; margin-top: 8px; word-break: break-all; }
 
   .tmc-summary h2 { font: 700 18px Arial, sans-serif; margin: 0 0 10px; color: #222; }
   .tmc-table { border-collapse: collapse; width: 100%; font: 11px/1.3 Arial, sans-serif; color: #111; }
@@ -321,7 +502,7 @@
   .tmc-note2 { font: 10px Arial, sans-serif; color: #777; margin-top: 6px; }
 
   #tmc-panel { position: fixed; right: 16px; bottom: 16px; z-index: 2147483647; background: #fff;
-    border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.18);
+    border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,.18); text-align: left;
     font: 13px/1.35 -apple-system, BlinkMacSystemFont, Arial, sans-serif; color: #222; width: 270px; }
   #tmc-panel .tmc-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
   #tmc-panel .tmc-head label { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; flex: 1; }
@@ -342,10 +523,17 @@
   #tmc-panel .tmc-btn.tmc-sec-btn { background: #fff; color: #c82021; }
   #tmc-panel .tmc-btn:disabled { opacity: .45; cursor: default; }
   #tmc-panel .tmc-empty { color: #888; margin: 0 0 8px; }
-  #tmc-panel .tmc-hint { color: #888; font-size: 11px; margin: 0 0 6px; }
+  #tmc-panel .tmc-hint { display: none; color: #888; font-size: 11px; margin: 0 0 6px; }
+  #tmc-panel.tmc-hint-open .tmc-hint { display: block; }
+  #tmc-panel .tmc-info { width: 16px; height: 16px; border: 1px solid #aaa; border-radius: 50%; background: #fff; color: #777;
+    font: italic 700 10px/14px Georgia, serif; padding: 0; cursor: pointer; flex: none; }
+  #tmc-panel .tmc-info:hover, #tmc-panel.tmc-hint-open .tmc-info { border-color: #c82021; color: #c82021; }
   #tmc-panel li button.tmc-kind { font: 700 10px Arial, sans-serif; color: #2a6; border: 1px solid #2a6; border-radius: 3px;
     padding: 0 3px; line-height: 14px; }
   #tmc-panel li button.tmc-kind.tmc-kind-l { color: #b07000; border-color: #e0a020; background: #fff6e0; }
+  #tmc-panel .tmc-site { font: 700 9px Arial, sans-serif; color: #fff; border-radius: 3px; padding: 0 3px; line-height: 13px; }
+  #tmc-panel .tmc-site-redfin { background: #c82021; }
+  #tmc-panel .tmc-site-zillow { background: #006aff; }
   #tmc-panel .tmc-auto { font-size: 10px; color: #fff; background: #c82021; border-radius: 3px; padding: 0 4px; }
   #tmc-panel .tmc-sf { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12px; margin: 0 0 4px; }
   #tmc-panel .tmc-sf input { flex: 1; min-width: 0; border: 1px solid #ccc; border-radius: 5px; padding: 3px 6px; font: 12px Arial, sans-serif; }
@@ -360,58 +548,37 @@
   document.head.appendChild(styleEl);
 
   /* ================================================================== *
-   * Capture the pieces of a home page
+   * Capturing a comp
    * ================================================================== */
-  function findParts() {
-    const banner = document.querySelector('.bp-AddressBannerSectionV2');
-    const top = banner ? banner.closest('.componentSection') || banner : null; // includes the summary box
-    const summary = document.querySelector('#tm-sale-summary');
-    const about = document.querySelector('#about-this-home-scroll');
-    const photo =
-      document.querySelector('.InlinePhotoPreviewSection #MBImage img') ||
-      document.querySelector('[data-rf-test-id="mediaBrowser"] img') ||
-      document.querySelector('.InlinePhotoPreviewSection img');
-    return { top, summary, about, photo };
-  }
-
-  function sanitize(node) {
-    const c = node.cloneNode(true);
-    CFG.removeFromClones.forEach((sel) => c.querySelectorAll(sel).forEach((n) => n.remove()));
-    // drop Redfin ids (avoid duplicates) but keep tm- ids so the summary box keeps its styling
-    [c, ...c.querySelectorAll('[id]')].forEach((n) => { if (n.id && !n.id.startsWith('tm-')) n.removeAttribute('id'); });
-    c.querySelectorAll('img').forEach((img) => {
-      const src = img.currentSrc || img.src;
-      if (src) img.setAttribute('src', new URL(src, location.href).href);
-      img.removeAttribute('srcset');
-      img.removeAttribute('loading');
-    });
-    c.querySelectorAll('a[href]').forEach((a) => a.setAttribute('href', new URL(a.getAttribute('href'), location.href).href));
-    return c;
-  }
-
   function captureCurrent(data) {
-    const p = findParts();
-    if (!p.top && !p.about) return null;
-    const parts = [];
-    if (p.top) parts.push(sanitize(p.top).outerHTML);
-    if (p.summary && p.top && !p.top.contains(p.summary)) parts.push(sanitize(p.summary).outerHTML);
-    if (p.about) parts.push(sanitize(p.about).outerHTML);
-    const addr = (document.title.split('|')[0] || location.pathname).trim();
+    const pid = propId();
+    if (!pid || !data) return null;
     return {
-      key: pageKey(), pid: propId(), url: location.href.split('#')[0], addr,
-      photo: p.photo ? new URL(p.photo.currentSrc || p.photo.src, location.href).href : '',
-      parts, data: data || null, exclude: false, savedAt: Date.now(),
+      key: SITE.keyFor(pid, location.href), site: SITE.id, pid, url: location.href.split('#')[0],
+      addr: data.fullAddress || (document.title.split('|')[0] || location.pathname).trim(),
+      photo: data.photo || '', desc: data.desc || '',
+      data, exclude: false, savedAt: Date.now(),
     };
   }
 
-  // Fill in table data for stored comps saved by older versions (no data, or no sale/listing type)
+  // Comps saved before 3.0 stored copies of the Redfin page instead of a description
+  function legacyDesc(c) {
+    if (c.desc != null || !c.parts || !c.parts.length) return c.desc || '';
+    const doc = new DOMParser().parseFromString(c.parts.join(''), 'text/html');
+    const r = doc.querySelector('.remarks');
+    return r ? r.textContent.trim() : '';
+  }
+
+  // Fill in table data for stored comps saved by older versions (no data, or no sale/listing type).
+  // Only comps from the site you're on can be refetched; the other site's data isn't reachable from here.
   async function withData(set) {
     let changed = false;
     for (const c of set) {
-      if (!c.pid) c.pid = ((c.url || c.key || '').match(HOME_RE) || [])[1]; // saves from v1
+      if (siteOf(c) !== SITE) continue;
+      if (!c.pid) c.pid = SITE.pidOf(c.url || c.key); // saves from v1
       if ((!c.data || !c.data.kind) && c.pid) {
         try {
-          const fresh = await getHomeData(c.pid);
+          const fresh = await getHomeData(c.pid, c.url);
           const old = c.data || {};
           // keep values the old save had (e.g. read off the page banner) where the feed is blank
           Object.keys(old).forEach((k) => { if (fresh[k] == null && old[k] != null) fresh[k] = old[k]; });
@@ -563,6 +730,27 @@
     return r;
   }
 
+  function compPage(c) {
+    const d = c.data || {};
+    const e = effective(c);
+    const wrap = document.createElement('div');
+    wrap.className = 'tmc-page tmc-comp';
+    let html = '';
+    if (e.kind === 'listing' && c.data) {
+      html += `<div class="tmc-listnote">${esc(`Listing comp: ${fmtMoney(e.listPrice)} list` +
+        (e.pct ? ` less ${e.pct}% = ${fmtMoney(e.price)} (${fmtMoney(e.ppsf, 2)}/sf)` : '') +
+        (e.date ? `, listed ${fmtDate(e.date, d.tz, false)}` : ''))}</div>`;
+    }
+    html += `<h1 class="tmc-addr">${esc(d.fullAddress || c.addr)}</h1>`;
+    if (c.photo) html += `<img class="tmc-photo" src="${esc(c.photo)}" alt="">`;
+    if (c.data) html += `<div class="tm-sum">${summaryRows(d, c.kindOverride)}</div>`;
+    const desc = legacyDesc(c);
+    if (desc) html += `<div class="tmc-about"><h3>About this home</h3><p>${esc(desc)}</p></div>`;
+    html += `<div class="tmc-src">${esc(siteOf(c).name)}: ${esc(c.url)}</div>`;
+    wrap.innerHTML = html;
+    return wrap;
+  }
+
   function render(comps, withSummary) {
     const r = root();
     r.innerHTML = '';
@@ -577,36 +765,7 @@
           `${model.anyAuto ? ' (highest $/SF comp dropped as an outlier)' : ''}.</div>` : '');
       r.appendChild(pg);
     }
-    comps.forEach((c) => {
-      const wrap = document.createElement('div');
-      wrap.className = 'tmc-page tmc-comp';
-      const e = effective(c);
-      if (e.kind === 'listing' && c.data) {
-        const note = document.createElement('div');
-        note.className = 'tmc-listnote';
-        note.textContent = `Listing comp: ${fmtMoney(e.listPrice)} list` +
-          (e.pct ? ` less ${e.pct}% = ${fmtMoney(e.price)} (${fmtMoney(e.ppsf, 2)}/sf)` : '') +
-          (e.date ? `, listed ${fmtDate(e.date, c.data.tz, false)}` : '');
-        wrap.appendChild(note);
-      }
-      if (c.photo) {
-        const img = document.createElement('img');
-        img.className = 'tmc-photo';
-        img.src = c.photo;
-        wrap.appendChild(img);
-      }
-      c.parts.forEach((html) => {
-        const sec = document.createElement('div');
-        sec.className = 'tmc-sec';
-        sec.innerHTML = html;
-        wrap.appendChild(sec);
-      });
-      const src = document.createElement('div');
-      src.className = 'tmc-src';
-      src.textContent = c.url;
-      wrap.appendChild(src);
-      r.appendChild(wrap);
-    });
+    comps.forEach((c) => r.appendChild(compPage(c)));
     if (CFG.fitOnePage) fitPages(r);
     return r;
   }
@@ -640,8 +799,8 @@
   let mode = 'single'; // 'single' | 'set'
 
   function renderSingle() {
-    if (!isHome()) { root().innerHTML = ''; return false; }
-    const c = captureCurrent();
+    if (!isHome() || !curData || String(curData.pid) !== String(propId())) { root().innerHTML = ''; return false; }
+    const c = captureCurrent(curData);
     if (!c) return false;
     render([c], false);
     return true;
@@ -663,24 +822,26 @@
   });
   window.addEventListener('afterprint', () => {
     mode = 'single';
-    if (!CFG.hijackCmdP) document.body.classList.remove('tmc-active');
-    renderSingle();
+    document.body.classList.remove('tmc-active');
+    if (CFG.hijackCmdP && renderSingle()) document.body.classList.add('tmc-active');
   });
 
   /* ================================================================== *
    * Floating panel
    * ================================================================== */
   let panel;
+  const HINT = 'Unticked comps are struck from the averages. S = sale, L = listing (click to switch). R / Z = Redfin / Zillow.';
   function buildPanel() {
     panel = document.createElement('div');
     panel.id = 'tmc-panel';
     panel.innerHTML = `
       <div class="tmc-head">
         <label><input type="checkbox" id="tmc-check"> <span id="tmc-check-label">Add to print set</span></label>
+        <button class="tmc-info" id="tmc-info" title="${HINT}" aria-expanded="false">i</button>
         <button class="tmc-toggle" id="tmc-toggle" title="Show / hide">&#9662;</button>
       </div>
       <div class="tmc-body">
-        <p class="tmc-hint" id="tmc-hint">Unticked comps are struck from the averages. S = sale, L = listing (click to switch).</p>
+        <p class="tmc-hint" id="tmc-hint">${HINT}</p>
         <ol id="tmc-list"></ol>
         <label class="tmc-sf">Subject SF <input type="text" inputmode="numeric" id="tmc-subject-sf" placeholder="e.g. 2,910"></label>
         <label class="tmc-sf">Listing discount <input type="text" inputmode="decimal" id="tmc-disc" style="flex:0 0 46px;text-align:right"> %</label>
@@ -701,6 +862,11 @@
     document.body.appendChild(panel);
     if (localStorage.getItem('tmcCollapsed') === '1') panel.classList.add('tmc-collapsed');
 
+    panel.querySelector('#tmc-info').onclick = (e) => {
+      const open = panel.classList.toggle('tmc-hint-open');
+      e.currentTarget.setAttribute('aria-expanded', String(open));
+      if (open) panel.classList.remove('tmc-collapsed');
+    };
     panel.querySelector('#tmc-toggle').onclick = () => {
       panel.classList.toggle('tmc-collapsed');
       localStorage.setItem('tmcCollapsed', panel.classList.contains('tmc-collapsed') ? '1' : '0');
@@ -708,15 +874,16 @@
 
     panel.querySelector('#tmc-check').onchange = async (e) => {
       const checked = e.target.checked;
-      if (!checked) { save(load().filter((c) => c.key !== pageKey())); refresh(); return; }
+      const key = SITE.keyFor(propId(), location.href);
+      if (!checked) { save(load().filter((c) => c.key !== key)); refresh(); return; }
       let data = null;
-      try { data = await getHomeData(propId()); } catch (err) { /* table cells will be blank */ }
-      await ensureBox();
+      let failure = null;
+      try { data = await getHomeData(propId(), location.href); } catch (err) { failure = err; }
       const c = captureCurrent(data);
-      if (!c) { flash('Page not loaded yet. Try again in a second.'); e.target.checked = false; return; }
+      if (!c) { flash(failure ? failure.message : 'Page not loaded yet. Try again in a second.'); e.target.checked = false; return; }
       const set = load();
       const i = set.findIndex((s) => s.key === c.key);
-      if (i >= 0) { c.override = set[i].override; c.exclude = set[i].exclude; set[i] = c; } else set.push(c);
+      if (i >= 0) { c.override = set[i].override; c.exclude = set[i].exclude; c.kindOverride = set[i].kindOverride; set[i] = c; } else set.push(c);
       save(set);
       refresh();
     };
@@ -727,9 +894,11 @@
       if (opts().summaryPage) askSubjectSf();
       printWith(set, opts().summaryPage);
     };
-    panel.querySelector('#tmc-print-one').onclick = () => {
-      const c = captureCurrent();
-      if (c) printWith([c], false);
+    panel.querySelector('#tmc-print-one').onclick = async () => {
+      let data = curData;
+      try { data = await getHomeData(propId(), location.href); } catch (err) { /* use what's on screen */ }
+      const c = captureCurrent(data);
+      if (c) printWith([c], false); else flash('Page not loaded yet. Try again in a second.');
     };
     panel.querySelector('#tmc-copy').onclick = () => { askSubjectSf(); copyTable().catch((e) => flash('Copy failed: ' + e.message)); };
     panel.querySelector('#tmc-preview').onclick = async (e) => {
@@ -762,7 +931,7 @@
       const v = discBox.value.replace(/[^\d.]/g, '');
       setOpt('listDiscountPct', v === '' ? 0 : parseFloat(v));
       const box = document.getElementById('tm-sale-summary');
-      if (box) delete box.dataset.tmcPid; // redraw the "Less X%" line
+      if (box) delete box.dataset.tmcSig; // redraw the "Less X%" line
       update(() => {});
     };
   }
@@ -810,17 +979,15 @@
     const home = isHome();
     const chk = panel.querySelector('#tmc-check');
     chk.disabled = !home;
-    chk.checked = home && set.some((c) => c.key === pageKey());
+    chk.checked = home && set.some((c) => c.key === SITE.keyFor(propId(), location.href));
     const lbl = panel.querySelector('#tmc-check-label');
     if (!lbl.dataset.text) lbl.textContent = home ? 'Add to print set' : 'Comp set';
     panel.querySelector('#tmc-print-one').disabled = !home;
-    // printing reuses Redfin's home page styles, so print from a home page
-    panel.querySelector('#tmc-print-set').disabled = !set.length || !home;
-    panel.querySelector('#tmc-preview').disabled = !set.length || !home;
+    panel.querySelector('#tmc-print-set').disabled = !set.length;
+    panel.querySelector('#tmc-preview').disabled = !set.length;
     panel.querySelector('#tmc-copy').disabled = !set.length;
     panel.querySelector('#tmc-print-set').textContent = `Print set (${set.length})`;
     panel.querySelector('#tmc-empty').style.display = set.length ? 'none' : '';
-    panel.querySelector('#tmc-hint').style.display = set.length ? '' : 'none';
 
     const sfBox = panel.querySelector('#tmc-subject-sf');
     if (document.activeElement !== sfBox) sfBox.value = opts().subjectSf || '';
@@ -848,18 +1015,23 @@
         const next = cur === 'listing' ? 'sale' : 'listing';
         if (s[i].data && s[i].data.kind === next) delete s[i].kindOverride; else s[i].kindOverride = next;
       });
+      const site = siteOf(c);
+      const tag = document.createElement('span');
+      tag.className = `tmc-site tmc-site-${site.id}`;
+      tag.textContent = site.name[0];
+      tag.title = `From ${site.name}`;
       const name = document.createElement('span');
       name.className = 'tmc-name';
       name.textContent = (c.data && c.data.street ? expandStreet(c.data.street) : c.addr.split(',')[0]) +
         (e.ppsf ? `  ${fmtMoney(e.ppsf)}/sf` : '');
-      name.title = c.addr;
-      li.append(inc, kindBtn, name);
+      name.title = `${c.addr} (${site.name})`;
+      li.append(inc, kindBtn, tag, name);
       if (ex[i].auto) {
-        const tag = document.createElement('span');
-        tag.className = 'tmc-auto';
-        tag.textContent = 'high';
-        tag.title = 'Highest $/SF, dropped automatically';
-        li.appendChild(tag);
+        const high = document.createElement('span');
+        high.className = 'tmc-auto';
+        high.textContent = 'high';
+        high.title = 'Highest $/SF, dropped automatically';
+        li.appendChild(high);
       } else if (ex[i].manual) {
         const reset = document.createElement('button');
         reset.textContent = '↺';
@@ -894,13 +1066,13 @@
   let lastHref = '';
   let warmTries = 0;
   setInterval(() => {
-    if (location.href !== lastHref) { lastHref = location.href; warmTries = 0; refresh(); }
+    if (location.href !== lastHref) { lastHref = location.href; warmTries = 0; curData = null; refresh(); }
     if (!isHome()) return;
     ensureBox();
     // keep the one-pager pre-rendered so the photo is already loaded when you hit Cmd+P
     if (CFG.hijackCmdP && mode === 'single' && warmTries < 20 && !document.body.classList.contains('tmc-preview')) {
       warmTries++;
-      if (document.getElementById('tm-sale-summary') && renderSingle()) {
+      if (curData && renderSingle()) {
         document.body.classList.add('tmc-active');
         if (warmTries > 5) warmTries = 20;
       }
