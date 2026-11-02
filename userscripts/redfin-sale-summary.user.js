@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Redfin Comp Printer
+// @name         Comp Batching Tool for Redfin and Zillow
 // @namespace    loneoakfund
-// @version      3.0.0
+// @version      3.0.1
 // @description  Sale summary box (with unit type) on Redfin and Zillow home pages, and a comp collector shared across both sites that copies a comp table for Excel and prints a summary table page plus one page per comp.
 // @match        https://www.redfin.com/*
 // @match        https://www.zillow.com/*
@@ -436,7 +436,7 @@
       box.dataset.tmcSig = sig;
       box.innerHTML = summaryRows(d);
     } catch (e) {
-      console.warn('[Comp Printer] summary box failed', e);
+      console.warn('[Comp Batching Tool] summary box failed', e);
     } finally {
       boxFor = null;
     }
