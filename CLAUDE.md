@@ -21,7 +21,7 @@ LOF standalone valuation calculator and tooling — small static site for local 
 | `app.js` | State, calculator logic, rendering, clipboard, localStorage (~200KB single file) |
 | `loan-docs-data.js` | Data for Loan Doc Manual tab |
 | `loandoctemplates/` | `.docx` templates: AGREEMENT, EFT, INSTRUCTIONS, NOTE, TD |
-| `Dockerfile`, `nginx.conf`, `docker-compose.yml` | Static Nginx serving |
+| `Dockerfile`, `nginx.conf`, `docker-compose.yml` | Static Nginx serving. The Dockerfile copies files by name: the site is public, so a new served file must be added there, and nothing else in the repo (loan doc templates, notes) may be copied in. |
 | `tests/keyboard-flow.spec.mjs` | Playwright e2e |
 
 ## Top-level tabs (index.html)
