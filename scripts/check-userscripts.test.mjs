@@ -1,9 +1,9 @@
 /* Run: node --test scripts/check-userscripts.test.mjs
 
-   Teammates install the userscripts from /install/ and Tampermonkey updates them
+   Teammates install the userscripts from /install/ and Violentmonkey updates them
    from here. Three things have to agree, and none of them fails loudly:
    - the files in userscripts/, which Nginx serves at /userscripts/<name>,
-   - each script's @downloadURL / @updateURL, which Tampermonkey re-fetches
+   - each script's @downloadURL / @updateURL, which Violentmonkey re-fetches
      (a wrong one means nobody ever gets another update),
    - the install guide's Install links (a wrong one is a 404 in a teammate's browser). */
 import { test } from "node:test";
@@ -32,7 +32,7 @@ test("there are scripts to serve", () => {
 
 for (const name of FILES) {
   test(`userscripts/${name} updates from where it's served`, () => {
-    assert.match(name, /\.user\.js$/, "Tampermonkey only installs a .user.js address");
+    assert.match(name, /\.user\.js$/, "Violentmonkey only installs a .user.js address");
     const source = read(`userscripts/${name}`);
     const address = `${HOST}/userscripts/${name}`;
     assert.deepEqual(headerValues(source, "downloadURL"), [address]);
