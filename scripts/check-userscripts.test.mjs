@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 
 // Public address teammates' browsers reach loftools at, no trailing slash.
-const HOST = "https://loftools.thepopcorn.party";
+const HOST = "https://loftools.azurewebsites.net";
 
 const ROOT = new URL("..", import.meta.url);
 const read = (relative) => readFileSync(new URL(relative, ROOT), "utf8");

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TitlePro247 → Humperdink Property Autofill
 // @namespace    loneoakfund
-// @version      0.5.2
+// @version      0.5.3
 // @description  Scrape property report on TitlePro247 and autofill the New Property modal in Humperdink.
 // @match        https://www.titlepro247.com/Orders/Home/Html/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
@@ -11,8 +11,8 @@
 // @grant        GM_setClipboard
 // @grant        unsafeWindow
 // @run-at       document-idle
-// @downloadURL  https://loftools.thepopcorn.party/userscripts/titlepro-to-humperdink.user.js
-// @updateURL    https://loftools.thepopcorn.party/userscripts/titlepro-to-humperdink.user.js
+// @downloadURL  https://loftools.azurewebsites.net/userscripts/titlepro-to-humperdink.user.js
+// @updateURL    https://loftools.azurewebsites.net/userscripts/titlepro-to-humperdink.user.js
 // ==/UserScript==
 
 (function () {

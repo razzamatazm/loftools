@@ -1,7 +1,7 @@
 # Userscripts
 
 Userscripts for Humperdink, TitlePro and Redfin. Teammates run them in Violentmonkey (Chrome or Edge), install
-them from the guide at https://loftools.thepopcorn.party/install/ (`install/index.html`), and Violentmonkey
+them from the guide at https://loftools.azurewebsites.net/install/ (`install/index.html`), and Violentmonkey
 updates them from the addresses in each script's header. The guide used to point at Tampermonkey; it now points
 at Violentmonkey, so keep new scripts to APIs Violentmonkey supports (see https://violentmonkey.github.io/api/gm/).
 
@@ -15,7 +15,7 @@ at Violentmonkey, so keep new scripts to APIs Violentmonkey supports (see https:
 ## Rules
 
 - Every change to a script raises its `@version`. Violentmonkey only offers an update when the version goes up, so a change without a bump reaches nobody.
-- `@downloadURL` and `@updateURL` must both be `https://loftools.thepopcorn.party/userscripts/<file name>`, and the file name must end in `.user.js`.
+- `@downloadURL` and `@updateURL` must both be `https://loftools.azurewebsites.net/userscripts/<file name>`, and the file name must end in `.user.js`.
 - Don't edit the logic of `send-to-hot-task.user.js` here. Change it in `operation-hot-task`, then copy it over, keeping this copy's update addresses.
 - Refresh that copy when Hot Task deploys the script change, not before. A copy running ahead of the live Hot Task app can open a Teams screen the app doesn't have yet.
 - Adding or renaming a script means adding or renaming its Install link in `install/index.html`, unless it's personal. Personal scripts (`humperdink-copy-link.user.js`) are served but never linked from the guide; list them in `PERSONAL` in `scripts/check-userscripts.test.mjs`.

@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Send to Hot Task
 // @namespace    https://github.com/razzamatazm/operation-hot-task
-// @version      2.0.0
+// @version      2.0.1
 // @description  Copy a Humperdink loan to the clipboard, then open Hot Task in Teams desktop on a new LOI Check.
 // @author       Operation Hot Task
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
 // @run-at       document-idle
 // @grant        none
-// @downloadURL  https://loftools.thepopcorn.party/userscripts/send-to-hot-task.user.js
-// @updateURL    https://loftools.thepopcorn.party/userscripts/send-to-hot-task.user.js
+// @downloadURL  https://loftools.azurewebsites.net/userscripts/send-to-hot-task.user.js
+// @updateURL    https://loftools.azurewebsites.net/userscripts/send-to-hot-task.user.js
 // ==/UserScript==
 
 /* See README.md beside this file for install instructions. This file is the

@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Humperdink Copy Link: payment link only
 // @namespace    loneoakfund
-// @version      0.1.0
+// @version      0.1.1
 // @description  Make Humperdink's Copy Link button put just the PayJunction payment URL on the clipboard, without the sentence around it.
 // @match        https://humperdink.loneoakfund.com/*
 // @run-at       document-start
 // @grant        none
-// @downloadURL  https://loftools.thepopcorn.party/userscripts/humperdink-copy-link.user.js
-// @updateURL    https://loftools.thepopcorn.party/userscripts/humperdink-copy-link.user.js
+// @downloadURL  https://loftools.azurewebsites.net/userscripts/humperdink-copy-link.user.js
+// @updateURL    https://loftools.azurewebsites.net/userscripts/humperdink-copy-link.user.js
 // ==/UserScript==
 
 /* Humperdink's Copy Link copies a sentence:

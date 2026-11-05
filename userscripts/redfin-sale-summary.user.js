@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Comp Batching Tool for Redfin and Zillow
 // @namespace    loneoakfund
-// @version      3.0.1
+// @version      3.0.2
 // @description  Sale summary box (with unit type) on Redfin and Zillow home pages, and a comp collector shared across both sites that copies a comp table for Excel and prints a summary table page plus one page per comp.
 // @match        https://www.redfin.com/*
 // @match        https://www.zillow.com/*
@@ -10,8 +10,8 @@
 // @grant        GM_addValueChangeListener
 // @grant        GM_setClipboard
 // @run-at       document-idle
-// @downloadURL  https://loftools.thepopcorn.party/userscripts/redfin-sale-summary.user.js
-// @updateURL    https://loftools.thepopcorn.party/userscripts/redfin-sale-summary.user.js
+// @downloadURL  https://loftools.azurewebsites.net/userscripts/redfin-sale-summary.user.js
+// @updateURL    https://loftools.azurewebsites.net/userscripts/redfin-sale-summary.user.js
 // ==/UserScript==
 
 /* One script for both sites so they share one comp set: GM storage belongs to the

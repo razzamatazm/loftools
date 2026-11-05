@@ -22,6 +22,7 @@ LOF standalone valuation calculator and tooling — small static site for local 
 | `loan-docs-data.js` | Data for Loan Doc Manual tab |
 | `loandoctemplates/` | `.docx` templates: AGREEMENT, EFT, INSTRUCTIONS, NOTE, TD |
 | `Dockerfile`, `nginx.conf`, `docker-compose.yml` | Static Nginx serving. The Dockerfile copies files by name: the site is public, so a new served file must be added there, and nothing else in the repo (loan doc templates, notes) may be copied in. |
+| `server.js`, `scripts/deploy-azure.sh` | Azure Web App: dependency-free Node static server mirroring nginx.conf, and the deploy script that stages the public files by name (keep its list in step with the Dockerfile) |
 | `tests/keyboard-flow.spec.mjs` | Playwright e2e |
 
 ## Top-level tabs (index.html)
@@ -57,7 +58,11 @@ docker compose down
 node --check app.js
 docker compose config
 
-# Deploy to server (pulls origin/main on 10.0.0.7:2202, rebuilds container)
+# Deploy to Azure Web App loftools (shares Operation Hot Task's App Service plan).
+# Ships the working tree; server.js serves the staged files. Needs `az login` on the LOF tenant.
+scripts/deploy-azure.sh
+
+# Old NAS deploy (pulls origin/main on 10.0.0.7:2202, rebuilds container), being retired
 # Push first; server only sees what's on GitHub. Needs "loftools-server" in ~/.ssh/config.
 scripts/deploy.sh
 
