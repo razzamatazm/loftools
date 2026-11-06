@@ -62,10 +62,6 @@ docker compose config
 # Ships the working tree; server.js serves the staged files. Needs `az login` on the LOF tenant.
 scripts/deploy-azure.sh
 
-# Old NAS deploy (pulls origin/main on 10.0.0.7:2202, rebuilds container), being retired
-# Push first; server only sees what's on GitHub. Needs "loftools-server" in ~/.ssh/config.
-scripts/deploy.sh
-
 # E2E test
 npm install
 npx playwright install chromium
