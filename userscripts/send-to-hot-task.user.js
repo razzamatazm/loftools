@@ -1,19 +1,19 @@
 // ==UserScript==
 // @name         Send to Hot Task
 // @namespace    https://github.com/razzamatazm/operation-hot-task
-// @version      2.0.1
+// @version      2.0.2
 // @description  Copy a Humperdink loan to the clipboard, then open Hot Task in Teams desktop on a new LOI Check.
 // @author       Operation Hot Task
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
 // @run-at       document-idle
 // @grant        none
-// @downloadURL  https://loftools.azurewebsites.net/userscripts/send-to-hot-task.user.js
-// @updateURL    https://loftools.azurewebsites.net/userscripts/send-to-hot-task.user.js
+// @downloadURL  https://operation-hot-task-app-lof.azurewebsites.net/userscripts/send-to-hot-task.user.js
+// @updateURL    https://operation-hot-task-app-lof.azurewebsites.net/userscripts/send-to-hot-task.user.js
 // ==/UserScript==
 
 /* See README.md beside this file for install instructions. This file is the
-   source of truth; loftools serves a copy of it, and Tampermonkey updates from
-   that copy, so raise @version with every change or nobody receives it.
+   source of truth. Hot Task serves it at /userscripts/ and Violentmonkey updates
+   from there, so raise @version with every change or nobody receives it.
 
    The payload shape is the contract in packages/shared/src/humperdink.ts —
    `HumperdinkPayload` there, `parseHumperdinkPayload` reads what this writes.

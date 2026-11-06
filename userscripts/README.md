@@ -7,7 +7,7 @@ at Violentmonkey, so keep new scripts to APIs Violentmonkey supports (see https:
 
 | File | Source of truth |
 |---|---|
-| `send-to-hot-task.user.js` | `operation-hot-task` repo, `tools/humperdink/send-to-hot-task.user.js`. Hot Task's tests run that file against its parser and Teams app id. This is a served copy. |
+| `send-to-hot-task.user.js` | `operation-hot-task` repo. Bridge copy only: its update addresses point at Hot Task, so installs from this old address move there. Never edit it. |
 | `titlepro-to-humperdink.user.js` | This file. Behaviour notes live in `operation-hot-task` at `tools/titlepro/README.md`. |
 | `redfin-sale-summary.user.js` | This file. Runs on Redfin and Zillow; site-specific code is in its `REDFIN` and `ZILLOW` adapters. Its `@name` is "Comp Batching Tool for Redfin and Zillow" (it was "Redfin Comp Printer" up to 3.0.0). Keep the old file name: it is every install's update address, so renaming it cuts everyone off from updates. Change `@name` only with care: automatic updates keep the existing copy, but a manual reinstall from the guide matches by `@namespace` + `@name`, so a reinstall over a copy that hasn't updated yet adds a second copy. |
 | `humperdink-copy-link.user.js` | This file. Personal script, not for teammates: keep it off the install guide. |
@@ -15,9 +15,8 @@ at Violentmonkey, so keep new scripts to APIs Violentmonkey supports (see https:
 ## Rules
 
 - Every change to a script raises its `@version`. Violentmonkey only offers an update when the version goes up, so a change without a bump reaches nobody.
-- `@downloadURL` and `@updateURL` must both be `https://loftools.azurewebsites.net/userscripts/<file name>`, and the file name must end in `.user.js`.
-- Don't edit the logic of `send-to-hot-task.user.js` here. Change it in `operation-hot-task`, then copy it over, keeping this copy's update addresses.
-- Refresh that copy when Hot Task deploys the script change, not before. A copy running ahead of the live Hot Task app can open a Teams screen the app doesn't have yet.
+- `@downloadURL` and `@updateURL` must both be `https://loftools.azurewebsites.net/userscripts/<file name>` (the bridge copy points at Hot Task instead), and the file name must end in `.user.js`.
+- Hot Task serves its own scripts (Export to HT and Hot Task Panel) at `https://operation-hot-task-app-lof.azurewebsites.net/userscripts/`, and the install guide links them there. They ship with Hot Task's deploys; nothing to copy here.
 - Adding or renaming a script means adding or renaming its Install link in `install/index.html`, unless it's personal. Personal scripts (`humperdink-copy-link.user.js`) are served but never linked from the guide; list them in `PERSONAL` in `scripts/check-userscripts.test.mjs`.
 
 ## Check

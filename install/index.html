@@ -261,9 +261,9 @@
       <a class="back" href="/">&larr; Humperdink Tools</a>
       <h1>Set up the Humperdink browser add-ons</h1>
       <p class="lede">
-        Three small add-ons for Chrome and Microsoft Edge. One sends a Humperdink loan to Hot Task, one fills in a new
-        Humperdink property from a TitlePro report, and one collects sale comps from Redfin and Zillow and prints
-        them. Setup takes about five minutes, once. After that they update themselves.
+        Four small add-ons for Chrome and Microsoft Edge. One sends a Humperdink loan to Hot Task, one opens Hot Task
+        right on top of any Humperdink page, one fills in a new Humperdink property from a TitlePro report, and one
+        collects sale comps from Redfin and Zillow and prints them. Setup takes about five minutes, once. After that they update themselves.
       </p>
 
       <section>
@@ -357,7 +357,17 @@
               <h3>Export to HT</h3>
               <p>Sends a Humperdink loan to a new LOI Check in Hot Task.</p>
             </div>
-            <a class="button" href="/userscripts/send-to-hot-task.user.js">Install</a>
+            <a class="button" href="https://operation-hot-task-app-lof.azurewebsites.net/userscripts/send-to-hot-task.user.js">Install</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-row">
+            <div>
+              <h3>Hot Task Panel</h3>
+              <p>Puts a round Hot Task button in the bottom right of every Humperdink page. Click it to open Hot Task over the page, without leaving Humperdink.</p>
+            </div>
+            <a class="button" href="https://operation-hot-task-app-lof.azurewebsites.net/userscripts/hot-task-panel.user.js">Install</a>
           </div>
         </div>
 
@@ -401,6 +411,9 @@
             Open any loan in Humperdink, or reload one you already have open. An
             <span class="ui">Export to HT</span> button appears in the Loan Terms header, right after the
             LOI button.
+          </li>
+          <li>
+            On any Humperdink page, a round Hot Task button sits in the bottom right corner.
           </li>
           <li>
             Open a property report in TitlePro. A blue <span class="ui">Send to Humperdink</span> button appears

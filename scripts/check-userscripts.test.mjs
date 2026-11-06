@@ -12,6 +12,11 @@ import { readdirSync, readFileSync } from "node:fs";
 
 // Public address teammates' browsers reach loftools at, no trailing slash.
 const HOST = "https://loftools.azurewebsites.net";
+// Hot Task serves its own scripts; the guide links them there.
+const HOT_TASK = "https://operation-hot-task-app-lof.azurewebsites.net";
+const HOT_TASK_SCRIPTS = ["hot-task-panel.user.js", "send-to-hot-task.user.js"];
+// Kept here only so installs from the old address follow it to Hot Task's.
+const BRIDGES = ["send-to-hot-task.user.js"];
 
 const ROOT = new URL("..", import.meta.url);
 const read = (relative) => readFileSync(new URL(relative, ROOT), "utf8");
@@ -34,7 +39,7 @@ for (const name of FILES) {
   test(`userscripts/${name} updates from where it's served`, () => {
     assert.match(name, /\.user\.js$/, "Violentmonkey only installs a .user.js address");
     const source = read(`userscripts/${name}`);
-    const address = `${HOST}/userscripts/${name}`;
+    const address = `${BRIDGES.includes(name) ? HOT_TASK : HOST}/userscripts/${name}`;
     assert.deepEqual(headerValues(source, "downloadURL"), [address]);
     assert.deepEqual(headerValues(source, "updateURL"), [address]);
     assert.equal(headerValues(source, "version").length, 1, "one @version, or updates are never offered");
@@ -43,6 +48,9 @@ for (const name of FILES) {
 
 test("the install guide links every shared script and nothing else", () => {
   const linked = [...INSTALL_PAGE.matchAll(/href="([^"]+\.user\.js)"/g)].map((m) => m[1]).sort();
-  const shared = FILES.filter((name) => !PERSONAL.includes(name));
-  assert.deepEqual(linked, shared.map((name) => `/userscripts/${name}`).sort());
+  const shared = FILES.filter((name) => !PERSONAL.includes(name) && !BRIDGES.includes(name));
+  assert.deepEqual(
+    linked,
+    [...shared.map((name) => `/userscripts/${name}`), ...HOT_TASK_SCRIPTS.map((name) => `${HOT_TASK}/userscripts/${name}`)].sort()
+  );
 });
