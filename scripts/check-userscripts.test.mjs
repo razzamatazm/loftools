@@ -14,7 +14,7 @@ import { readdirSync, readFileSync } from "node:fs";
 const HOST = "https://loftools.azurewebsites.net";
 // Hot Task serves its own scripts; the guide links them there.
 const HOT_TASK = "https://operation-hot-task-app-lof.azurewebsites.net";
-const HOT_TASK_SCRIPTS = ["hot-task-panel.user.js", "send-to-hot-task.user.js"];
+const HOT_TASK_SCRIPTS = ["hot-task-panel.user.js"];
 // Kept here only so installs from the old address follow it to Hot Task's.
 const BRIDGES = ["send-to-hot-task.user.js"];
 

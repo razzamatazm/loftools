@@ -261,9 +261,9 @@
       <a class="back" href="/">&larr; Humperdink Tools</a>
       <h1>Set up the Humperdink browser add-ons</h1>
       <p class="lede">
-        Four small add-ons for Chrome and Microsoft Edge. One sends a Humperdink loan to Hot Task, one opens Hot Task
-        right on top of any Humperdink page, one fills in a new Humperdink property from a TitlePro report, and one
-        collects sale comps from Redfin and Zillow and prints them. Setup takes about five minutes, once. After that they update themselves.
+        Three small add-ons for Chrome and Microsoft Edge. One brings Hot Task into Humperdink: it opens Hot Task
+        right on top of any Humperdink page and sends a loan to a new LOI Check. One fills in a new Humperdink
+        property from a TitlePro report, and one collects sale comps from Redfin and Zillow and prints them. Setup takes about five minutes, once. After that they update themselves.
       </p>
 
       <section>
@@ -354,18 +354,8 @@
         <div class="card">
           <div class="card-row">
             <div>
-              <h3>Export to HT</h3>
-              <p>Sends a Humperdink loan to a new LOI Check in Hot Task.</p>
-            </div>
-            <a class="button" href="https://operation-hot-task-app-lof.azurewebsites.net/userscripts/send-to-hot-task.user.js">Install</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-row">
-            <div>
               <h3>Hot Task Panel</h3>
-              <p>Puts a round Hot Task button in the bottom right of every Humperdink page. Click it to open Hot Task over the page, without leaving Humperdink.</p>
+              <p>Puts a round Hot Task button in the bottom right of every Humperdink page. Click it to open Hot Task over the page, without leaving Humperdink. On a loan, it also adds an Export to HT button that sends the loan to a new LOI Check.</p>
             </div>
             <a class="button" href="https://operation-hot-task-app-lof.azurewebsites.net/userscripts/hot-task-panel.user.js">Install</a>
           </div>
@@ -396,6 +386,10 @@
           copy, and this copy keeps itself up to date.
         </p>
         <p class="note">
+          Export to HT used to be its own add-on, called Send to Hot Task. It's part of Hot Task Panel now. If
+          the Violentmonkey dashboard lists both, remove Send to Hot Task.
+        </p>
+        <p class="note">
           The Comp Batching Tool used to be called Redfin Comp Printer. If the Violentmonkey dashboard lists both
           names, remove Redfin Comp Printer, or you'll get two summary boxes and two panels.
         </p>
@@ -410,10 +404,7 @@
           <li>
             Open any loan in Humperdink, or reload one you already have open. An
             <span class="ui">Export to HT</span> button appears in the Loan Terms header, right after the
-            LOI button.
-          </li>
-          <li>
-            On any Humperdink page, a round Hot Task button sits in the bottom right corner.
+            LOI button, and a round Hot Task button sits in the bottom right corner.
           </li>
           <li>
             Open a property report in TitlePro. A blue <span class="ui">Send to Humperdink</span> button appears
@@ -435,15 +426,26 @@
             it looks faded, the loan's properties are still loading. Give it a second.
           </li>
           <li>
-            It copies the loan and opens Hot Task in Teams on a new LOI Check. The first time, your browser
-            asks whether to open Microsoft Teams. Tick <span class="ui">Always allow</span> and click
-            <span class="ui">Open</span>, and it won't ask again.
+            The first time, it asks where Export to HT should open: <span class="ui">Panel</span> or
+            <span class="ui">Teams</span>. It remembers your answer in this browser, and you can change it any
+            time in the Panel's settings menu.
+            <ul>
+              <li>
+                <span class="ui">Panel</span> opens Hot Task over the Humperdink page on a new LOI Check.
+              </li>
+              <li>
+                <span class="ui">Teams</span> copies the loan and opens Hot Task in Teams on a new LOI Check.
+                The first time, your browser asks whether to open Microsoft Teams. Tick
+                <span class="ui">Always allow</span> and click <span class="ui">Open</span>, and it won't ask
+                again.
+              </li>
+            </ul>
           </li>
           <li>
-            Folder Name, the Humperdink link and the property addresses fill in on their own. If they don't,
-            press <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>⌘</kbd>+<kbd>V</kbd> on a Mac) — the form opens with
-            your cursor already in it, and pasting into any field on the form is the import. There is no
-            paste box.
+            Folder Name, the Humperdink link and the property addresses fill in on their own. In Teams, if
+            they don't, press <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>⌘</kbd>+<kbd>V</kbd> on a Mac). The form
+            opens with your cursor already in it, and pasting into any field on the form is the import. There
+            is no paste box.
           </li>
           <li>
             Fill in the terms yourself, copied straight from the loan committee approval email thread, and
