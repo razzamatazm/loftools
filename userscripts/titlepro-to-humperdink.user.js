@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         TitlePro247 → Humperdink Property Autofill
 // @namespace    loneoakfund
-// @version      0.5.3
+// @version      0.5.4
 // @description  Scrape property report on TitlePro247 and autofill the New Property modal in Humperdink.
 // @match        https://www.titlepro247.com/Orders/Home/Html/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
 // @match        https://www.titlepro247.com/v2/ViewOrder/*
+// @match        https://v3.titlepro247.com/v2/ViewOrder/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_setClipboard
