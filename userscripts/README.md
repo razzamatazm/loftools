@@ -10,6 +10,9 @@ at Violentmonkey, so keep new scripts to APIs Violentmonkey supports (see https:
 | `send-to-hot-task.user.js` | `operation-hot-task` repo. Bridge copy only: its update addresses point at Hot Task, so installs from this old address move there. Never edit it. |
 | `titlepro-to-humperdink.user.js` | This file. Behaviour notes live in `operation-hot-task` at `tools/titlepro/README.md`. |
 | `redfin-sale-summary.user.js` | This file. Runs on Redfin and Zillow; site-specific code is in its `REDFIN` and `ZILLOW` adapters. Its `@name` is "Comp Batching Tool for Redfin and Zillow" (it was "Redfin Comp Printer" up to 3.0.0). Keep the old file name: it is every install's update address, so renaming it cuts everyone off from updates. Change `@name` only with care: automatic updates keep the existing copy, but a manual reinstall from the guide matches by `@namespace` + `@name`, so a reinstall over a copy that hasn't updated yet adds a second copy. |
+| `humperdink-new-loan.user.js` | This file. |
+| `humperdink-standard-docs.user.js` | This file. Asks local download vs create in Humperdink on first use; the saved default lives in Humperdink's localStorage under `lofStandardDocsMode`. |
+| `humperdink-loan-docs-checker.user.js` | This file. Places its button after Standard Docs when that script is installed. |
 | `humperdink-copy-link.user.js` | This file. Personal script, not for teammates: keep it off the install guide. |
 
 ## Rules
