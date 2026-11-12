@@ -138,24 +138,20 @@ button {
   background: var(--panel-subtle);
 }
 
+/* Tabs wrap to a second row when they don't fit, so none hide behind Reset All Fields. */
 .tablist {
   display: flex;
+  flex-wrap: wrap;
   gap: 0;
   padding: 0 20px;
   flex: 1;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
 .reset-all-btn {
   flex: none;
   padding: 6px 12px;
   font-size: 13px;
-}
-
-.tablist::-webkit-scrollbar {
-  display: none;
 }
 
 /* Looks like a tab but navigates to the install guide; kept off .tab so tab switching ignores it. */
@@ -166,7 +162,7 @@ button {
   border-radius: 0;
   background: transparent;
   color: var(--muted);
-  padding: 13px 16px;
+  padding: 13px 12px;
   font-weight: 600;
   font-size: 14px;
   white-space: nowrap;
