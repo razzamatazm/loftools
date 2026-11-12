@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         Humperdink - Standard Docs Button
 // @namespace    https://humperdink.loneoakfund.com/
-// @version      1.2.0
+// @version      1.2.1
 // @description  Adds a "Standard Docs" button beside Loan Docs that generates the standard Loan Docs templates in one go, either downloaded to this computer or created in Humperdink.
 // @match        https://humperdink.loneoakfund.com/Loans/*
+// @match        https://loneo-qa-lmsapp.6technology.com/Loans/*
+// @match        https://beta-lmsapp.loneoakfund.com/Loans/*
 // @grant        none
 // @run-at       document-idle
 // @downloadURL  https://loftools.azurewebsites.net/userscripts/humperdink-standard-docs.user.js

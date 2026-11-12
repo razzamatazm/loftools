@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         Humperdink Copy Link: payment link only
 // @namespace    loneoakfund
-// @version      0.1.1
+// @version      0.1.2
 // @description  Make Humperdink's Copy Link button put just the PayJunction payment URL on the clipboard, without the sentence around it.
 // @match        https://humperdink.loneoakfund.com/*
+// @match        https://loneo-qa-lmsapp.6technology.com/*
+// @match        https://beta-lmsapp.loneoakfund.com/*
 // @run-at       document-start
 // @grant        none
 // @downloadURL  https://loftools.azurewebsites.net/userscripts/humperdink-copy-link.user.js

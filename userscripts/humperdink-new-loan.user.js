@@ -1,10 +1,14 @@
 // ==UserScript==
 // @name         Humperdink: New Loan on Loan Activity
 // @namespace    https://humperdink.loneoakfund.com/
-// @version      1.0.1
+// @version      1.0.2
 // @description  Adds the sidebar "New Loan" button to the Loan Activity page and opens Humperdink's own New Loan modal there.
 // @match        https://humperdink.loneoakfund.com/Loans/Activity/*
+// @match        https://loneo-qa-lmsapp.6technology.com/Loans/Activity/*
+// @match        https://beta-lmsapp.loneoakfund.com/Loans/Activity/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
+// @match        https://loneo-qa-lmsapp.6technology.com/Loans/Details/*
+// @match        https://beta-lmsapp.loneoakfund.com/Loans/Details/*
 // @grant        none
 // @run-at       document-idle
 // @noframes

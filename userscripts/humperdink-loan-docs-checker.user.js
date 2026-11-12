@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         Humperdink - Loan Docs Checker
 // @namespace    https://humperdink.loneoakfund.com/
-// @version      1.0.2
+// @version      1.1.2
 // @description  Checks (and optionally fills) Loan Docs dates and spelled-out amounts/rates from the closing date, term, amount and rates.
 // @match        https://humperdink.loneoakfund.com/Loans/*
+// @match        https://loneo-qa-lmsapp.6technology.com/Loans/*
+// @match        https://beta-lmsapp.loneoakfund.com/Loans/*
 // @grant        none
 // @run-at       document-idle
 // @downloadURL  https://loftools.azurewebsites.net/userscripts/humperdink-loan-docs-checker.user.js
@@ -19,6 +21,10 @@
 
   const BTN_ID = 'btn_LoanDocsCheckDocs';
   const PANEL_ID = 'ldc-panel';
+  const FILL_BTN_ID = 'ldc-fill-btn';
+  const FILL_POP_ID = 'ldc-fill-pop';
+  // Fill mode (beta) is opt-in per browser, switched from the Check Docs panel. Stored in Humperdink's localStorage.
+  const FILL_KEY = 'lofLoanDocsFillMode';
   const $ = () => window.jQuery;
 
   // ---------- number words ----------
@@ -246,7 +252,7 @@
       markField(c);
     });
     const bad = result.checks.filter((c) => !c.ok);
-    setButtonLabel(bad.length ? 'Check Docs (' + bad.length + ' off)' : 'Check Docs ✓');
+    setButtonLabel(bad.length ? 'Check Docs (' + bad.length + ' off)' : 'Check Docs');
     if (showPanel) renderPanel(result);
     else if (document.getElementById(PANEL_ID)) renderPanel(result);
     return result;
@@ -263,7 +269,6 @@
     }
     const bad = result.checks.filter((c) => !c.ok);
     const hb = 'font-size:11px;padding:2px 8px;margin-left:6px;border:1px solid #fff;border-radius:3px;cursor:pointer;';
-    const hbLight = hb + 'background:#fff;color:#2a6db0;font-weight:bold;';
     const hbGhost = hb + 'background:transparent;color:#fff;';
     const rows = result.checks.map((c, i) => {
       const status = c.ok ? '<span style="color:#2e7d32">✓</span>'
@@ -279,17 +284,22 @@
     panel.innerHTML =
       '<div style="background:#2a6db0;color:#fff;padding:6px 8px;display:flex;justify-content:space-between;align-items:center">' +
       '<b>Loan Docs Check: ' + (bad.length ? bad.length + ' to fix' : 'all good') + '</b>' +
-      '<span>' + (bad.length ? '<button data-ldc-fixall style="' + hbLight + '">Fix all</button>' : '') +
-      '<button data-ldc-recheck style="' + hbGhost + '">Recheck</button>' +
+      '<span><button data-ldc-recheck style="' + hbGhost + '">Recheck</button>' +
       '<button data-ldc-close style="' + hbGhost + '">×</button></span></div>' +
       errs + '<table style="width:100%;border-collapse:collapse">' + rows + '</table>' +
-      '<div style="color:#888;padding:6px 8px;font-size:10px">Fixes update the page like typing would. Save the loan as usual afterward.</div>';
+      '<div style="color:#888;padding:6px 8px;font-size:10px">Fixes update the page like typing would. Save the loan as usual afterward.</div>' +
+      '<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-top:1px solid #eee;cursor:pointer;font-weight:normal;margin:0">' +
+      '<input type="checkbox" data-ldc-fillmode' + (fillEnabled() ? ' checked' : '') + ' style="margin:0">' +
+      'Enable fill mode (beta): adds a Fill button beside Closing Date</label>';
+
+    panel.onchange = (e) => {
+      if (e.target.hasAttribute('data-ldc-fillmode')) setFillEnabled(e.target.checked);
+    };
 
     panel.onclick = (e) => {
       const t = e.target;
       if (t.hasAttribute('data-ldc-close')) { panel.remove(); return; }
       if (t.hasAttribute('data-ldc-recheck')) { runCheck(true); return; }
-      if (t.hasAttribute('data-ldc-fixall')) { bad.forEach(applyCheck); setTimeout(() => runCheck(true), 300); return; }
       if (t.hasAttribute('data-ldc-fix')) { applyCheck(result.checks[+t.getAttribute('data-ldc-fix')]); setTimeout(() => runCheck(true), 300); return; }
       if (t.hasAttribute('data-ldc-goto')) {
         e.preventDefault();
@@ -298,6 +308,130 @@
       }
     };
   }
+
+  // ---------- fill mode (beta) ----------
+  function fillEnabled() {
+    try { return localStorage.getItem(FILL_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function setFillEnabled(on) {
+    try { on ? localStorage.setItem(FILL_KEY, '1') : localStorage.removeItem(FILL_KEY); } catch (e) { /* storage blocked */ }
+    syncFillButton();
+  }
+
+  // Adds or removes the Fill button beside Closing Date to match the saved setting.
+  function syncFillButton() {
+    const existing = document.getElementById(FILL_BTN_ID);
+    if (!fillEnabled()) {
+      if (existing) existing.remove();
+      closeFillPopover();
+      return;
+    }
+    if (existing) { updateFillButtonState(); return; }
+    const closing = document.getElementById('txtClosingDate');
+    if (!closing || !document.getElementById('loanDocspanel')) return;
+    // jqxDateTimeInput renders as a block div; make it inline so the button sits beside it, not under it.
+    if (getComputedStyle(closing).display === 'block') {
+      closing.style.display = 'inline-block';
+      closing.style.verticalAlign = 'middle';
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = FILL_BTN_ID;
+    btn.textContent = 'Fill';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById(FILL_POP_ID) ? closeFillPopover() : renderFillPopover();
+    });
+    closing.insertAdjacentElement('afterend', btn);
+    // Picking or typing a date fires jqx's valueChanged; enable the button the moment a date lands.
+    try { $()(closing).on('valueChanged', () => setTimeout(updateFillButtonState, 0)); } catch (e) { /* no jqx */ }
+    updateFillButtonState();
+  }
+
+  // Everything Fill writes hangs off Closing Date, so the button stays grayed out until there is one.
+  function updateFillButtonState() {
+    const btn = document.getElementById(FILL_BTN_ID);
+    if (!btn) return;
+    const ready = !!getDate('txtClosingDate');
+    btn.disabled = !ready;
+    btn.title = ready
+      ? 'Preview and fill the dates and spelled-out text that follow from Closing Date (beta)'
+      : 'Enter a Closing Date first. Every date Fill sets is worked out from it.';
+    btn.style.cssText = 'font-size:11px;padding:2px 10px;margin-left:6px;vertical-align:middle;border-radius:3px;font-weight:bold;' +
+      (ready ? 'border:1px solid #2a6db0;background:#fff;color:#2a6db0;cursor:pointer;'
+        : 'border:1px solid #bbb;background:#f2f2f2;color:#999;cursor:not-allowed;');
+    if (!ready) closeFillPopover();
+  }
+
+  function closeFillPopover() {
+    const pop = document.getElementById(FILL_POP_ID);
+    if (pop) pop.remove();
+  }
+
+  // Ids the user unticked in the popover; kept across re-renders so a recheck doesn't re-tick them.
+  const skipped = new Set();
+
+  function renderFillPopover() {
+    const btn = document.getElementById(FILL_BTN_ID);
+    if (!btn || !$()) return;
+    const result = buildChecks();
+    const todo = result.checks.filter((c) => !c.ok);
+
+    let pop = document.getElementById(FILL_POP_ID);
+    if (!pop) {
+      pop = document.createElement('div');
+      pop.id = FILL_POP_ID;
+      pop.style.cssText = 'position:absolute;width:440px;max-height:60vh;overflow:auto;z-index:20001;background:#fff;' +
+        'border:1px solid #2a6db0;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,.25);font-size:12px;';
+      document.body.appendChild(pop);
+    }
+    const r = btn.getBoundingClientRect();
+    pop.style.top = (r.bottom + window.scrollY + 4) + 'px';
+    pop.style.left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - 448)) + 'px';
+
+    const rows = todo.map((c, i) =>
+      '<tr style="border-top:1px solid #eee">' +
+      '<td style="padding:4px;width:18px"><input type="checkbox" data-ldc-pick="' + i + '"' + (skipped.has(c.id) ? '' : ' checked') + ' style="margin:0"></td>' +
+      '<td style="padding:4px;width:150px">' + esc(c.label) + (c.note ? '<div style="color:#888;font-size:10px">' + esc(c.note) + '</div>' : '') + '</td>' +
+      '<td style="padding:4px"><s style="color:#999">' + esc(c.currentText || '(blank)') + '</s><br><b>' + esc(c.expectedText) + '</b></td></tr>'
+    ).join('');
+    const errs = result.errors.map((e) => '<div style="color:#b38600;padding:2px 8px">⚠ ' + esc(e) + '</div>').join('');
+    const picked = todo.filter((c) => !skipped.has(c.id)).length;
+    const hb = 'font-size:11px;padding:2px 8px;margin-left:6px;border:1px solid #fff;border-radius:3px;cursor:pointer;';
+
+    pop.innerHTML =
+      '<div style="background:#2a6db0;color:#fff;padding:6px 8px;display:flex;justify-content:space-between;align-items:center">' +
+      '<b>' + (todo.length ? 'Will fill ' + picked + ' of ' + todo.length : 'Nothing to fill: all match') + '</b>' +
+      '<span>' + (todo.length ? '<button data-ldc-dofill' + (picked ? '' : ' disabled') + ' style="' + hb + 'background:#fff;color:#2a6db0;font-weight:bold;">Fill ' + picked + '</button>' : '') +
+      '<button data-ldc-popclose style="' + hb + 'background:transparent;color:#fff;">×</button></span></div>' +
+      errs + (todo.length ? '<table style="width:100%;border-collapse:collapse">' + rows + '</table>' : '') +
+      '<div style="color:#888;padding:6px 8px;font-size:10px">Beta. Untick anything you want left alone. Save the loan as usual afterward.</div>';
+
+    pop.onchange = (e) => {
+      const t = e.target;
+      if (!t.hasAttribute('data-ldc-pick')) return;
+      const c = todo[+t.getAttribute('data-ldc-pick')];
+      t.checked ? skipped.delete(c.id) : skipped.add(c.id);
+      renderFillPopover();
+    };
+    pop.onclick = (e) => {
+      const t = e.target;
+      if (t.hasAttribute('data-ldc-popclose')) { closeFillPopover(); return; }
+      if (t.hasAttribute('data-ldc-dofill')) {
+        todo.filter((c) => !skipped.has(c.id)).forEach(applyCheck);
+        setTimeout(() => { runCheck(false); renderFillPopover(); }, 300);
+      }
+    };
+  }
+
+  // Close the popover on a click outside it or Escape.
+  document.addEventListener('mousedown', (e) => {
+    const pop = document.getElementById(FILL_POP_ID);
+    if (pop && !pop.contains(e.target) && e.target.id !== FILL_BTN_ID) closeFillPopover();
+  }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeFillPopover(); });
 
   function autoFill() {
     const r = runCheck(false);
@@ -312,7 +446,12 @@
   let debounce = null;
   const schedule = () => {
     clearTimeout(debounce);
-    debounce = setTimeout(() => (AUTO_FILL ? autoFill() : (document.getElementById(PANEL_ID) || document.querySelector('[data-ldc-marked]')) && runCheck(false)), 500);
+    debounce = setTimeout(() => {
+      if (AUTO_FILL) autoFill();
+      else if (document.getElementById(PANEL_ID) || document.querySelector('[data-ldc-marked]')) runCheck(false);
+      updateFillButtonState();
+      if (document.getElementById(FILL_POP_ID)) renderFillPopover();
+    }, 500);
   };
 
   // Inputs that drive the calculations. Re-check (or re-fill) when they change.
@@ -326,6 +465,7 @@
   }
 
   function injectButton() {
+    syncFillButton();
     if (document.getElementById(BTN_ID)) return;
     const anchor = document.getElementById('btn_LoanDocsStandardDocs') || document.getElementById('btn_LoanDocsLoanDocs');
     if (!anchor) return;
@@ -349,5 +489,5 @@
   new MutationObserver(injectButton).observe(document.body, { childList: true, subtree: true });
 
   // Exposed for quick testing from the console.
-  window.__loanDocsChecker = { buildChecks, runCheck, decimalWords, intWords };
+  window.__loanDocsChecker = { buildChecks, runCheck, decimalWords, intWords, setFillEnabled };
 })();

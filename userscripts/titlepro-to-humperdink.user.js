@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name         TitlePro247 → Humperdink Property Autofill
 // @namespace    loneoakfund
-// @version      0.5.4
+// @version      0.5.5
 // @description  Scrape property report on TitlePro247 and autofill the New Property modal in Humperdink.
 // @match        https://www.titlepro247.com/Orders/Home/Html/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
+// @match        https://loneo-qa-lmsapp.6technology.com/Loans/Details/*
+// @match        https://beta-lmsapp.loneoakfund.com/Loans/Details/*
 // @match        https://www.titlepro247.com/v2/ViewOrder/*
 // @match        https://v3.titlepro247.com/v2/ViewOrder/*
 // @grant        GM_setValue
@@ -770,9 +772,11 @@
   // ------------------------- bootstrap -------------------------
 
   const host = location.hostname;
+  // Humperdink prod, plus its QA and preprod copies.
+  const HUMPERDINK_HOSTS = ['humperdink.loneoakfund.com', 'loneo-qa-lmsapp.6technology.com', 'beta-lmsapp.loneoakfund.com'];
   if (host.endsWith('titlepro247.com')) {
     initTitlePro();
-  } else if (host.endsWith('humperdink.loneoakfund.com')) {
+  } else if (HUMPERDINK_HOSTS.includes(host)) {
     initHumperdink();
   }
 })();
