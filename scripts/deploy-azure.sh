@@ -40,6 +40,11 @@ trap 'rm -rf "$STAGE_DIR" "$DEPLOY_ZIP"' EXIT
 cp server.js index.html consumerdebt.html styles.css app.js loan-docs-data.js "$STAGE_DIR/"
 mkdir -p "$STAGE_DIR/install" "$STAGE_DIR/userscripts"
 cp install/index.html "$STAGE_DIR/install/"
+# Usage screenshots on the install guide. Images only: anything else in that folder stays off the site.
+if ls install/screenshots/*.png >/dev/null 2>&1; then
+  mkdir -p "$STAGE_DIR/install/screenshots"
+  cp install/screenshots/*.png "$STAGE_DIR/install/screenshots/"
+fi
 cp userscripts/*.user.js "$STAGE_DIR/userscripts/"
 (cd "$STAGE_DIR" && zip -r -q "$DEPLOY_ZIP" .)
 

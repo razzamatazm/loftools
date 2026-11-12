@@ -239,6 +239,58 @@
         font-weight: 600;
       }
 
+      .howto {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+      }
+
+      .howto summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--brand);
+        font-weight: 600;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .howto summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .howto summary::before {
+        content: "\25B8";
+        transition: transform 120ms ease;
+      }
+
+      .howto[open] summary::before {
+        transform: rotate(90deg);
+      }
+
+      .howto-body h4 {
+        margin: 20px 0 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+
+      .shot {
+        margin: 14px 0 0;
+      }
+
+      .shot img {
+        display: block;
+        max-width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .shot figcaption {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
       @media (max-width: 560px) {
         .page {
           margin-top: 16px;
@@ -261,9 +313,9 @@
       <a class="back" href="/">&larr; Humperdink Tools</a>
       <h1>Set up the Humperdink browser add-ons</h1>
       <p class="lede">
-        Three small add-ons for Chrome and Microsoft Edge. One brings Hot Task into Humperdink: it opens Hot Task
-        right on top of any Humperdink page and sends a loan to a new LOI Check. One fills in a new Humperdink
-        property from a TitlePro report, and one collects sale comps from Redfin and Zillow and prints them. Setup takes about five minutes, once. After that they update themselves.
+        Small add-ons for Chrome and Microsoft Edge that bring Hot Task into Humperdink, speed up new loans,
+        properties and loan docs, and collect sale comps from Redfin and Zillow. Setup takes about five
+        minutes, once. After that they update themselves.
       </p>
 
       <section>
@@ -348,7 +400,7 @@
         <p>
           Click each <span class="ui">Install</span> button below. A Violentmonkey tab opens showing the
           add-on. Click <span class="ui">Install</span> there too, then close that tab if it doesn't close
-          by itself.
+          by itself. Each add-on has a <span class="ui">How to use</span> link under it with the steps.
         </p>
 
         <div class="card">
@@ -359,6 +411,97 @@
             </div>
             <a class="button" href="https://operation-hot-task-app-lof.azurewebsites.net/userscripts/hot-task-panel.user.js">Install</a>
           </div>
+          <details class="howto" id="use-hot-task-panel">
+            <summary>How to use</summary>
+            <div class="howto-body">
+              <p>
+                Click the round Hot Task button in the bottom right of any Humperdink page to open Hot Task on
+                top of the page. Click it again to tuck it away.
+              </p>
+
+              <h4>Export to HT: starting an LOI Check from a loan</h4>
+              <p>
+                Export to HT starts a new LOI Check in Hot Task with the loan's name, its Humperdink link and its
+                property addresses already in it. It can open Hot Task in the Panel, on top of Humperdink, or in
+                Teams. Teams takes one extra step, so the two are written out separately below.
+              </p>
+              <ol>
+                <li>
+                  On a loan in Humperdink, click <span class="ui">Export to HT</span> in the Loan Terms header. If
+                  it looks faded, the loan's properties are still loading. Give it a second.
+                </li>
+                <li>
+                  The first time, it asks where to open: <span class="ui">Panel</span> or
+                  <span class="ui">Teams</span>. It remembers your answer, and you can change it any time in the
+                  Panel's settings menu.
+                </li>
+              </ol>
+              <figure class="shot">
+                <img src="screenshots/export-to-ht-button.png" alt="The Export to HT button in the Loan Terms header, after the LOI button" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>Export to HT, right after the LOI button, with the Panel or Teams question it asks the first time.</figcaption>
+              </figure>
+
+              <h4>If you chose Panel</h4>
+              <p>
+                Hot Task opens over the Humperdink page on a new LOI Check, with the Folder Name, the Humperdink
+                link and the property addresses already filled in. Skip to Finish the LOI Check below.
+              </p>
+
+              <h4>If you chose Teams</h4>
+              <ol>
+                <li>
+                  The first time, your browser asks whether to open Microsoft Teams. Tick
+                  <span class="ui">Always allow</span> and click <span class="ui">Open</span>, and it won't ask
+                  again.
+                </li>
+                <li>Teams opens Hot Task on a new LOI Check. The form is empty. That's expected.</li>
+                <li>
+                  Press <kbd>Ctrl</kbd>+<kbd>V</kbd>. The Folder Name, the Humperdink link and the property
+                  addresses fill in. If nothing happens, click any box on the form and press
+                  <kbd>Ctrl</kbd>+<kbd>V</kbd> again.
+                </li>
+              </ol>
+              <figure class="shot">
+                <img src="screenshots/export-to-ht-teams-empty.png" alt="A new, empty LOI Check in Teams waiting for Ctrl+V" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>Before: the new LOI Check opens empty and asks for Ctrl+V.</figcaption>
+              </figure>
+              <figure class="shot">
+                <img src="screenshots/export-to-ht-teams-paste.png" alt="A new LOI Check in Teams, filled in after pressing Ctrl+V" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>After Ctrl+V: Folder Name, the property addresses and the Humperdink link are filled in (blurred here).</figcaption>
+              </figure>
+              <div class="note">
+                <strong>Why paste?</strong> Export to HT already copied the loan for you when you clicked it, so
+                there's nothing to copy yourself. Teams just won't let Hot Task pick it up on its own, so pressing
+                <kbd>Ctrl</kbd>+<kbd>V</kbd> hands it over. You don't need to find a paste box: any box on the form
+                works.
+              </div>
+
+              <h4>Finish the LOI Check</h4>
+              <ol>
+                <li>
+                  Fill in the terms yourself, copied straight from the loan committee approval email thread, and
+                  cross reference them against the property profile document. Add the correct borrower and broker
+                  names while you're there. The export doesn't bring any of it, on purpose.
+                </li>
+                <li>Check it over, fill in anything else, and click <span class="ui">Create</span>. Nothing is filed until you do.</li>
+              </ol>
+              <p>
+                It copies the loan name, the Humperdink link, and the address of every property on the loan. It
+                does <strong>not</strong> copy the loan terms, the borrower or the broker. That's deliberate: a
+                note that arrives with the rate and the fee already filled in gets skimmed instead of checked,
+                and checking them is the job. The terms belong to the loan committee approval email thread, and
+                the property profile document is what you check them against.
+              </p>
+              <p>
+                If you had a new task half-written in Hot Task, it's saved to the
+                <span class="ui">Drafts</span> tab, not lost.
+              </p>
+              <p>
+                If the button shows a message like <span class="ui">Couldn't read the loan's properties</span>
+                instead, Humperdink has probably changed its page. Nothing was copied. Send Tyler a screenshot.
+              </p>
+            </div>
+          </details>
         </div>
 
         <div class="card">
@@ -369,6 +512,74 @@
             </div>
             <a class="button" href="/userscripts/titlepro-to-humperdink.user.js">Install</a>
           </div>
+          <details class="howto" id="use-titlepro-to-humperdink">
+            <summary>How to use</summary>
+            <div class="howto-body">
+              <ol>
+                <li>
+                  Open the property report in TitlePro and click the blue <span class="ui">Send to Humperdink</span> button
+                  in the bottom right corner. It flashes something like
+                  <span class="ui">Ready for HD Import: Purchased 3/14/2022 for $450,000</span> for about ten seconds.
+                </li>
+                <li>
+                  In Humperdink, open the loan and click <span class="ui">+ Property</span> to open the New
+                  Property window.
+                </li>
+                <li>
+                  Click the blue <span class="ui">Paste from TitlePro</span> button next to
+                  <span class="ui">Create</span>. It shows <span class="ui">Imported Successfully</span> or
+                  <span class="ui">Import Failed</span>.
+                </li>
+                <li>Check the fields and click <span class="ui">Create</span>.</li>
+              </ol>
+              <figure class="shot">
+                <img src="screenshots/titlepro-send.png" alt="The Send to Humperdink button on a TitlePro property report" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>Send to Humperdink, bottom right of a TitlePro property report.</figcaption>
+              </figure>
+              <figure class="shot">
+                <img src="screenshots/titlepro-paste.png" alt="The Paste from TitlePro button in Humperdink's New Property window" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>Paste from TitlePro, next to Create in the New Property window.</figcaption>
+              </figure>
+
+              <h4>What it fills in</h4>
+              <ul class="fields">
+                <li>Address, city, state, zip</li>
+                <li>County</li>
+                <li>APN</li>
+                <li>Property type</li>
+                <li>Building size</li>
+                <li>Lot size, in square feet</li>
+                <li>Purchase price</li>
+                <li>Purchase date</li>
+                <li>Year built</li>
+              </ul>
+              <p>
+                Bedrooms, bathrooms and units aren't filled in, because the New Property window has no place for
+                them. The purchase price and date come from the most recent real sale on the report, so gifts,
+                transfers between family members and foreclosures are skipped.
+              </p>
+
+              <div class="note note-warn">
+                <strong>If the message turns yellow,</strong> double-check the purchase price and date against the
+                report before you click Create. The message lists what looked off, for example the sale wasn't clearly
+                marked as an arm's-length sale, the deed covered more than one parcel, or the report had no
+                purchase date.
+              </div>
+
+              <h4>Good to know</h4>
+              <ul>
+                <li>
+                  It holds one report at a time. Sending a second report replaces the first, so send the one you
+                  want right before you paste.
+                </li>
+                <li>You don't need to keep the TitlePro tab open. It remembers the last report you sent.</li>
+                <li>
+                  <span class="ui">Import Failed</span> usually means you haven't sent a report from TitlePro yet.
+                  <span class="ui">No data found</span> in TitlePro means the TitlePro page isn't a property report.
+                </li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <div class="card">
@@ -379,36 +590,192 @@
             </div>
             <a class="button" href="/userscripts/humperdink-new-loan.user.js">Install</a>
           </div>
+          <details class="howto" id="use-new-loan">
+            <summary>How to use</summary>
+            <div class="howto-body">
+              <ol>
+                <li>Go to the Loan Activity page in Humperdink.</li>
+                <li>Click <span class="ui">New Loan</span> in the left sidebar. Humperdink's usual New Loan window opens.</li>
+                <li>
+                  Fill it in and click <span class="ui">Create</span>, the same as you would from inside a loan.
+                  <ul>
+                    <li>With <span class="ui">Open in new tab</span> ticked, the new loan opens in a new tab and the Loan Activity list refreshes.</li>
+                    <li>With it unticked, this tab goes straight to the new loan.</li>
+                  </ul>
+                </li>
+              </ol>
+              <figure class="shot">
+                <img src="screenshots/new-loan-sidebar.png" alt="The New Loan button in the Loan Activity sidebar" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>New Loan in the Loan Activity sidebar opens Humperdink's own New Loan window.</figcaption>
+              </figure>
+              <p>Cancel, the X or <kbd>Esc</kbd> closes the window without creating anything.</p>
+            </div>
+          </details>
         </div>
 
         <div class="card">
           <div class="card-row">
             <div>
               <h3>Standard Docs</h3>
-              <p>Adds a Standard Docs button beside Loan Docs on a loan. One click makes the five standard loan docs: Agreement, EFT, Note (non-revolver), TD and Instructions. The first time, it asks whether to download them to your computer or create them in Humperdink, and you can save your answer as the default. Shift-click the button to choose again.</p>
+              <p>Adds a Standard Docs button beside Loan Docs on a loan. One click makes the five standard loan docs: Agreement, EFT, Note (non-revolver), TD and Instructions.</p>
             </div>
             <a class="button" href="/userscripts/humperdink-standard-docs.user.js">Install</a>
           </div>
+          <details class="howto" id="use-standard-docs">
+            <summary>How to use</summary>
+            <div class="howto-body">
+              <ol>
+                <li>Open a loan in Humperdink and click <span class="ui">Standard Docs</span>, next to Loan Docs.</li>
+                <li>
+                  The first time, it asks where the docs should go:
+                  <ul>
+                    <li><span class="ui">Download to this computer</span> puts the Word files in your Downloads folder.</li>
+                    <li><span class="ui">Create in Humperdink</span> saves them to the loan's documents.</li>
+                  </ul>
+                  Click <span class="ui">Save as default</span> to skip this question next time, or
+                  <span class="ui">Just this time</span> to be asked again.
+                </li>
+                <li>It makes the Agreement, EFT, Note (non-revolver), TD and Instructions in one go.</li>
+              </ol>
+              <figure class="shot">
+                <img src="screenshots/standard-docs.png" alt="The Standard Docs button and its where-should-they-go window" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>Standard Docs, with the window it shows the first time.</figcaption>
+              </figure>
+              <p>
+                Saved a default and want to change it? Hold <kbd>Shift</kbd> while you click
+                <span class="ui">Standard Docs</span> and it asks again.
+              </p>
+            </div>
+          </details>
         </div>
 
         <div class="card">
           <div class="card-row">
             <div>
               <h3>Loan Docs Checker</h3>
-              <p>Adds a Check Docs button beside Loan Docs on a loan. It checks the loan docs dates (maturity, first payment, funding end of month, extensions) and the spelled-out amount and rates against the closing date, term and numbers, outlines anything that's off, and offers a Fix button for each. Save the loan as usual after fixing.</p>
+              <p>Adds a Check Docs button beside Loan Docs on a loan. It checks the loan docs dates and the spelled-out amount and rates, outlines anything that's off, and can fix it for you.</p>
             </div>
             <a class="button" href="/userscripts/humperdink-loan-docs-checker.user.js">Install</a>
           </div>
+          <details class="howto" id="use-loan-docs-checker">
+            <summary>How to use</summary>
+            <div class="howto-body">
+              <ol>
+                <li>Open a loan in Humperdink and fill in the Closing Date, Loan Term, loan amount and rates as usual.</li>
+                <li>
+                  Click <span class="ui">Check Docs</span>, next to Loan Docs. A panel lists every date and
+                  spelled-out field it checked, and anything that's off gets a red outline on the page.
+                </li>
+                <li>
+                  Click <span class="ui">Fix</span> on a row to put in the right value, or click a field's name
+                  to jump to it.
+                </li>
+                <li>Save the loan as usual. The checker doesn't save anything for you.</li>
+              </ol>
+              <figure class="shot">
+                <img src="screenshots/loan-docs-check.png" alt="The Check Docs panel listing fields to fix" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>The Check Docs panel, with a Fix button on each row that's off.</figcaption>
+              </figure>
+              <p>
+                It checks the maturity date, first payment date, funding end of month date, extension dates,
+                original loan docs date, and the spelled-out loan amount, interest rates, default rate and
+                extension rates and fees. A yellow outline means it's worth a look but might be right as is,
+                like an original loan docs date that isn't today.
+              </p>
+
+              <h4>Fill mode (beta)</h4>
+              <ol>
+                <li>Tick <span class="ui">Enable fill mode (beta)</span> at the bottom of the Check Docs panel. It stays on in this browser until you untick it.</li>
+                <li>
+                  A <span class="ui">Fill</span> button appears beside Closing Date. It stays grayed out until
+                  there's a closing date, because every other date is worked out from it.
+                </li>
+                <li>
+                  Click <span class="ui">Fill</span> to see everything it would change, old value crossed out and
+                  new value underneath. Untick anything you want left alone, then click
+                  <span class="ui">Fill</span> at the top of that box.
+                </li>
+                <li>Save the loan as usual.</li>
+              </ol>
+              <figure class="shot">
+                <img src="screenshots/loan-docs-fill.png" alt="The Fill preview beside Closing Date" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>The Fill preview: untick anything you want to keep, then fill.</figcaption>
+              </figure>
+            </div>
+          </details>
         </div>
 
         <div class="card">
           <div class="card-row">
             <div>
               <h3>Comp Batching Tool for Redfin and Zillow</h3>
-              <p>Puts a sale summary (unit type, last sale price and date, square feet, lot size, beds and baths, year built, price per square foot) under the address on a Redfin or Zillow home. A panel in the bottom right collects comps, copies a comp table for Excel, and prints a summary table plus one page per comp. Comps from both sites go into the same set, so you can mix them.</p>
+              <p>Puts a sale summary under the address on a Redfin or Zillow home, and collects comps into a set you can copy into Excel or print. Comps from both sites go into the same set, so you can mix them.</p>
             </div>
             <a class="button" href="/userscripts/redfin-sale-summary.user.js">Install</a>
           </div>
+          <details class="howto" id="use-comp-batching">
+            <summary>How to use</summary>
+            <div class="howto-body">
+              <ol>
+                <li>
+                  Open a home on Redfin or Zillow. A summary box under the address shows the unit type, last sale
+                  price and date, square feet, lot size, beds and baths, year built and price per square foot.
+                </li>
+                <li>
+                  To keep it as a comp, tick <span class="ui">Add to print set</span> in the panel at the bottom
+                  right. Do the same on each comp you want. The set carries across tabs and across both sites.
+                </li>
+                <li>
+                  Type the subject property's square feet into <span class="ui">Subject SF</span>. The panel then
+                  shows the value based on the average comp.
+                </li>
+                <li>
+                  When the set is ready:
+                  <ul>
+                    <li><span class="ui">Copy table</span> copies the comp table, ready to paste into Excel.</li>
+                    <li><span class="ui">Print set</span> prints a summary table page plus one page per comp.</li>
+                    <li><span class="ui">Preview</span> shows the printout on screen first.</li>
+                    <li><span class="ui">Print this</span> prints just the home you're looking at.</li>
+                  </ul>
+                </li>
+                <li>Click <span class="ui">Clear</span> to empty the set before the next deal.</li>
+              </ol>
+              <figure class="shot">
+                <img src="screenshots/comp-summary.png" alt="The sale summary box under a home's address" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>The sale summary under the address.</figcaption>
+              </figure>
+              <figure class="shot">
+                <img src="screenshots/comp-panel.png" alt="The comp set panel in the bottom right" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>The comp set panel, bottom right.</figcaption>
+              </figure>
+
+              <h4>What Print set gives you</h4>
+              <figure class="shot">
+                <img src="screenshots/comp-print-summary.png" alt="The printed summary page: a comp table with averages and the value based on the average comp" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>Page one: the comp table, averages and the value based on the average comp. Struck-through comps are left out of the averages.</figcaption>
+              </figure>
+              <figure class="shot">
+                <img src="screenshots/comp-print-page.png" alt="A printed comp page with the home's photo and sale summary" loading="lazy" onerror="this.closest('figure').hidden = true" />
+                <figcaption>Then one page per comp: photo, sale summary and the listing description.</figcaption>
+              </figure>
+
+              <h4>Good to know</h4>
+              <ul>
+                <li>Untick a comp in the panel to leave it out of the averages without removing it.</li>
+                <li>
+                  <span class="ui">S</span> or <span class="ui">L</span> next to a comp marks it as a sale or a
+                  listing. Click it to switch. Listings are counted at the list price less the
+                  <span class="ui">Listing discount</span>.
+                </li>
+                <li>
+                  With <span class="ui">Auto-drop highest $/SF comp</span> ticked and three or more comps, the
+                  priciest comp per square foot is left out of the averages and marked
+                  <span class="ui">high</span>. Tick it to keep it in.
+                </li>
+                <li><kbd>Ctrl</kbd>+<kbd>P</kbd> on a home page prints the tidy one-page version.</li>
+              </ul>
+            </div>
+          </details>
         </div>
 
         <p class="note">
@@ -449,118 +816,6 @@
       </section>
 
       <section>
-        <h2>Using Export to HT: Humperdink to Hot Task</h2>
-        <ol>
-          <li>
-            On a loan in Humperdink, click <span class="ui">Export to HT</span> in the Loan Terms header. If
-            it looks faded, the loan's properties are still loading. Give it a second.
-          </li>
-          <li>
-            The first time, it asks where Export to HT should open: <span class="ui">Panel</span> or
-            <span class="ui">Teams</span>. It remembers your answer in this browser, and you can change it any
-            time in the Panel's settings menu.
-            <ul>
-              <li>
-                <span class="ui">Panel</span> opens Hot Task over the Humperdink page on a new LOI Check.
-              </li>
-              <li>
-                <span class="ui">Teams</span> copies the loan and opens Hot Task in Teams on a new LOI Check.
-                The first time, your browser asks whether to open Microsoft Teams. Tick
-                <span class="ui">Always allow</span> and click <span class="ui">Open</span>, and it won't ask
-                again.
-              </li>
-            </ul>
-          </li>
-          <li>
-            Folder Name, the Humperdink link and the property addresses fill in on their own. In Teams, if
-            they don't, press <kbd>Ctrl</kbd>+<kbd>V</kbd> (<kbd>⌘</kbd>+<kbd>V</kbd> on a Mac). The form
-            opens with your cursor already in it, and pasting into any field on the form is the import. There
-            is no paste box.
-          </li>
-          <li>
-            Fill in the terms yourself, copied straight from the loan committee approval email thread, and
-            cross reference them against the property profile document. Add the correct borrower and broker
-            names while you're there. The export doesn't bring any of it, on purpose.
-          </li>
-          <li>Check it over, fill in anything else, and click <span class="ui">Create</span>. Nothing is filed until you do.</li>
-        </ol>
-        <p>
-          It copies the loan name, the Humperdink link, and the address of every property on the loan. It
-          does <strong>not</strong> copy the loan terms, the borrower or the broker. That's deliberate: a
-          note that arrives with the rate and the fee already filled in gets skimmed instead of checked,
-          and checking them is the job. The terms belong to the loan committee approval email thread, and
-          the property profile document is what you check them against.
-        </p>
-        <p>
-          If you had a new task half-written in Hot Task, it's saved to the
-          <span class="ui">Drafts</span> tab, not lost.
-        </p>
-        <p>
-          If the button shows a message like <span class="ui">Couldn't read the loan's properties</span>
-          instead, Humperdink has probably changed its page. Nothing was copied. Send Tyler a screenshot.
-        </p>
-      </section>
-
-      <section>
-        <h2>Using TitlePro to Humperdink: filling in a new property</h2>
-        <ol>
-          <li>
-            Open the property report in TitlePro and click the blue <span class="ui">Send to Humperdink</span> button
-            in the bottom right corner. It flashes something like
-            <span class="ui">Ready for HD Import: Purchased 3/14/2022 for $450,000</span> for about ten seconds.
-          </li>
-          <li>
-            In Humperdink, open the loan and click <span class="ui">+ Property</span> to open the New
-            Property window.
-          </li>
-          <li>
-            Click the blue <span class="ui">Paste from TitlePro</span> button next to
-            <span class="ui">Create</span>. It shows <span class="ui">Imported Successfully</span> or
-            <span class="ui">Import Failed</span>.
-          </li>
-          <li>Check the fields and click <span class="ui">Create</span>.</li>
-        </ol>
-
-        <h3>What it fills in</h3>
-        <ul class="fields">
-          <li>Address, city, state, zip</li>
-          <li>County</li>
-          <li>APN</li>
-          <li>Property type</li>
-          <li>Building size</li>
-          <li>Lot size, in square feet</li>
-          <li>Purchase price</li>
-          <li>Purchase date</li>
-          <li>Year built</li>
-        </ul>
-        <p>
-          Bedrooms, bathrooms and units aren't filled in, because the New Property window has no place for
-          them. The purchase price and date come from the most recent real sale on the report, so gifts,
-          transfers between family members and foreclosures are skipped.
-        </p>
-
-        <div class="note note-warn">
-          <strong>If the message turns yellow,</strong> double-check the purchase price and date against the
-          report before you click Create. The message lists what looked off, for example the sale wasn't clearly
-          marked as an arm's-length sale, the deed covered more than one parcel, or the report had no
-          purchase date.
-        </div>
-
-        <h3>Good to know</h3>
-        <ul>
-          <li>
-            It holds one report at a time. Sending a second report replaces the first, so send the one you
-            want right before you paste.
-          </li>
-          <li>You don't need to keep the TitlePro tab open. It remembers the last report you sent.</li>
-          <li>
-            <span class="ui">Import Failed</span> usually means you haven't sent a report from TitlePro yet.
-            <span class="ui">No data found</span> in TitlePro means the TitlePro page isn't a property report.
-          </li>
-        </ul>
-      </section>
-
-      <section>
         <h2>Updates</h2>
         <p>
           You don't need to do anything. Violentmonkey checks for new versions about once a day and installs
@@ -586,6 +841,16 @@
           );
         });
       });
+      // A link to #use-<add-on> opens that add-on's How to use section.
+      function openFromHash() {
+        var target = location.hash && document.getElementById(location.hash.slice(1));
+        if (target && target.tagName === "DETAILS") {
+          target.open = true;
+          target.scrollIntoView({ block: "start" });
+        }
+      }
+      window.addEventListener("hashchange", openFromHash);
+      openFromHash();
     </script>
   </body>
 </html>
