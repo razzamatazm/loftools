@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TitlePro247 → Humperdink Property Autofill
 // @namespace    loneoakfund
-// @version      0.5.5
+// @version      0.6.0
 // @description  Scrape property report on TitlePro247 and autofill the New Property modal in Humperdink.
 // @match        https://www.titlepro247.com/Orders/Home/Html/*
 // @match        https://humperdink.loneoakfund.com/Loans/Details/*
@@ -204,7 +204,11 @@
 
   // Descriptions that mean "not a real purchase" even when TitlePro leaves
   // Type of Transaction blank.
-  const NON_ARMS_DESC = /intra.?family|dissolution|gift|quit.?claim|trustee|foreclos|sheriff|tax\s*deed|nominal|correct|re.?record|affidavit|easement/i;
+  const NON_ARMS_DESC = /intra.?family|inter.?spousal|dissolution|gift|quit.?claim|trustee|trust\s*transfer|foreclos|in\s*lieu|sheriff|tax\s*deed|transfer\s*on\s*death|beneficiary\s*deed|nominal|correct|re.?record|affidavit|easement/i;
+
+  // Below this a recorded price is more likely a token consideration than a
+  // real purchase, so it is shown for review but never picked on its own.
+  const MIN_SALE_PRICE = 50000;
 
   // TitlePro only says "Arms-Length Transfer" on residential sales. Commercial
   // sales come through as "Non Residential Transfer", and a priced grant or
@@ -240,14 +244,24 @@
       });
   }
 
-  // Latest real purchase: most recent priced transfer that is not flagged
-  // non arms-length and is not a partial interest. Explicit "Arms-Length
+  // Latest real purchase: most recent transfer priced at MIN_SALE_PRICE or
+  // more that is not flagged non arms-length and is not a partial interest. Explicit "Arms-Length
   // Transfer" wins a tie on the same recording date; "Per Assessor" rows
   // (assessor-reported sale price, no recorded deed detail) still qualify,
   // since that is often the only place the true price shows up.
+  // Why a transfer can't be the purchase, or '' if it can.
+  function skipReason(t) {
+    if (t.nonArms) return 'Not a market sale';
+    if (/^y/i.test(t.partialInterest)) return 'Partial interest';
+    if (!t.price) return 'No price';
+    if (!isMDY(t.recordingDate)) return 'No recording date';
+    if (t.price < MIN_SALE_PRICE) return 'Under $' + MIN_SALE_PRICE.toLocaleString();
+    return '';
+  }
+
   function pickLatestSale(transfers) {
     return transfers
-      .filter(t => t.price > 0 && isMDY(t.recordingDate) && !t.nonArms && !/^y/i.test(t.partialInterest))
+      .filter(t => !skipReason(t))
       .sort((a, b) =>
         dateKey(b.recordingDate) - dateKey(a.recordingDate) ||
         (b.armsLength - a.armsLength) ||
@@ -316,6 +330,8 @@
       if (best.multiApn) warnings.push('Deed covers more than one parcel, price may include them');
       if (dateKey(best.recordingDate) > dateKey(lfs.recordingDate) && lfs.price) {
         warnings.push('Used a newer sale than TitlePro\'s Latest Full Sale (' + lfs.price + ' on ' + lfs.recordingDate + ')');
+      } else if (dateKey(best.recordingDate) === dateKey(lfs.recordingDate) && num(lfs.price) && num(lfs.price) !== best.price) {
+        warnings.push('TitlePro\'s Latest Full Sale shows ' + lfs.price + ' for the same date, the history shows $' + best.price.toLocaleString());
       }
     } else {
       purchasePrice = money(lfs.price);
@@ -325,7 +341,9 @@
       saleArmsLength = null;
       saleSource = 'latest full sale block';
       if (!transfers.length) warnings.push('No transaction history found, used TitlePro\'s Latest Full Sale');
-      else warnings.push('No priced arms-length sale in the history, used TitlePro\'s Latest Full Sale');
+      else warnings.push('No arms-length sale of $' + MIN_SALE_PRICE.toLocaleString() + ' or more in the history, used TitlePro\'s Latest Full Sale');
+      const lp = num(lfs.price);
+      if (lp && lp < MIN_SALE_PRICE) warnings.push('Price is under $' + MIN_SALE_PRICE.toLocaleString() + ', may be a token amount');
     }
 
     if (!purchaseDate) warnings.push('No purchase date found, enter it by hand');
@@ -364,6 +382,24 @@
         id: t.txnId, recorded: t.recordingDate, price: t.priceRaw,
         type: t.type, desc: t.desc, buyer: t.buyer,
       })),
+
+      // Every recorded transfer, newest first, for the confirm window in
+      // Humperdink. picked marks the one the rules above chose, if any.
+      transfers: transfers
+        .slice()
+        .sort((a, b) => dateKey(b.recordingDate || b.transferDate) - dateKey(a.recordingDate || a.transferDate))
+        .map(t => ({
+          id: t.txnId,
+          recorded: t.recordingDate,
+          transferred: t.transferDate,
+          price: t.price,
+          type: t.type || t.desc || t.docType,
+          buyer: t.buyer,
+          seller: t.seller,
+          multiApn: t.multiApn,
+          skip: skipReason(t),
+          picked: useBest && t === best,
+        })),
 
       ownerNames: val('Primary Owner Name(s)'),
     };
@@ -689,21 +725,188 @@
     if (setInput('txtPropertyAPN', p.apn)) wrote.push('apn');
     if (setInput('txtBuildingSize', p.buildingSqft)) wrote.push('bldgSqft');
     if (setInput('txtLotSize', p.lotSqft)) wrote.push('lotSqft');
-    if (setInput('txtPurchasePrice', p.purchasePrice)) wrote.push('purchPrice');
+    // Payloads from 0.6.0 on carry the transfer list, and price and date wait
+    // for the confirm window. Older stored payloads fill them directly.
+    const confirmSale = Array.isArray(p.transfers);
+    if (!confirmSale && setInput('txtPurchasePrice', p.purchasePrice)) wrote.push('purchPrice');
     // Note: the id is txtYearBuild, no trailing "t".
     if (setInput('txtYearBuild', p.yearBuilt)) wrote.push('yearBuilt');
     // The New Property modal has no Bedrooms / Bathrooms / Units field.
     // Those stay in the payload (p.bedrooms, p.bathrooms, p.units) but are not written.
     if (setJqxCombo('propertyTypecombobox', p.propertyType)) wrote.push('propType');
     if (setJqxCombo('lotSizecombobox', 'sqft')) wrote.push('lotUnit');
-    if (setJqxDate('datetimeinputPurchaseDate', p.purchaseDate)) wrote.push('purchDate');
+    if (!confirmSale && setJqxDate('datetimeinputPurchaseDate', p.purchaseDate)) wrote.push('purchDate');
 
     const warn = p.saleWarnings && p.saleWarnings.length;
     if (warn) console.warn('[lof] verify sale figures:', p.saleWarnings, p.saleCandidates);
     // Address stands in for "the fill worked", or the APN for land with no address.
     const ok = wrote.includes('address') || (!p.address && wrote.includes('apn'));
-    flash(btn, ok ? 'Imported Successfully' : 'Import Failed', ok, 10000);
     console.log('[lof] wrote', wrote, 'payload:', p);
+    if (!ok) { flash(btn, 'Import Failed', false, 10000); return; }
+    if (!confirmSale) { flash(btn, 'Imported Successfully', true, 10000); return; }
+
+    openSaleConfirm(p, sale => {
+      if (!sale) { flash(btn, 'Imported, purchase left blank', 'warn', 10000); return; }
+      const priceOk = !sale.price || setInput('txtPurchasePrice', sale.price);
+      const dateOk = !sale.date || setJqxDate('datetimeinputPurchaseDate', sale.date);
+      const done = priceOk && dateOk;
+      flash(btn, done ? 'Imported Successfully' : 'Purchase price or date didn\'t fill', done || 'warn', 10000);
+    });
+  }
+
+  // ---- purchase confirm window ----
+
+  const CONFIRM_ID = 'lofSaleConfirm';
+
+  function h(tag, style, text) {
+    const el = document.createElement(tag);
+    if (style) Object.assign(el.style, style);
+    if (text != null) el.textContent = text;
+    return el;
+  }
+
+  const fmtMoney = n => (n ? '$' + Number(n).toLocaleString() : '');
+
+  // Lists every transfer on the report, newest first, with the rules' pick
+  // preselected. Picking a row loads its price and date into editable boxes,
+  // so a row with no price (or the wrong one) can still be the purchase.
+  // done(sale) gets {price, date} to write, or null to leave both blank.
+  function openSaleConfirm(p, done) {
+    const old = document.getElementById(CONFIRM_ID);
+    if (old) old.remove();
+
+    const rows = p.transfers.map((t, i) => ({ key: 't' + i, t, price: t.price, date: t.recorded || t.transferred }));
+    const lfs = p.latestFullSale || {};
+    const lfsPrice = num(lfs.price);
+    const lfsDate = lfs.recordingDate || lfs.saleDate || '';
+    if (lfsPrice || lfsDate) {
+      rows.push({
+        key: 'lfs', price: lfsPrice, date: lfsDate,
+        t: { recorded: lfsDate, price: lfsPrice, type: 'TitlePro Latest Full Sale summary', buyer: '', seller: '', skip: '' },
+      });
+    }
+    // An acquisition has a contract price but nothing recorded yet, so this
+    // row clears both boxes for typing the price in by hand.
+    rows.unshift({
+      key: 'new', price: 0, date: '',
+      t: { recorded: '', price: 0, type: 'New acquisition, no recorded sale yet', buyer: '', seller: '', skip: '' },
+    });
+    let picked = rows.find(r => r.t.picked);
+    if (!picked && p.saleSource === 'latest full sale block') picked = rows.find(r => r.key === 'lfs');
+
+    const overlay = h('div', {
+      position: 'fixed', inset: '0', zIndex: 2147483647, background: 'rgba(0,0,0,.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+      font: '13px/1.4 sans-serif', color: '#1a1a1a',
+    });
+    overlay.id = CONFIRM_ID;
+    const panel = h('div', {
+      background: '#fff', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,.35)',
+      width: 'min(920px, 100%)', maxHeight: 'calc(100vh - 32px)', display: 'flex', flexDirection: 'column',
+    });
+    overlay.appendChild(panel);
+
+    const head = h('div', { padding: '14px 16px 8px' });
+    head.appendChild(h('div', { fontSize: '16px', fontWeight: '600' }, 'Confirm the purchase'));
+    const where = [p.address, p.city].filter(Boolean).join(', ') || (p.apn ? 'APN ' + p.apn : '');
+    if (where) head.appendChild(h('div', { color: '#5a6570' }, where));
+    head.appendChild(h('div', { color: '#5a6570', marginTop: '4px' },
+      'Every transfer on the TitlePro report, newest first. Pick the purchase, then adjust the price or date if needed.'));
+    panel.appendChild(head);
+
+    if (p.saleWarnings && p.saleWarnings.length) {
+      const w = h('ul', { margin: '0 16px 8px', padding: '8px 8px 8px 26px', background: '#fff4e0', border: '1px solid #e8c27a', borderRadius: '4px' });
+      for (const msg of p.saleWarnings) w.appendChild(h('li', null, msg));
+      panel.appendChild(w);
+    }
+
+    const wrap = h('div', { overflow: 'auto', margin: '0 16px', border: '1px solid #c8d3df', borderRadius: '4px', flex: '1 1 auto' });
+    const table = h('table', { borderCollapse: 'collapse', width: '100%' });
+    const thead = h('tr', { background: '#f0f4f8', textAlign: 'left' });
+    for (const c of ['', 'Recorded', 'Price', 'Type', 'Buyer', 'Seller', 'Note']) {
+      thead.appendChild(h('th', { padding: '6px 8px', fontWeight: '600', whiteSpace: 'nowrap', position: 'sticky', top: '0', background: '#f0f4f8' }, c));
+    }
+    table.appendChild(thead);
+
+    const priceIn = h('input', { width: '140px', padding: '5px 6px', font: 'inherit' });
+    const dateIn = h('input', { width: '110px', padding: '5px 6px', font: 'inherit' });
+    dateIn.placeholder = 'MM/DD/YYYY';
+
+    const radios = [];
+    const select = r => {
+      picked = r;
+      for (const x of radios) {
+        x.input.checked = x.r === r;
+        x.tr.style.background = x.r === r ? '#e3eefb' : '';
+      }
+      priceIn.value = r.price ? Number(r.price).toLocaleString() : '';
+      dateIn.value = r.date || '';
+      if (r.key === 'new') priceIn.focus();
+    };
+
+    for (const r of rows) {
+      const t = r.t;
+      const muted = !!t.skip;
+      const tr = h('tr', { borderTop: '1px solid #e3e8ee', cursor: 'pointer', color: muted ? '#7a848e' : '' });
+      const input = h('input');
+      input.type = 'radio';
+      input.name = 'lofSalePick';
+      const td0 = h('td', { padding: '6px 8px' });
+      td0.appendChild(input);
+      tr.appendChild(td0);
+      const note = [t.skip, t.multiApn ? 'Deed covers more than one parcel' : '', r === picked ? 'Suggested' : '']
+        .filter(Boolean).join(', ');
+      for (const v of [t.recorded || (t.transferred ? t.transferred + ' (transfer)' : ''), fmtMoney(t.price), t.type, t.buyer, t.seller, note]) {
+        tr.appendChild(h('td', { padding: '6px 8px', verticalAlign: 'top' }, v || ''));
+      }
+      tr.addEventListener('click', () => select(r));
+      radios.push({ r, input, tr });
+      table.appendChild(tr);
+    }
+    wrap.appendChild(table);
+    panel.appendChild(wrap);
+
+    const foot = h('div', { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', padding: '12px 16px' });
+    const lab = (text, input) => {
+      const l = h('label', { display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }, text);
+      l.appendChild(input);
+      return l;
+    };
+    foot.appendChild(lab('Purchase price $', priceIn));
+    foot.appendChild(lab('Purchase date', dateIn));
+    const err = h('span', { color: '#b3261e' });
+    foot.appendChild(err);
+    foot.appendChild(h('span', { flex: '1 1 auto' }));
+    const btnStyle = { border: 'none', borderRadius: '4px', padding: '8px 14px', font: 'inherit', fontWeight: '600', cursor: 'pointer' };
+    const skipBtn = h('button', Object.assign({ background: '#e3e8ee', color: '#1a1a1a' }, btnStyle), 'Leave blank');
+    const useBtn = h('button', Object.assign({ background: '#0b66c3', color: '#fff' }, btnStyle), 'Use this purchase');
+    skipBtn.type = useBtn.type = 'button';
+    foot.appendChild(skipBtn);
+    foot.appendChild(useBtn);
+    panel.appendChild(foot);
+
+    const close = sale => { overlay.remove(); done(sale); };
+    const confirm = () => {
+      const price = money(priceIn.value);
+      const date = dateIn.value.trim();
+      if (price && !(num(price) > 0)) { err.textContent = 'Price isn\'t a number'; return; }
+      if (date && !isMDY(date)) { err.textContent = 'Date must be MM/DD/YYYY'; return; }
+      if (!price && !date) { close(null); return; }
+      close({ price, date });
+    };
+    skipBtn.addEventListener('click', () => close(null));
+    useBtn.addEventListener('click', confirm);
+    // Keep keys inside the window so Humperdink's modal doesn't act on them.
+    overlay.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Escape') close(null);
+      else if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+    });
+
+    document.body.appendChild(overlay);
+    if (picked) select(picked);
+    else { priceIn.value = p.purchasePrice ? Number(p.purchasePrice).toLocaleString() : ''; dateIn.value = p.purchaseDate || ''; }
+    if (document.activeElement !== priceIn) useBtn.focus();
   }
 
   const PASTE_BTN_ID = 'lofPasteFromTitlePro';
